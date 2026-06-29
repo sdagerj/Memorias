@@ -1,0 +1,16 @@
+# Dependencias y artefactos
+node_modules/
+dist/
+build/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log

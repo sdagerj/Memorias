@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Versión "maskable": el contenido vive dentro de la zona segura central. -->
+  <rect width="512" height="512" fill="#7c4d3a"/>
+  <g transform="translate(140 150)">
+    <path d="M116 26C86 5 41 5 8 20v180c33-15 78-15 108 6 30-21 75-21 108-6V20C191 5 146 5 116 26Z" fill="#fffdf8"/>
+    <path d="M116 26v166" stroke="#7c4d3a" stroke-width="8" fill="none"/>
+    <g stroke="#c98a3a" stroke-width="7" stroke-linecap="round">
+      <path d="M30 58h62M30 88h62M30 118h52"/>
+      <path d="M140 58h62M140 88h62M140 118h52"/>
+    </g>
+    <g transform="translate(94 108)">
+      <path d="M22 4c-10 0-18 8-18 18 0 13 18 28 18 28s18-15 18-28C40 12 32 4 22 4Z" fill="#c98a3a"/>
+      <circle cx="22" cy="21" r="7" fill="#fffdf8"/>
+    </g>
+  </g>
+</svg>

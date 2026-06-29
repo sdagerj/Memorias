@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#7c4d3a" />
+  <meta name="description" content="Tu libro de memorias: guarda recuerdos con fotos, textos y tu ubicación, y conviértelos en un libro." />
+  <title>Memorias — Mi libro de recuerdos</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/icon.svg" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Memorias" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <img src="icons/icon.svg" alt="" class="brand-logo" />
+      <div>
+        <h1>Memorias</h1>
+        <p class="tagline">Tu libro de recuerdos</p>
+      </div>
+    </div>
+    <button id="installBtn" class="install-btn" hidden>Instalar app</button>
+  </header>
+
+  <main id="app">
+    <!-- Vista: Línea de tiempo -->
+    <section id="view-timeline" class="view active">
+      <div class="view-head">
+        <h2>Mis recuerdos</h2>
+        <span id="memCount" class="count">0</span>
+      </div>
+      <input type="search" id="searchInput" class="search" placeholder="Buscar en tus recuerdos…" />
+      <div id="timeline" class="timeline"></div>
+      <div id="emptyState" class="empty">
+        <p class="empty-emoji">📖</p>
+        <h3>Aún no hay recuerdos</h3>
+        <p>Toca el botón <strong>+</strong> para guardar tu primer recuerdo. Puedes escribir, agregar fotos y dejar tu ubicación.</p>
+      </div>
+    </section>
+
+    <!-- Vista: Mapa / Ubicaciones -->
+    <section id="view-map" class="view">
+      <div class="view-head"><h2>Lugares</h2></div>
+      <p class="muted">Estos son los lugares donde has guardado recuerdos.</p>
+      <div id="placesList" class="places"></div>
+    </section>
+
+    <!-- Vista: Libro -->
+    <section id="view-book" class="view">
+      <div class="view-head"><h2>Mi libro</h2></div>
+      <p class="muted">Una vista previa de tu libro de memorias. Puedes exportarlo a PDF para imprimirlo o guardarlo.</p>
+      <div class="book-actions">
+        <button id="exportPdfBtn" class="btn primary">Exportar / Imprimir libro (PDF)</button>
+      </div>
+      <div id="bookPreview" class="book-preview"></div>
+    </section>
+
+    <!-- Vista: Ajustes -->
+    <section id="view-settings" class="view">
+      <div class="view-head"><h2>Ajustes</h2></div>
+      <div class="card">
+        <h3>Tus datos</h3>
+        <p class="muted">Tus recuerdos se guardan solo en este dispositivo. Haz copias de seguridad con frecuencia.</p>
+        <div class="settings-row">
+          <button id="exportDataBtn" class="btn">Exportar copia de seguridad</button>
+          <label class="btn file-btn">Restaurar copia
+            <input type="file" id="importDataInput" accept="application/json" hidden />
+          </label>
+        </div>
+      </div>
+      <div class="card">
+        <h3>El autor del libro</h3>
+        <label class="field">
+          <span>Nombre que aparecerá en la portada</span>
+          <input type="text" id="authorName" placeholder="Tu nombre" />
+        </label>
+        <label class="field">
+          <span>Título del libro</span>
+          <input type="text" id="bookTitle" placeholder="Mis Memorias" />
+        </label>
+      </div>
+      <div class="card danger">
+        <h3>Borrar todo</h3>
+        <p class="muted">Esto eliminará todos tus recuerdos de este dispositivo. No se puede deshacer.</p>
+        <button id="wipeBtn" class="btn danger-btn">Borrar todos los recuerdos</button>
+      </div>
+      <p class="version muted">Memorias · versión 1.0</p>
+    </section>
+  </main>
+
+  <!-- Botón flotante para nuevo recuerdo -->
+  <button id="fab" class="fab" aria-label="Nuevo recuerdo">+</button>
+
+  <!-- Navegación inferior -->
+  <nav class="tabbar">
+    <button class="tab active" data-view="timeline"><span>📚</span>Recuerdos</button>
+    <button class="tab" data-view="map"><span>📍</span>Lugares</button>
+    <button class="tab" data-view="book"><span>📖</span>Libro</button>
+    <button class="tab" data-view="settings"><span>⚙️</span>Ajustes</button>
+  </nav>
+
+  <!-- Modal: editor de recuerdo -->
+  <div id="editor" class="modal" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <button id="cancelEntry" class="link-btn">Cancelar</button>
+        <h2 id="editorTitle">Nuevo recuerdo</h2>
+        <button id="saveEntry" class="link-btn strong">Guardar</button>
+      </div>
+      <form id="entryForm" class="entry-form">
+        <input type="hidden" id="entryId" />
+        <label class="field">
+          <span>¿Qué quieres recordar?</span>
+          <input type="text" id="entryTitle" placeholder="Un título corto" maxlength="120" />
+        </label>
+        <label class="field">
+          <span>Fecha</span>
+          <input type="date" id="entryDate" />
+        </label>
+        <div class="field">
+          <span>Cuéntalo — escribe o habla</span>
+          <textarea id="entryText" rows="6" placeholder="Escribe lo que viste, sentiste o viviste…"></textarea>
+          <div class="voice-row">
+            <button type="button" id="voiceBtn" class="btn voice-btn">🎙️ Dictar por voz</button>
+            <span id="voiceStatus" class="muted voice-status"></span>
+          </div>
+        </div>
+
+        <div class="field">
+          <span>¿Cómo te sentías?</span>
+          <div id="moodPicker" class="mood-picker">
+            <button type="button" class="mood" data-mood="😀">😀</button>
+            <button type="button" class="mood" data-mood="🥰">🥰</button>
+            <button type="button" class="mood" data-mood="😌">😌</button>
+            <button type="button" class="mood" data-mood="😮">😮</button>
+            <button type="button" class="mood" data-mood="😢">😢</button>
+            <button type="button" class="mood" data-mood="🤔">🤔</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <span>Fotos</span>
+          <div id="photoGrid" class="photo-grid"></div>
+          <label class="btn add-photo">Agregar fotos
+            <input type="file" id="photoInput" accept="image/*" multiple hidden />
+          </label>
+        </div>
+
+        <div class="field">
+          <span>Ubicación</span>
+          <div id="locationBox" class="location-box">
+            <span id="locationText" class="muted">Sin ubicación</span>
+          </div>
+          <div class="loc-actions">
+            <button type="button" id="getLocationBtn" class="btn">📍 Usar mi ubicación</button>
+            <button type="button" id="clearLocationBtn" class="btn ghost" hidden>Quitar</button>
+          </div>
+        </div>
+      </form>
+      <button id="deleteEntry" class="btn danger-btn full" hidden>Eliminar este recuerdo</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

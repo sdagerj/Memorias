@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="96" fill="#7c4d3a"/>
+  <g transform="translate(96 104)">
+    <!-- Libro abierto -->
+    <path d="M160 36C120 8 60 8 16 28v248c44-20 104-20 144 8 40-28 100-28 144-8V28C260 8 200 8 160 36Z" fill="#fffdf8"/>
+    <path d="M160 36v228" stroke="#7c4d3a" stroke-width="10" fill="none"/>
+    <g stroke="#c98a3a" stroke-width="9" stroke-linecap="round">
+      <path d="M44 78h84M44 116h84M44 154h70"/>
+      <path d="M192 78h84M192 116h84M192 154h70"/>
+    </g>
+    <!-- Marcador de ubicación -->
+    <g transform="translate(132 150)">
+      <circle cx="28" cy="28" r="30" fill="#c98a3a"/>
+      <path d="M28 6c-12 0-22 10-22 22 0 16 22 34 22 34s22-18 22-34C50 16 40 6 28 6Z" fill="#fffdf8"/>
+      <circle cx="28" cy="27" r="9" fill="#c98a3a"/>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,451 @@
+// Lógica principal de la app Memorias.
+import * as db from './db.js';
+import { getCurrentPosition, reverseGeocode, formatCoords, mapLink } from './geo.js';
+import { renderBook, formatLongDate } from './book.js';
+import { VoiceDictation, isVoiceSupported } from './voice.js';
+
+// --- Estado del editor en curso ---
+let draftPhotos = [];      // [{ name, blob }]
+let draftLocation = null;  // { lat, lng, place }
+let draftMood = '';
+let editingId = null;
+let voice = null;
+let voiceBaseText = '';    // texto antes de empezar a dictar
+
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+// =================== Navegación ===================
+function showView(name) {
+  $$('.view').forEach((v) => v.classList.remove('active'));
+  $(`#view-${name}`).classList.add('active');
+  $$('.tab').forEach((t) => t.classList.toggle('active', t.dataset.view === name));
+  if (name === 'map') renderPlaces();
+  if (name === 'book') renderBookView();
+  window.scrollTo(0, 0);
+}
+
+$$('.tab').forEach((tab) => tab.addEventListener('click', () => showView(tab.dataset.view)));
+
+// =================== Línea de tiempo ===================
+let allEntries = [];
+
+async function loadEntries() {
+  allEntries = await db.getAllEntries();
+  renderTimeline();
+}
+
+function renderTimeline() {
+  const term = ($('#searchInput').value || '').toLowerCase().trim();
+  const list = term
+    ? allEntries.filter((e) =>
+        (e.title || '').toLowerCase().includes(term) ||
+        (e.text || '').toLowerCase().includes(term) ||
+        (e.location?.place || '').toLowerCase().includes(term))
+    : allEntries;
+
+  const container = $('#timeline');
+  container.innerHTML = '';
+  $('#memCount').textContent = allEntries.length;
+  $('#emptyState').style.display = allEntries.length ? 'none' : 'block';
+
+  for (const e of list) {
+    const card = document.createElement('article');
+    card.className = 'entry-card';
+    card.addEventListener('click', () => openEditor(e.id));
+
+    let html = '';
+    if (e.photos && e.photos.length) {
+      html += '<div class="photos-strip">';
+      for (const p of e.photos.slice(0, 6)) {
+        const url = URL.createObjectURL(p.blob);
+        html += `<img src="${url}" alt="" loading="lazy" />`;
+      }
+      html += '</div>';
+    }
+    html += '<div class="entry-body">';
+    const metaBits = [];
+    if (e.date) metaBits.push(formatLongDate(e.date));
+    html += `<div class="entry-meta">${e.mood ? `<span class="mood">${e.mood}</span>` : ''}<span>${metaBits.join(' · ')}</span></div>`;
+    html += `<h3>${escapeHTML(e.title || 'Sin título')}</h3>`;
+    if (e.text) html += `<p>${escapeHTML(e.text)}</p>`;
+    if (e.location) {
+      const name = e.location.place || formatCoords(e.location.lat, e.location.lng);
+      html += `<div class="entry-loc">📍 ${escapeHTML(name)}</div>`;
+    }
+    html += '</div>';
+    card.innerHTML = html;
+    container.appendChild(card);
+  }
+}
+
+$('#searchInput').addEventListener('input', renderTimeline);
+
+// =================== Editor ===================
+function resetDraft() {
+  draftPhotos = [];
+  draftLocation = null;
+  draftMood = '';
+  editingId = null;
+  voiceBaseText = '';
+  $('#entryId').value = '';
+  $('#entryTitle').value = '';
+  $('#entryText').value = '';
+  $('#entryDate').value = new Date().toISOString().slice(0, 10);
+  $$('.mood').forEach((m) => m.classList.remove('selected'));
+  renderPhotoGrid();
+  renderLocationBox();
+  $('#deleteEntry').hidden = true;
+}
+
+async function openEditor(id = null) {
+  resetDraft();
+  if (id) {
+    const e = await db.getEntry(id);
+    if (e) {
+      editingId = e.id;
+      $('#editorTitle').textContent = 'Editar recuerdo';
+      $('#entryId').value = e.id;
+      $('#entryTitle').value = e.title || '';
+      $('#entryText').value = e.text || '';
+      $('#entryDate').value = e.date || new Date().toISOString().slice(0, 10);
+      draftPhotos = (e.photos || []).map((p) => ({ ...p }));
+      draftLocation = e.location || null;
+      draftMood = e.mood || '';
+      $$('.mood').forEach((m) => m.classList.toggle('selected', m.dataset.mood === draftMood));
+      renderPhotoGrid();
+      renderLocationBox();
+      $('#deleteEntry').hidden = false;
+    }
+  } else {
+    $('#editorTitle').textContent = 'Nuevo recuerdo';
+  }
+  $('#editor').hidden = false;
+}
+
+function closeEditor() {
+  if (voice && voice.recognizing) voice.stop();
+  $('#editor').hidden = true;
+}
+
+$('#fab').addEventListener('click', () => openEditor());
+$('#cancelEntry').addEventListener('click', closeEditor);
+
+$('#saveEntry').addEventListener('click', async () => {
+  const title = $('#entryTitle').value.trim();
+  const text = $('#entryText').value.trim();
+  if (!title && !text && !draftPhotos.length) {
+    toast('Escribe algo o agrega una foto primero');
+    return;
+  }
+  const entry = {
+    id: editingId || cryptoId(),
+    title,
+    text,
+    date: $('#entryDate').value || new Date().toISOString().slice(0, 10),
+    mood: draftMood,
+    photos: draftPhotos,
+    location: draftLocation,
+    createdAt: editingId ? (await db.getEntry(editingId))?.createdAt || Date.now() : Date.now(),
+    updatedAt: Date.now(),
+  };
+  await db.saveEntry(entry);
+  closeEditor();
+  await loadEntries();
+  toast(editingId ? 'Recuerdo actualizado' : 'Recuerdo guardado ✨');
+});
+
+$('#deleteEntry').addEventListener('click', async () => {
+  if (!editingId) return;
+  if (!confirm('¿Eliminar este recuerdo? No se puede deshacer.')) return;
+  await db.deleteEntry(editingId);
+  closeEditor();
+  await loadEntries();
+  toast('Recuerdo eliminado');
+});
+
+// Estado de ánimo
+$$('.mood').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const m = btn.dataset.mood;
+    draftMood = draftMood === m ? '' : m;
+    $$('.mood').forEach((x) => x.classList.toggle('selected', x.dataset.mood === draftMood && draftMood !== ''));
+  });
+});
+
+// --- Fotos ---
+$('#photoInput').addEventListener('change', async (e) => {
+  const files = Array.from(e.target.files || []);
+  for (const file of files) {
+    const blob = await downscaleImage(file);
+    draftPhotos.push({ name: file.name, blob });
+  }
+  renderPhotoGrid();
+  e.target.value = '';
+});
+
+function renderPhotoGrid() {
+  const grid = $('#photoGrid');
+  grid.innerHTML = '';
+  draftPhotos.forEach((p, i) => {
+    const url = URL.createObjectURL(p.blob);
+    const div = document.createElement('div');
+    div.className = 'thumb';
+    div.innerHTML = `<img src="${url}" alt="" /><button type="button" class="rm" aria-label="Quitar">×</button>`;
+    div.querySelector('.rm').addEventListener('click', () => {
+      draftPhotos.splice(i, 1);
+      renderPhotoGrid();
+    });
+    grid.appendChild(div);
+  });
+}
+
+// Reduce el tamaño de las imágenes para no llenar el almacenamiento.
+function downscaleImage(file, maxDim = 1600, quality = 0.82) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxDim || height > maxDim) {
+        const scale = maxDim / Math.max(width, height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      URL.revokeObjectURL(url);
+      canvas.toBlob((blob) => resolve(blob || file), 'image/jpeg', quality);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
+// --- Ubicación ---
+function renderLocationBox() {
+  const text = $('#locationText');
+  const clearBtn = $('#clearLocationBtn');
+  if (draftLocation) {
+    const name = draftLocation.place || formatCoords(draftLocation.lat, draftLocation.lng);
+    text.innerHTML = `📍 <a href="${mapLink(draftLocation.lat, draftLocation.lng)}" target="_blank" rel="noopener">${escapeHTML(name)}</a>`;
+    text.classList.remove('muted');
+    clearBtn.hidden = false;
+  } else {
+    text.textContent = 'Sin ubicación';
+    text.classList.add('muted');
+    clearBtn.hidden = true;
+  }
+}
+
+$('#getLocationBtn').addEventListener('click', async () => {
+  const btn = $('#getLocationBtn');
+  btn.disabled = true;
+  btn.textContent = 'Buscando…';
+  try {
+    const pos = await getCurrentPosition();
+    const place = await reverseGeocode(pos.lat, pos.lng);
+    draftLocation = { lat: pos.lat, lng: pos.lng, place: place || null };
+    renderLocationBox();
+    toast(place ? `Ubicación: ${place}` : 'Ubicación guardada');
+  } catch (err) {
+    toast('No se pudo obtener la ubicación. Revisa los permisos.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '📍 Usar mi ubicación';
+  }
+});
+
+$('#clearLocationBtn').addEventListener('click', () => {
+  draftLocation = null;
+  renderLocationBox();
+});
+
+// --- Voz / dictado ---
+function setupVoice() {
+  const btn = $('#voiceBtn');
+  const status = $('#voiceStatus');
+  if (!isVoiceSupported()) {
+    btn.disabled = true;
+    btn.textContent = '🎙️ Voz no disponible';
+    status.textContent = 'Tu navegador no permite dictado. Puedes escribir.';
+    return;
+  }
+
+  voice = new VoiceDictation({
+    lang: 'es-ES',
+    onText: (chunk, isFinal) => {
+      const ta = $('#entryText');
+      if (isFinal) {
+        voiceBaseText = appendText(voiceBaseText, chunk);
+        ta.value = voiceBaseText;
+      } else {
+        ta.value = appendText(voiceBaseText, chunk);
+      }
+      ta.scrollTop = ta.scrollHeight;
+    },
+    onState: (state) => {
+      if (state === 'recording') {
+        btn.classList.add('recording');
+        btn.textContent = '⏹️ Detener';
+        status.textContent = 'Escuchando… habla con naturalidad.';
+      } else {
+        btn.classList.remove('recording');
+        btn.textContent = '🎙️ Dictar por voz';
+        if (state === 'error') status.textContent = 'No se pudo escuchar. Revisa el permiso del micrófono.';
+        else status.textContent = '';
+      }
+    },
+  });
+
+  btn.addEventListener('click', () => {
+    if (!voice.recognizing) voiceBaseText = $('#entryText').value;
+    voice.toggle();
+  });
+}
+
+function appendText(base, chunk) {
+  const b = (base || '').trim();
+  const c = (chunk || '').trim();
+  if (!b) return c;
+  if (!c) return b;
+  return b + (/[.!?…]$/.test(b) ? ' ' : ' ') + c;
+}
+
+// =================== Lugares ===================
+function renderPlaces() {
+  const container = $('#placesList');
+  container.innerHTML = '';
+  const withLoc = allEntries.filter((e) => e.location);
+  if (!withLoc.length) {
+    container.innerHTML = '<p class="muted">Todavía no hay recuerdos con ubicación. Cuando guardes un recuerdo, usa el botón “📍 Usar mi ubicación”.</p>';
+    return;
+  }
+  // Agrupa por nombre de lugar.
+  const groups = new Map();
+  for (const e of withLoc) {
+    const key = e.location.place || formatCoords(e.location.lat, e.location.lng);
+    if (!groups.has(key)) groups.set(key, { key, items: [], sample: e.location });
+    groups.get(key).items.push(e);
+  }
+  for (const g of groups.values()) {
+    const a = document.createElement('a');
+    a.className = 'place-card';
+    a.href = mapLink(g.sample.lat, g.sample.lng);
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.innerHTML = `
+      <div>
+        <div class="place-name">📍 ${escapeHTML(g.key)}</div>
+        <div class="place-sub">${formatCoords(g.sample.lat, g.sample.lng)} · ver en el mapa</div>
+      </div>
+      <span class="place-count">${g.items.length}</span>`;
+    container.appendChild(a);
+  }
+}
+
+// =================== Libro ===================
+let bookURLs = [];
+async function renderBookView() {
+  bookURLs.forEach((u) => URL.revokeObjectURL(u));
+  const title = await db.getSetting('bookTitle', 'Mis Memorias');
+  const author = await db.getSetting('authorName', '');
+  bookURLs = renderBook($('#bookPreview'), allEntries, { title: title || 'Mis Memorias', author });
+}
+
+$('#exportPdfBtn').addEventListener('click', () => {
+  toast('Elige “Guardar como PDF” en el diálogo de impresión');
+  setTimeout(() => window.print(), 400);
+});
+
+// =================== Ajustes ===================
+async function loadSettings() {
+  $('#authorName').value = await db.getSetting('authorName', '');
+  $('#bookTitle').value = await db.getSetting('bookTitle', '');
+}
+
+$('#authorName').addEventListener('change', (e) => db.setSetting('authorName', e.target.value.trim()));
+$('#bookTitle').addEventListener('change', (e) => db.setSetting('bookTitle', e.target.value.trim()));
+
+$('#exportDataBtn').addEventListener('click', async () => {
+  toast('Preparando copia…');
+  const data = await db.exportBackup();
+  const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `memorias-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+$('#importDataInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    await db.importBackup(data);
+    await loadEntries();
+    await loadSettings();
+    toast('Copia restaurada ✨');
+  } catch (err) {
+    toast('No se pudo leer el archivo');
+  }
+  e.target.value = '';
+});
+
+$('#wipeBtn').addEventListener('click', async () => {
+  if (!confirm('¿Seguro? Esto borra TODOS tus recuerdos de este dispositivo.')) return;
+  await db.clearAllEntries();
+  await loadEntries();
+  toast('Todo borrado');
+});
+
+// =================== Utilidades ===================
+function escapeHTML(str) {
+  return String(str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function cryptoId() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  return 'id-' + Math.abs(Date.now() ^ (performance.now() * 1000 | 0)).toString(36);
+}
+
+let toastTimer = null;
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => (t.hidden = true), 2600);
+}
+
+// =================== Instalar (PWA) ===================
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  $('#installBtn').hidden = false;
+});
+$('#installBtn').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  $('#installBtn').hidden = true;
+});
+
+// =================== Arranque ===================
+async function init() {
+  setupVoice();
+  await loadSettings();
+  await loadEntries();
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+}
+init();

@@ -1,0 +1,26 @@
+{
+  "name": "Memorias — Mi libro de recuerdos",
+  "short_name": "Memorias",
+  "description": "Guarda tus recuerdos con fotos, textos, voz y tu ubicación, y conviértelos en un libro.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5efe6",
+  "theme_color": "#7c4d3a",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
