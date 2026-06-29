@@ -31,21 +31,40 @@ fecha, su lugar y, si quieres, una foto.
 
 ## 📱 Cómo instalarla en tu celular
 
-La app es una **PWA** (aplicación web instalable). Necesita publicarse en una
-dirección web con HTTPS. La forma más fácil y gratuita es **GitHub Pages**:
+La app es una **PWA** (aplicación web instalable). Para instalarla, primero
+hay que **publicarla** en una dirección web con HTTPS. La forma más fácil y
+gratuita es **GitHub Pages**. Solo se hace **una vez** y desde la computadora.
 
-### Opción A — GitHub Pages (recomendada)
+### Paso 1 — Publicar la app (una sola vez, desde la computadora)
 
-1. En GitHub, entra al repositorio → **Settings** → **Pages**.
-2. En **Source** elige la rama `claude/memory-book-app-10p7j3` (o `main` si ya
-   se fusionó) y la carpeta **/ (root)**. Guarda.
-3. Espera ~1 minuto. GitHub te dará una dirección como
-   `https://TU-USUARIO.github.io/Memorias/`.
-4. Abre esa dirección **en el navegador de tu celular**:
-   - **Android (Chrome):** menú ⋮ → *Agregar a pantalla de inicio* / *Instalar
-     aplicación*.
-   - **iPhone (Safari):** botón compartir → *Añadir a pantalla de inicio*.
-5. ¡Listo! Tendrás el icono de **Memorias** como una app normal.
+1. Entra a tu repositorio en GitHub:
+   `https://github.com/sdagerj/Memorias`
+2. Arriba, toca **Settings** (Ajustes).
+3. En el menú de la izquierda, toca **Pages**.
+4. En **Source** (Origen) elige **Deploy from a branch** (Desplegar desde una
+   rama).
+5. En **Branch** (Rama) elige **`claude/memory-book-app-10p7j3`** y la carpeta
+   **`/ (root)`**. Toca **Save** (Guardar).
+6. Espera **1 o 2 minutos** y recarga la página de **Pages**. Aparecerá un
+   recuadro verde con tu dirección:
+
+   **`https://sdagerj.github.io/Memorias/`**
+
+> No hace falta fusionar nada: la app ya está en esa rama, así que se publica
+> tal cual.
+
+### Paso 2 — Instalarla en el celular
+
+1. Abre esa dirección (`https://sdagerj.github.io/Memorias/`) **en el navegador
+   de tu celular**. Lo más fácil: envíate el enlace por WhatsApp o correo y
+   ábrelo desde ahí.
+2. Instálala:
+   - **Android (Chrome):** menú **⋮** (arriba a la derecha) →
+     *Agregar a pantalla de inicio* / *Instalar aplicación*.
+   - **iPhone (Safari):** botón **compartir** (el cuadrito con la flecha hacia
+     arriba) → *Añadir a pantalla de inicio*.
+3. ¡Listo! Tendrás el icono de **Memorias** en tu pantalla, como una app
+   normal, y funcionará incluso sin internet.
 
 ### Opción B — Probarla en tu computadora
 
