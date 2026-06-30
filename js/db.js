@@ -40,9 +40,34 @@ function reqToPromise(request) {
   });
 }
 
+// Safari en iPhone (WebKit) puede fallar al guardar Blobs directamente en
+// IndexedDB. Para evitarlo, las fotos se almacenan como ArrayBuffer (muy
+// compatible) y se reconvierten a Blob al leerlas. El resto de la app sigue
+// usando `photo.blob` con normalidad.
+async function serializePhotos(photos) {
+  const out = [];
+  for (const p of photos || []) {
+    if (p.data instanceof ArrayBuffer) {
+      out.push({ name: p.name, type: p.type || 'image/jpeg', data: p.data });
+    } else if (p.blob) {
+      out.push({ name: p.name, type: p.blob.type || 'image/jpeg', data: await p.blob.arrayBuffer() });
+    }
+  }
+  return out;
+}
+
+function deserializePhotos(photos) {
+  return (photos || []).map((p) => {
+    // Compatibilidad con datos antiguos guardados como Blob.
+    if (p.blob) return { name: p.name, blob: p.blob };
+    return { name: p.name, blob: new Blob([p.data], { type: p.type || 'image/jpeg' }) };
+  });
+}
+
 export async function getAllEntries() {
   const store = await tx(STORE_ENTRIES, 'readonly');
   const entries = await reqToPromise(store.getAll());
+  for (const e of entries) e.photos = deserializePhotos(e.photos);
   // Más recientes primero (por fecha, luego por creación).
   return entries.sort((a, b) => {
     const d = (b.date || '').localeCompare(a.date || '');
@@ -52,12 +77,16 @@ export async function getAllEntries() {
 
 export async function getEntry(id) {
   const store = await tx(STORE_ENTRIES, 'readonly');
-  return reqToPromise(store.get(id));
+  const entry = await reqToPromise(store.get(id));
+  if (entry) entry.photos = deserializePhotos(entry.photos);
+  return entry;
 }
 
 export async function saveEntry(entry) {
+  // Convertimos las fotos a ArrayBuffer ANTES de abrir la transacción.
+  const record = { ...entry, photos: await serializePhotos(entry.photos) };
   const store = await tx(STORE_ENTRIES, 'readwrite');
-  await reqToPromise(store.put(entry));
+  await reqToPromise(store.put(record));
   return entry;
 }
 

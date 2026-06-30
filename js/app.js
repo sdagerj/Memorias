@@ -138,21 +138,31 @@ $('#saveEntry').addEventListener('click', async () => {
     toast('Escribe algo o agrega una foto primero');
     return;
   }
-  const entry = {
-    id: editingId || cryptoId(),
-    title,
-    text,
-    date: $('#entryDate').value || new Date().toISOString().slice(0, 10),
-    mood: draftMood,
-    photos: draftPhotos,
-    location: draftLocation,
-    createdAt: editingId ? (await db.getEntry(editingId))?.createdAt || Date.now() : Date.now(),
-    updatedAt: Date.now(),
-  };
-  await db.saveEntry(entry);
-  closeEditor();
-  await loadEntries();
-  toast(editingId ? 'Recuerdo actualizado' : 'Recuerdo guardado ✨');
+  const saveBtn = $('#saveEntry');
+  saveBtn.disabled = true;
+  const wasEditing = !!editingId;
+  try {
+    const entry = {
+      id: editingId || cryptoId(),
+      title,
+      text,
+      date: $('#entryDate').value || new Date().toISOString().slice(0, 10),
+      mood: draftMood,
+      photos: draftPhotos,
+      location: draftLocation,
+      createdAt: editingId ? (await db.getEntry(editingId))?.createdAt || Date.now() : Date.now(),
+      updatedAt: Date.now(),
+    };
+    await db.saveEntry(entry);
+    closeEditor();
+    await loadEntries();
+    toast(wasEditing ? 'Recuerdo actualizado' : 'Recuerdo guardado ✨');
+  } catch (err) {
+    console.error('No se pudo guardar el recuerdo:', err);
+    toast('No se pudo guardar. Si tiene muchas fotos, prueba con menos.');
+  } finally {
+    saveBtn.disabled = false;
+  }
 });
 
 $('#deleteEntry').addEventListener('click', async () => {
