@@ -236,6 +236,12 @@ h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; }
   align-items: flex-end;
   justify-content: center;
 }
+/* Cuando el editor está oculto (atributo hidden), no debe mostrarse.
+   Sin esta regla, "display: flex" anula el atributo hidden y el editor
+   se queda siempre encima, tapando la pantalla principal. */
+.modal[hidden] {
+  display: none;
+}
 .modal-card {
   background: var(--bg);
   width: 100%;
