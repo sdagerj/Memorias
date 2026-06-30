@@ -1,5 +1,5 @@
 // Service worker: permite que la app funcione sin conexión (offline).
-const CACHE = 'memorias-v2';
+const CACHE = 'memorias-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -34,17 +34,16 @@ self.addEventListener('fetch', (e) => {
   // No cacheamos llamadas a la red de terceros (p. ej. el geocodificador).
   if (url.origin !== self.location.origin) return;
 
-  // Cache-first para los archivos propios de la app.
+  // Network-first: si hay internet, usamos siempre la versión más reciente
+  // (así las actualizaciones llegan sin quedarse pegadas en una versión vieja);
+  // si no hay conexión, caemos al caché para seguir funcionando sin internet.
   e.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) return cached;
-      return fetch(request)
-        .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(request, copy)).catch(() => {});
-          return res;
-        })
-        .catch(() => caches.match('./index.html'));
-    })
+    fetch(request)
+      .then((res) => {
+        const copy = res.clone();
+        caches.open(CACHE).then((c) => c.put(request, copy)).catch(() => {});
+        return res;
+      })
+      .catch(() => caches.match(request).then((cached) => cached || caches.match('./index.html')))
   );
 });
