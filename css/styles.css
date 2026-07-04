@@ -390,11 +390,42 @@ h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; }
 .book-cover { text-align: center; padding: 60px 28px; }
 .book-cover h1 { font-size: 2.4rem; color: var(--brand); margin: 0 0 10px; }
 .book-cover .author { color: var(--muted); font-style: italic; }
+/* Portada con foto */
+.book-cover.has-photo { padding: 0; overflow: hidden; }
+.book-cover .cover-photo img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display: block;
+}
+.book-cover.has-photo .cover-text { padding: 28px; }
 .book-page h3 { color: var(--brand); margin: 0 0 4px; font-size: 1.4rem; }
 .book-page .page-meta { color: var(--muted); font-size: 0.85rem; margin-bottom: 14px; }
 .book-page p { white-space: pre-wrap; line-height: 1.7; }
-.book-page .book-photos { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; }
-.book-page .book-photos img { max-width: 100%; border-radius: 6px; max-height: 340px; }
+/* Fotos integradas en la página del recuerdo */
+.mem-hero { margin: 14px 0; }
+.mem-hero img {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  border-radius: 10px;
+  display: block;
+}
+.mem-gallery { display: grid; gap: 8px; margin: 14px 0; }
+.mem-gallery.cols-1 { grid-template-columns: 1fr; }
+.mem-gallery.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.mem-gallery.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.mem-gallery figure { margin: 0; }
+.mem-gallery img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 8px;
+  display: block;
+}
+.mem-gallery.cols-1 img { aspect-ratio: 3 / 2; }
+/* Evita que una foto se parta entre dos páginas al imprimir. */
+.mem-hero, .mem-gallery figure { break-inside: avoid; }
 .book-page .book-loc { margin-top: 12px; font-size: 0.85rem; color: var(--brand-soft); }
 .book-dedication { text-align: center; padding: 70px 28px; }
 .book-dedication p { font-style: italic; font-size: 1.2rem; color: var(--muted); white-space: pre-wrap; }
@@ -413,6 +444,12 @@ h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; }
 .book-preview.style-moderno .book-cover h1 { font-family: inherit; color: var(--accent); font-weight: 800; letter-spacing: -0.01em; }
 .book-preview.style-moderno .book-page { border-left: 4px solid var(--accent); }
 .book-preview.style-moderno .book-cover { border-left: none; }
+
+/* Tratamiento de fotos según el estilo */
+.book-preview.style-clasico .mem-hero img,
+.book-preview.style-clasico .mem-gallery img,
+.book-preview.style-clasico .cover-photo img { border-radius: 0; box-shadow: 0 0 0 1px var(--line); }
+.book-preview.style-moderno .mem-hero img { border-radius: 14px; aspect-ratio: 16 / 10; }
 
 /* Toast */
 .toast {
