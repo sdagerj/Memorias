@@ -3,9 +3,10 @@
 // Todo vive en el dispositivo del usuario: no hay servidor.
 
 const DB_NAME = 'memorias-db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_ENTRIES = 'entries';
 const STORE_SETTINGS = 'settings';
+const STORE_BOOKS = 'books';
 
 let _dbPromise = null;
 
@@ -21,6 +22,9 @@ function openDB() {
       }
       if (!db.objectStoreNames.contains(STORE_SETTINGS)) {
         db.createObjectStore(STORE_SETTINGS, { keyPath: 'key' });
+      }
+      if (!db.objectStoreNames.contains(STORE_BOOKS)) {
+        db.createObjectStore(STORE_BOOKS, { keyPath: 'id' });
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -100,6 +104,29 @@ export async function clearAllEntries() {
   return reqToPromise(store.clear());
 }
 
+// --- Libros ---
+export async function getAllBooks() {
+  const store = await tx(STORE_BOOKS, 'readonly');
+  const books = await reqToPromise(store.getAll());
+  return books.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+}
+
+export async function getBook(id) {
+  const store = await tx(STORE_BOOKS, 'readonly');
+  return reqToPromise(store.get(id));
+}
+
+export async function saveBook(book) {
+  const store = await tx(STORE_BOOKS, 'readwrite');
+  await reqToPromise(store.put(book));
+  return book;
+}
+
+export async function deleteBook(id) {
+  const store = await tx(STORE_BOOKS, 'readwrite');
+  return reqToPromise(store.delete(id));
+}
+
 export async function getSetting(key, fallback = null) {
   const store = await tx(STORE_SETTINGS, 'readonly');
   const row = await reqToPromise(store.get(key));
@@ -144,7 +171,8 @@ export async function exportBackup() {
     authorName: await getSetting('authorName', ''),
     bookTitle: await getSetting('bookTitle', ''),
   };
-  return { version: 1, exportedAt: new Date().toISOString(), settings, entries: out };
+  const books = await getAllBooks();
+  return { version: 2, exportedAt: new Date().toISOString(), settings, entries: out, books };
 }
 
 export async function importBackup(data) {
@@ -155,6 +183,9 @@ export async function importBackup(data) {
       blob: dataURLToBlob(p.dataURL),
     }));
     await saveEntry({ ...e, photos });
+  }
+  for (const b of data.books || []) {
+    await saveBook(b);
   }
   if (data.settings) {
     if (data.settings.authorName) await setSetting('authorName', data.settings.authorName);

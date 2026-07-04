@@ -15,6 +15,9 @@
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
+/* El atributo hidden siempre debe ocultar, aunque haya reglas display. */
+[hidden] { display: none !important; }
+
 html, body {
   margin: 0;
   padding: 0;
@@ -303,8 +306,78 @@ h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; }
 .location-box { padding: 12px 14px; background: #fff; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 10px; }
 .loc-actions { display: flex; gap: 10px; }
 
+/* Lista de libros */
+.books-grid { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+.book-card {
+  text-align: left;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 18px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+.book-card:active { transform: scale(0.99); }
+.book-card-title { font-family: Georgia, "Times New Roman", serif; font-size: 1.25rem; color: var(--brand); }
+.book-card-sub { color: var(--muted); font-size: 0.85rem; }
+
+/* Editor de libro */
+.editor-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.link-btn.danger { color: var(--danger); }
+
+.style-picker { display: flex; gap: 10px; flex-wrap: wrap; }
+.style-opt {
+  flex: 1 1 auto;
+  min-width: 90px;
+  padding: 12px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+.style-opt.selected { border-color: var(--brand); background: var(--brand); color: #fff; font-weight: 700; }
+
+.book-entries { display: flex; flex-direction: column; gap: 8px; }
+.be-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+.be-row.included { background: var(--paper); }
+.be-info { display: flex; flex-direction: column; min-width: 0; }
+.be-title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.be-date { font-size: 0.78rem; color: var(--muted); }
+.be-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.be-btn {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 9px;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 8px;
+  font: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.be-btn:disabled { opacity: 0.35; }
+.be-btn.remove { color: var(--danger); }
+.be-btn.add { color: var(--brand); white-space: nowrap; }
+.be-divider { margin: 8px 2px 2px; font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.claude-paste-field { margin-top: 12px; }
+
 /* Book preview */
-.book-actions { margin-bottom: 16px; }
+.book-actions { margin: 16px 0; }
 .book-preview { background: transparent; }
 .book-page {
   background: var(--paper);
@@ -323,6 +396,23 @@ h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; }
 .book-page .book-photos { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; }
 .book-page .book-photos img { max-width: 100%; border-radius: 6px; max-height: 340px; }
 .book-page .book-loc { margin-top: 12px; font-size: 0.85rem; color: var(--brand-soft); }
+.book-dedication { text-align: center; padding: 70px 28px; }
+.book-dedication p { font-style: italic; font-size: 1.2rem; color: var(--muted); white-space: pre-wrap; }
+.book-intro h3 { text-align: center; }
+
+/* Estilos del libro */
+.book-preview.style-clasico .book-page,
+.book-preview.style-clasico .book-cover { font-family: "Times New Roman", Times, serif; }
+.book-preview.style-clasico .book-page h3,
+.book-preview.style-clasico .book-cover h1 { font-family: "Times New Roman", Times, serif; color: var(--ink); }
+.book-preview.style-clasico .book-page p { text-align: justify; }
+
+.book-preview.style-moderno .book-page,
+.book-preview.style-moderno .book-cover { font-family: ui-rounded, "Segoe UI", system-ui, sans-serif; }
+.book-preview.style-moderno .book-page h3,
+.book-preview.style-moderno .book-cover h1 { font-family: inherit; color: var(--accent); font-weight: 800; letter-spacing: -0.01em; }
+.book-preview.style-moderno .book-page { border-left: 4px solid var(--accent); }
+.book-preview.style-moderno .book-cover { border-left: none; }
 
 /* Toast */
 .toast {
@@ -341,12 +431,14 @@ h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; }
 
 /* Print: el libro */
 @media print {
-  .app-header, .tabbar, .fab, .book-actions, #installBtn, .toast { display: none !important; }
+  .app-header, .tabbar, .fab, .book-actions, #installBtn, .toast,
+  #view-book .card, #view-book .editor-topbar, #view-book .view-head,
+  #booksScreen { display: none !important; }
   body, html { background: #fff; }
   #app { padding: 0; max-width: none; }
   .view { display: none !important; }
   #view-book.active { display: block !important; }
-  #view-book .view-head, #view-book > .muted { display: none; }
+  #bookPreview { display: block !important; }
   .book-page, .book-cover {
     box-shadow: none;
     border: none;

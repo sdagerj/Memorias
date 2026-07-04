@@ -49,14 +49,76 @@
       <div id="placesList" class="places"></div>
     </section>
 
-    <!-- Vista: Libro -->
+    <!-- Vista: Libros -->
     <section id="view-book" class="view">
-      <div class="view-head"><h2>Mi libro</h2></div>
-      <p class="muted">Una vista previa de tu libro de memorias. Puedes exportarlo a PDF para imprimirlo o guardarlo.</p>
-      <div class="book-actions">
-        <button id="exportPdfBtn" class="btn primary">Exportar / Imprimir libro (PDF)</button>
+      <!-- Sub-vista: lista de libros -->
+      <div id="booksScreen">
+        <div class="view-head"><h2>Mis libros</h2></div>
+        <p class="muted">Crea uno o varios libros con tus recuerdos. Cada libro tiene su portada, su estilo y los recuerdos que elijas.</p>
+        <button id="newBookBtn" class="btn primary full">＋ Crear un libro nuevo</button>
+        <div id="booksGrid" class="books-grid"></div>
+        <div id="booksEmpty" class="empty" hidden>
+          <p class="empty-emoji">📚</p>
+          <h3>Aún no has creado libros</h3>
+          <p>Toca <strong>“Crear un libro nuevo”</strong> para armar tu primer libro con tus recuerdos.</p>
+        </div>
       </div>
-      <div id="bookPreview" class="book-preview"></div>
+
+      <!-- Sub-vista: editor de un libro -->
+      <div id="bookEditor" hidden>
+        <div class="editor-topbar">
+          <button id="backToBooks" class="link-btn">‹ Mis libros</button>
+          <button id="deleteBookBtn" class="link-btn danger">Eliminar libro</button>
+        </div>
+
+        <div class="card">
+          <h3>Portada</h3>
+          <label class="field"><span>Título del libro</span>
+            <input type="text" id="bkTitle" placeholder="Mis Memorias" /></label>
+          <label class="field"><span>Autor (aparece en la portada)</span>
+            <input type="text" id="bkAuthor" placeholder="Tu nombre" /></label>
+          <label class="field"><span>Dedicatoria (opcional)</span>
+            <textarea id="bkDedication" rows="2" placeholder="Para…"></textarea></label>
+          <label class="field"><span>Introducción (opcional)</span>
+            <textarea id="bkIntro" rows="4" placeholder="Unas palabras para abrir el libro…"></textarea></label>
+        </div>
+
+        <div class="card">
+          <h3>Estilo</h3>
+          <div id="stylePicker" class="style-picker">
+            <button type="button" class="style-opt" data-style="elegante">Elegante</button>
+            <button type="button" class="style-opt" data-style="clasico">Clásico</button>
+            <button type="button" class="style-opt" data-style="moderno">Moderno</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Recuerdos del libro</h3>
+          <p class="muted">Elige cuáles entran y ordénalos con ↑ ↓.</p>
+          <div id="bookEntries" class="book-entries"></div>
+        </div>
+
+        <div class="card">
+          <h3>✨ Mejorar con Claude</h3>
+          <p class="muted">Copia tus recuerdos con un mensaje listo, pégalo en Claude (claude.ai) y trae de vuelta una versión más bonita para tu libro.</p>
+          <div class="settings-row">
+            <button type="button" id="copyForClaudeBtn" class="btn">Copiar para Claude</button>
+          </div>
+          <label class="field claude-paste-field"><span>Pega aquí la versión que te dio Claude</span>
+            <textarea id="claudePaste" rows="4" placeholder="Pega el texto de Claude…"></textarea></label>
+          <div class="settings-row">
+            <button type="button" id="useClaudeIntroBtn" class="btn">Usarlo como introducción</button>
+            <button type="button" id="clearClaudeBtn" class="btn ghost">Limpiar</button>
+          </div>
+        </div>
+
+        <div class="view-head"><h2>Vista previa</h2></div>
+        <div id="bookPreview" class="book-preview"></div>
+
+        <div class="book-actions">
+          <button id="exportPdfBtn" class="btn primary full">Exportar / Imprimir (PDF)</button>
+        </div>
+      </div>
     </section>
 
     <!-- Vista: Ajustes -->
@@ -73,13 +135,14 @@
         </div>
       </div>
       <div class="card">
-        <h3>El autor del libro</h3>
+        <h3>Datos por defecto para nuevos libros</h3>
+        <p class="muted">Se usan como punto de partida al crear un libro. Cada libro puedes editarlo aparte.</p>
         <label class="field">
-          <span>Nombre que aparecerá en la portada</span>
+          <span>Tu nombre (autor)</span>
           <input type="text" id="authorName" placeholder="Tu nombre" />
         </label>
         <label class="field">
-          <span>Título del libro</span>
+          <span>Título por defecto</span>
           <input type="text" id="bookTitle" placeholder="Mis Memorias" />
         </label>
       </div>
@@ -88,7 +151,7 @@
         <p class="muted">Esto eliminará todos tus recuerdos de este dispositivo. No se puede deshacer.</p>
         <button id="wipeBtn" class="btn danger-btn">Borrar todos los recuerdos</button>
       </div>
-      <p class="version muted">Memorias · versión 1.2</p>
+      <p class="version muted">Memorias · versión 1.3</p>
     </section>
   </main>
 
