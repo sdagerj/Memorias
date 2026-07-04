@@ -14,10 +14,13 @@ export function formatLongDate(iso) {
 }
 
 // Construye el libro dentro del contenedor dado. Devuelve las URLs de objeto
-// creadas para las fotos, para poder liberarlas después.
-export function renderBook(container, entries, { title, author }) {
+// creadas para las fotos, para poder liberarlas después. Los recuerdos se
+// pintan EN EL ORDEN recibido (el que eligió la persona en el editor).
+export function renderBook(container, entries, opts = {}) {
+  const { title, author, dedication, intro, style } = opts;
   const objectURLs = [];
   container.innerHTML = '';
+  container.className = 'book-preview style-' + (style || 'elegante');
 
   // Portada
   const cover = document.createElement('div');
@@ -32,18 +35,31 @@ export function renderBook(container, entries, { title, author }) {
   `;
   container.appendChild(cover);
 
-  // Recuerdos en orden cronológico (del más antiguo al más reciente) para un libro.
-  const ordered = [...entries].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  // Dedicatoria (opcional)
+  if (dedication && dedication.trim()) {
+    const ded = document.createElement('div');
+    ded.className = 'book-page book-dedication';
+    ded.innerHTML = `<p>${escapeHTML(dedication.trim())}</p>`;
+    container.appendChild(ded);
+  }
 
-  if (!ordered.length) {
+  // Introducción (opcional)
+  if (intro && intro.trim()) {
+    const it = document.createElement('div');
+    it.className = 'book-page book-intro';
+    it.innerHTML = `<h3>Introducción</h3><p>${escapeHTML(intro.trim())}</p>`;
+    container.appendChild(it);
+  }
+
+  if (!entries.length) {
     const empty = document.createElement('div');
     empty.className = 'book-page';
-    empty.innerHTML = `<p class="muted">Aún no has guardado recuerdos. Cuando lo hagas, aparecerán aquí como las páginas de tu libro.</p>`;
+    empty.innerHTML = `<p class="muted">Este libro aún no tiene recuerdos. Agrégalos desde “Recuerdos del libro”.</p>`;
     container.appendChild(empty);
     return objectURLs;
   }
 
-  for (const e of ordered) {
+  for (const e of entries) {
     const page = document.createElement('div');
     page.className = 'book-page';
 

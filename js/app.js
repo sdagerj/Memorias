@@ -21,7 +21,7 @@ function showView(name) {
   $(`#view-${name}`).classList.add('active');
   $$('.tab').forEach((t) => t.classList.toggle('active', t.dataset.view === name));
   if (name === 'map') renderPlaces();
-  if (name === 'book') renderBookView();
+  if (name === 'book') showBooksScreen();
   window.scrollTo(0, 0);
 }
 
@@ -356,14 +356,281 @@ function renderPlaces() {
   }
 }
 
-// =================== Libro ===================
+// =================== Libros ===================
 let bookURLs = [];
-async function renderBookView() {
+let currentBook = null;
+let saveBookTimer = null;
+
+function revokeBookURLs() {
   bookURLs.forEach((u) => URL.revokeObjectURL(u));
-  const title = await db.getSetting('bookTitle', 'Mis Memorias');
-  const author = await db.getSetting('authorName', '');
-  bookURLs = renderBook($('#bookPreview'), allEntries, { title: title || 'Mis Memorias', author });
+  bookURLs = [];
 }
+
+function styleName(s) {
+  return ({ elegante: 'Elegante', clasico: 'Clásico', moderno: 'Moderno' })[s] || 'Elegante';
+}
+
+// --- Lista de libros ---
+async function showBooksScreen() {
+  revokeBookURLs();
+  currentBook = null;
+  $('#bookEditor').hidden = true;
+  $('#booksScreen').hidden = false;
+  const books = await db.getAllBooks();
+  const grid = $('#booksGrid');
+  grid.innerHTML = '';
+  $('#booksEmpty').hidden = books.length > 0;
+  for (const b of books) {
+    const count = (b.entryIds || []).length;
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'book-card';
+    card.innerHTML = `
+      <span class="book-card-title">${escapeHTML(b.title || 'Sin título')}</span>
+      <span class="book-card-sub">${count} recuerdo${count === 1 ? '' : 's'} · estilo ${styleName(b.style)}</span>`;
+    card.addEventListener('click', () => openBook(b.id));
+    grid.appendChild(card);
+  }
+}
+
+async function newBook() {
+  const defTitle = (await db.getSetting('bookTitle', '')) || 'Mis Memorias';
+  const author = await db.getSetting('authorName', '');
+  // Orden cronológico (del más antiguo al más reciente) como punto de partida.
+  const chrono = [...allEntries]
+    .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+    .map((e) => e.id);
+  const book = {
+    id: cryptoId(),
+    title: defTitle,
+    author,
+    dedication: '',
+    intro: '',
+    style: 'elegante',
+    entryIds: chrono,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  };
+  await db.saveBook(book);
+  await openBook(book.id);
+  toast('Libro creado ✨');
+}
+
+// --- Editor de un libro ---
+async function openBook(id) {
+  const b = await db.getBook(id);
+  if (!b) return;
+  currentBook = b;
+  $('#booksScreen').hidden = true;
+  $('#bookEditor').hidden = false;
+  $('#bkTitle').value = b.title || '';
+  $('#bkAuthor').value = b.author || '';
+  $('#bkDedication').value = b.dedication || '';
+  $('#bkIntro').value = b.intro || '';
+  $('#claudePaste').value = '';
+  $$('.style-opt').forEach((o) => o.classList.toggle('selected', o.dataset.style === (b.style || 'elegante')));
+  renderBookEntries();
+  renderPreview();
+  window.scrollTo(0, 0);
+}
+
+// Objetos de recuerdo en el orden del libro (solo los que aún existen).
+function bookEntriesOrdered() {
+  const map = new Map(allEntries.map((e) => [e.id, e]));
+  return (currentBook.entryIds || []).map((id) => map.get(id)).filter(Boolean);
+}
+
+function renderPreview() {
+  revokeBookURLs();
+  bookURLs = renderBook($('#bookPreview'), bookEntriesOrdered(), {
+    title: currentBook.title || 'Mis Memorias',
+    author: currentBook.author,
+    dedication: currentBook.dedication,
+    intro: currentBook.intro,
+    style: currentBook.style || 'elegante',
+  });
+}
+
+function renderBookEntries() {
+  const container = $('#bookEntries');
+  container.innerHTML = '';
+  const map = new Map(allEntries.map((e) => [e.id, e]));
+  const includedIds = (currentBook.entryIds || []).filter((id) => map.has(id));
+
+  // Incluidos, en orden, con ↑ ↓ y quitar.
+  includedIds.forEach((id, i) => {
+    const e = map.get(id);
+    const row = document.createElement('div');
+    row.className = 'be-row included';
+    row.innerHTML = `
+      <div class="be-info">
+        <span class="be-title">${escapeHTML(e.title || 'Sin título')}</span>
+        <span class="be-date">${e.date ? formatLongDate(e.date) : ''}</span>
+      </div>
+      <div class="be-actions">
+        <button type="button" class="be-btn" data-act="up" ${i === 0 ? 'disabled' : ''}>↑</button>
+        <button type="button" class="be-btn" data-act="down" ${i === includedIds.length - 1 ? 'disabled' : ''}>↓</button>
+        <button type="button" class="be-btn remove" data-act="remove" aria-label="Quitar">✕</button>
+      </div>`;
+    row.querySelector('[data-act="up"]').addEventListener('click', () => moveEntry(id, -1));
+    row.querySelector('[data-act="down"]').addEventListener('click', () => moveEntry(id, 1));
+    row.querySelector('[data-act="remove"]').addEventListener('click', () => toggleEntry(id, false));
+    container.appendChild(row);
+  });
+
+  // Excluidos (recuerdos que existen pero no están en el libro).
+  const includedSet = new Set(includedIds);
+  const excluded = allEntries.filter((e) => !includedSet.has(e.id));
+  if (excluded.length) {
+    const div = document.createElement('div');
+    div.className = 'be-divider';
+    div.textContent = 'Agregar más recuerdos';
+    container.appendChild(div);
+    excluded.forEach((e) => {
+      const row = document.createElement('div');
+      row.className = 'be-row';
+      row.innerHTML = `
+        <div class="be-info">
+          <span class="be-title">${escapeHTML(e.title || 'Sin título')}</span>
+          <span class="be-date">${e.date ? formatLongDate(e.date) : ''}</span>
+        </div>
+        <div class="be-actions"><button type="button" class="be-btn add" data-act="add">＋ Agregar</button></div>`;
+      row.querySelector('[data-act="add"]').addEventListener('click', () => toggleEntry(e.id, true));
+      container.appendChild(row);
+    });
+  }
+
+  if (!includedIds.length && !excluded.length) {
+    container.innerHTML = '<p class="muted">Aún no tienes recuerdos. Crea algunos en la pestaña Recuerdos.</p>';
+  }
+}
+
+function moveEntry(id, dir) {
+  const ids = [...(currentBook.entryIds || [])];
+  const i = ids.indexOf(id);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= ids.length) return;
+  [ids[i], ids[j]] = [ids[j], ids[i]];
+  currentBook.entryIds = ids;
+  persistBook();
+  renderBookEntries();
+  renderPreview();
+}
+
+function toggleEntry(id, include) {
+  let ids = [...(currentBook.entryIds || [])];
+  if (include) {
+    if (!ids.includes(id)) ids.push(id);
+  } else {
+    ids = ids.filter((x) => x !== id);
+  }
+  currentBook.entryIds = ids;
+  persistBook();
+  renderBookEntries();
+  renderPreview();
+}
+
+// Guarda el libro actual (con un pequeño retraso para no escribir en cada tecla).
+function persistBook() {
+  if (!currentBook) return;
+  currentBook.updatedAt = Date.now();
+  const snapshot = { ...currentBook };
+  clearTimeout(saveBookTimer);
+  saveBookTimer = setTimeout(() => {
+    db.saveBook(snapshot).catch((err) => console.error('No se pudo guardar el libro:', err));
+  }, 250);
+}
+
+// Campos de la portada.
+[
+  ['#bkTitle', 'title'],
+  ['#bkAuthor', 'author'],
+  ['#bkDedication', 'dedication'],
+  ['#bkIntro', 'intro'],
+].forEach(([sel, prop]) => {
+  $(sel).addEventListener('input', () => {
+    if (!currentBook) return;
+    currentBook[prop] = $(sel).value;
+    persistBook();
+    renderPreview();
+  });
+});
+
+// Estilo.
+$$('.style-opt').forEach((opt) => {
+  opt.addEventListener('click', () => {
+    if (!currentBook) return;
+    currentBook.style = opt.dataset.style;
+    $$('.style-opt').forEach((o) => o.classList.toggle('selected', o === opt));
+    persistBook();
+    renderPreview();
+  });
+});
+
+$('#newBookBtn').addEventListener('click', newBook);
+$('#backToBooks').addEventListener('click', showBooksScreen);
+
+$('#deleteBookBtn').addEventListener('click', async () => {
+  if (!currentBook) return;
+  if (!confirm('¿Eliminar este libro? Tus recuerdos NO se borran, solo este libro.')) return;
+  await db.deleteBook(currentBook.id);
+  toast('Libro eliminado');
+  showBooksScreen();
+});
+
+// --- Mejorar con Claude (copiar / pegar) ---
+function buildClaudePrompt() {
+  const lines = [];
+  lines.push('Eres un editor literario cálido. Con estos recuerdos personales, escríbeme una introducción bonita para un libro de memorias (2 o 3 párrafos, en primera persona, tono cercano). Devuélveme solo el texto de la introducción, listo para pegar.');
+  lines.push('');
+  lines.push(`Título del libro: ${currentBook.title || 'Mis Memorias'}`);
+  if (currentBook.author) lines.push(`Autor: ${currentBook.author}`);
+  lines.push('');
+  lines.push('Recuerdos (en orden):');
+  bookEntriesOrdered().forEach((e, i) => {
+    const fecha = e.date ? ' (' + formatLongDate(e.date) + ')' : '';
+    lines.push('');
+    lines.push(`${i + 1}. ${e.title || 'Sin título'}${fecha}`);
+    if (e.text) lines.push(e.text);
+    if (e.location && e.location.place) lines.push(`Lugar: ${e.location.place}`);
+  });
+  return lines.join('\n');
+}
+
+$('#copyForClaudeBtn').addEventListener('click', async () => {
+  if (!currentBook) return;
+  if (!bookEntriesOrdered().length) {
+    toast('Agrega al menos un recuerdo al libro primero');
+    return;
+  }
+  const text = buildClaudePrompt();
+  try {
+    await navigator.clipboard.writeText(text);
+    toast('Copiado ✨ Pégalo en Claude (claude.ai)');
+  } catch (err) {
+    // Si el navegador no deja copiar solo, lo dejamos en la caja para copiar a mano.
+    $('#claudePaste').value = text;
+    toast('Copia el texto de la caja de abajo y pégalo en Claude');
+  }
+});
+
+$('#useClaudeIntroBtn').addEventListener('click', () => {
+  if (!currentBook) return;
+  const v = $('#claudePaste').value.trim();
+  if (!v) {
+    toast('Primero pega el texto que te dio Claude');
+    return;
+  }
+  currentBook.intro = v;
+  $('#bkIntro').value = v;
+  persistBook();
+  renderPreview();
+  toast('Introducción actualizada ✨');
+});
+
+$('#clearClaudeBtn').addEventListener('click', () => {
+  $('#claudePaste').value = '';
+});
 
 $('#exportPdfBtn').addEventListener('click', () => {
   toast('Elige “Guardar como PDF” en el diálogo de impresión');
