@@ -3,6 +3,7 @@ import * as db from './db.js';
 import { getCurrentPosition, reverseGeocode, formatCoords, mapLink } from './geo.js';
 import { renderBook, formatLongDate } from './book.js';
 import { VoiceDictation, isVoiceSupported } from './voice.js';
+import { initEssence } from './essence.js';
 
 // --- Estado del editor en curso ---
 let draftPhotos = [];      // [{ name, blob }]
@@ -22,6 +23,7 @@ function showView(name) {
   $$('.tab').forEach((t) => t.classList.toggle('active', t.dataset.view === name));
   if (name === 'map') renderPlaces();
   if (name === 'book') showBooksScreen();
+  if (name === 'essence') essenceReady.then((init) => init());
   window.scrollTo(0, 0);
 }
 
@@ -717,6 +719,17 @@ $('#installBtn').addEventListener('click', async () => {
 });
 
 // =================== Arranque ===================
+
+// initEssence se llama una sola vez (la primera vez que se abre la pestaña).
+let essenceInitialized = false;
+const essenceReady = (async () => {
+  return () => {
+    if (essenceInitialized) return;
+    essenceInitialized = true;
+    initEssence();
+  };
+})();
+
 async function init() {
   setupVoice();
   await loadSettings();
