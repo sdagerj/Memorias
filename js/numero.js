@@ -221,6 +221,8 @@ export async function initNumero() {
     if (!data.numero) { showToast('Escribe el número primero'); return; }
     currentNumero = { ...currentNumero, ...data };
     await db.saveNumber(currentNumero);
+    showNumeroScreen();
+    await renderNumerosList();
     showToast('Número guardado ✨');
   });
 
