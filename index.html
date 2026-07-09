@@ -149,54 +149,39 @@
           <button id="deleteNumeroBtn" class="link-btn danger">Eliminar</button>
         </div>
 
-        <!-- Carrusel de previsualización -->
+        <!-- Portada (previsualización) -->
         <div class="num-carousel-wrap">
           <div id="numCarousel" class="num-carousel"></div>
-          <div class="num-carousel-nav">
-            <button id="numPrev" class="num-nav-btn">‹</button>
-            <span id="numSlideLabel" class="num-slide-label">1 / 7</span>
-            <button id="numNext" class="num-nav-btn">›</button>
-          </div>
-          <div id="numDots" class="num-dots"></div>
+          <span id="numSlideLabel" class="num-slide-label" style="color:#8ba7c4;font-size:0.8rem"></span>
+          <div id="numDots"></div>
         </div>
 
         <!-- Formulario editorial -->
         <div class="card num-editor-card">
-          <h3>Portada (slide 1)</h3>
+          <h3>Portada</h3>
           <label class="field">
             <span>El número</span>
-            <input type="text" id="numNumero" placeholder="Ej: 38, 0.7, 1.000.000" />
+            <input type="text" id="numNumero" placeholder="Ej: 600, 0.7, 1.000.000" />
           </label>
           <label class="field">
-            <span>Gancho — la frase que abre todo</span>
-            <textarea id="numGancho" rows="2" placeholder="La frase que hace que alguien se detenga…"></textarea>
+            <span>Título</span>
+            <input type="text" id="numGancho" placeholder="La frase que abre todo…" />
           </label>
         </div>
 
         <div class="card num-editor-card">
-          <h3>Historia (slides 2 – 5)</h3>
-          <p class="muted">Una idea por beat. Economía de palabras.</p>
-          <label class="field"><span>Beat 1</span><textarea id="numBeat1" rows="3" placeholder="El contexto. ¿De dónde viene ese número?"></textarea></label>
-          <label class="field"><span>Beat 2</span><textarea id="numBeat2" rows="3" placeholder="El giro. ¿Qué cambió?"></textarea></label>
-          <label class="field"><span>Beat 3</span><textarea id="numBeat3" rows="3" placeholder="El momento pivote."></textarea></label>
-          <label class="field"><span>Beat 4</span><textarea id="numBeat4" rows="3" placeholder="La consecuencia. ¿Qué pasó después?"></textarea></label>
+          <h3>Editorial</h3>
+          <label class="field">
+            <textarea id="numEditorial" rows="14" placeholder="Escribe tu editorial aquí…"></textarea>
+          </label>
         </div>
 
         <div class="card num-editor-card">
-          <h3>Lección (slide 6)</h3>
-          <p class="muted">La cita. El momento más compartible.</p>
-          <label class="field"><textarea id="numLeccion" rows="3" placeholder=""Lo que aprendí fue…""></textarea></label>
-        </div>
-
-        <div class="card num-editor-card">
-          <h3>CTA (slide 7)</h3>
-          <label class="field"><textarea id="numCta" rows="2" placeholder="¿Cuál es tu número? Cuéntame en los comentarios."></textarea></label>
-        </div>
-
-        <div class="card num-editor-card">
-          <h3>Editorial (solo tuyo)</h3>
-          <p class="muted">Tu reflexión de la semana. Por qué elegiste este número, qué te movió, qué querías decir. No se publica — es tu archivo de intención.</p>
-          <label class="field"><textarea id="numEditorial" rows="5" placeholder="Esta semana pensé en este número porque…"></textarea></label>
+          <h3>Destaque <span class="muted" style="font-weight:400;font-size:0.85rem">— opcional</span></h3>
+          <p class="muted">Una frase clave que quieras resaltar.</p>
+          <label class="field">
+            <textarea id="numDestaque" rows="3" placeholder=""La frase que más te movió…""></textarea>
+          </label>
         </div>
 
         <div class="settings-row" style="padding-bottom:24px">
@@ -275,7 +260,7 @@
         <p class="muted">Esto eliminará todos tus recuerdos de este dispositivo. No se puede deshacer.</p>
         <button id="wipeBtn" class="btn danger-btn">Borrar todos los recuerdos</button>
       </div>
-      <p class="version muted">Memorias · versión 1.7</p>
+      <p class="version muted">Memorias · versión 1.8</p>
     </section>
   </main>
 
