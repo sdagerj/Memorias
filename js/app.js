@@ -22,6 +22,8 @@ function showView(name) {
   $$('.view').forEach((v) => v.classList.remove('active'));
   $(`#view-${name}`).classList.add('active');
   $$('.tab').forEach((t) => t.classList.toggle('active', t.dataset.view === name));
+  // El FAB solo tiene sentido en la línea de tiempo; en El Número tiene su propio botón.
+  $('#fab').hidden = !['timeline'].includes(name);
   if (name === 'map') renderPlaces();
   if (name === 'book') showBooksScreen();
   if (name === 'essence') essenceReady.then((init) => init());
