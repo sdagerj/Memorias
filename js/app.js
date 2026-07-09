@@ -4,6 +4,7 @@ import { getCurrentPosition, reverseGeocode, formatCoords, mapLink } from './geo
 import { renderBook, formatLongDate } from './book.js';
 import { VoiceDictation, isVoiceSupported } from './voice.js';
 import { initEssence } from './essence.js';
+import { initNumero } from './numero.js';
 
 // --- Estado del editor en curso ---
 let draftPhotos = [];      // [{ name, blob }]
@@ -24,6 +25,7 @@ function showView(name) {
   if (name === 'map') renderPlaces();
   if (name === 'book') showBooksScreen();
   if (name === 'essence') essenceReady.then((init) => init());
+  if (name === 'numero') numeroReady.then((init) => init());
   window.scrollTo(0, 0);
 }
 
@@ -720,13 +722,22 @@ $('#installBtn').addEventListener('click', async () => {
 
 // =================== Arranque ===================
 
-// initEssence se llama una sola vez (la primera vez que se abre la pestaña).
+// initEssence / initNumero se llaman una sola vez (la primera vez que se abre cada pestaña).
 let essenceInitialized = false;
 const essenceReady = (async () => {
   return () => {
     if (essenceInitialized) return;
     essenceInitialized = true;
     initEssence();
+  };
+})();
+
+let numeroInitialized = false;
+const numeroReady = (async () => {
+  return () => {
+    if (numeroInitialized) return;
+    numeroInitialized = true;
+    initNumero();
   };
 })();
 
