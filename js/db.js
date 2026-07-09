@@ -3,10 +3,11 @@
 // Todo vive en el dispositivo del usuario: no hay servidor.
 
 const DB_NAME = 'memorias-db';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const STORE_ENTRIES = 'entries';
 const STORE_SETTINGS = 'settings';
 const STORE_BOOKS = 'books';
+const STORE_NUMBERS = 'numbers';
 
 let _dbPromise = null;
 
@@ -25,6 +26,9 @@ function openDB() {
       }
       if (!db.objectStoreNames.contains(STORE_BOOKS)) {
         db.createObjectStore(STORE_BOOKS, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(STORE_NUMBERS)) {
+        db.createObjectStore(STORE_NUMBERS, { keyPath: 'id' });
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -127,6 +131,29 @@ export async function deleteBook(id) {
   return reqToPromise(store.delete(id));
 }
 
+// --- El Número ---
+export async function getAllNumbers() {
+  const store = await tx(STORE_NUMBERS, 'readonly');
+  const items = await reqToPromise(store.getAll());
+  return items.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+}
+
+export async function getNumber(id) {
+  const store = await tx(STORE_NUMBERS, 'readonly');
+  return reqToPromise(store.get(id));
+}
+
+export async function saveNumber(item) {
+  const store = await tx(STORE_NUMBERS, 'readwrite');
+  await reqToPromise(store.put(item));
+  return item;
+}
+
+export async function deleteNumber(id) {
+  const store = await tx(STORE_NUMBERS, 'readwrite');
+  return reqToPromise(store.delete(id));
+}
+
 export async function getSetting(key, fallback = null) {
   const store = await tx(STORE_SETTINGS, 'readonly');
   const row = await reqToPromise(store.get(key));
@@ -172,7 +199,8 @@ export async function exportBackup() {
     bookTitle: await getSetting('bookTitle', ''),
   };
   const books = await getAllBooks();
-  return { version: 2, exportedAt: new Date().toISOString(), settings, entries: out, books };
+  const numbers = await getAllNumbers();
+  return { version: 3, exportedAt: new Date().toISOString(), settings, entries: out, books, numbers };
 }
 
 export async function importBackup(data) {
@@ -186,6 +214,9 @@ export async function importBackup(data) {
   }
   for (const b of data.books || []) {
     await saveBook(b);
+  }
+  for (const n of data.numbers || []) {
+    await saveNumber(n);
   }
   if (data.settings) {
     if (data.settings.authorName) await setSetting('authorName', data.settings.authorName);

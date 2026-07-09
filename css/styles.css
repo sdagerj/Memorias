@@ -466,6 +466,204 @@ h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; }
   box-shadow: var(--shadow);
 }
 
+/* =================== El Número =================== */
+:root {
+  --num-navy: #0d1b2a;
+  --num-teal: #1a6b72;
+  --num-gold: #c9963a;
+  --num-paper: #f8f5ef;
+  --num-slide-h: min(72vw, 420px);
+  --num-slide-w: min(72vw, 420px);
+}
+
+/* Pestaña con acento dorado cuando está activa */
+.tab[data-view="numero"].active { color: var(--num-gold); }
+
+/* Título de la sección */
+.num-title-head { color: var(--num-navy) !important; }
+
+/* Botón primario de El Número */
+.num-btn-primary {
+  background: var(--num-navy);
+  color: #fff;
+  border-color: var(--num-navy);
+}
+
+/* Archivo de tarjetas */
+.numeros-grid { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+.num-card {
+  background: var(--num-navy);
+  color: #fff;
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(13,27,42,0.18);
+  transition: transform 0.15s;
+}
+.num-card:active { transform: scale(0.98); }
+.num-card-num {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--num-gold);
+  line-height: 1;
+}
+.num-card-gancho { font-size: 0.92rem; color: #c8d6e5; margin-top: 6px; }
+.num-card-date { font-size: 0.75rem; color: #6e8caa; margin-top: 8px; }
+
+/* Editor */
+.num-editor-card h3 { color: var(--num-navy); }
+
+/* ── Carrusel ── */
+.num-carousel-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin: 0 -16px 20px;
+  padding: 20px 16px;
+  background: var(--num-navy);
+}
+
+.num-carousel {
+  position: relative;
+  width: var(--num-slide-w);
+  height: var(--num-slide-h);
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.num-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+.num-slide.active { opacity: 1; pointer-events: auto; }
+
+.num-slide-inner {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+}
+
+/* Portada */
+.num-slide-inner.cover { background: var(--num-navy); }
+.num-hashtag {
+  font-size: 2rem;
+  color: var(--num-gold);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.num-big {
+  font-size: clamp(3.5rem, 14vw, 5.5rem);
+  font-weight: 600;
+  color: #fff;
+  line-height: 1;
+  word-break: break-word;
+}
+.num-gancho {
+  font-size: clamp(0.95rem, 3.2vw, 1.2rem);
+  color: var(--num-teal);
+  margin-top: 16px;
+  font-style: italic;
+  line-height: 1.4;
+}
+.num-brand-tag {
+  position: absolute;
+  bottom: 14px;
+  right: 16px;
+  font-size: 0.72rem;
+  color: var(--num-gold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Beat */
+.num-slide-inner.beat { background: var(--num-paper); }
+.num-beat-num {
+  font-size: 3rem;
+  font-weight: 600;
+  color: var(--num-gold);
+  opacity: 0.25;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.num-beat-text {
+  font-size: clamp(1rem, 3.5vw, 1.35rem);
+  color: var(--num-navy);
+  line-height: 1.5;
+}
+
+/* Lección */
+.num-slide-inner.leccion { background: var(--num-teal); }
+.num-quote-mark {
+  font-size: 5rem;
+  color: var(--num-gold);
+  line-height: 0.6;
+  margin-bottom: 16px;
+  opacity: 0.7;
+}
+.num-leccion-text {
+  font-size: clamp(1rem, 3.5vw, 1.35rem);
+  color: #fff;
+  font-style: italic;
+  line-height: 1.5;
+}
+
+/* CTA */
+.num-slide-inner.cta { background: var(--num-navy); }
+.num-cta-hashtag {
+  font-size: 1.1rem;
+  color: var(--num-gold);
+  letter-spacing: 0.06em;
+  margin-bottom: 12px;
+}
+.num-cta-text {
+  font-size: clamp(1rem, 3.2vw, 1.25rem);
+  color: #e8f0fa;
+  line-height: 1.5;
+  font-style: italic;
+}
+
+/* Controles del carrusel */
+.num-carousel-nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.num-nav-btn {
+  background: #ffffff22;
+  border: none;
+  color: #fff;
+  font-size: 1.5rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.num-slide-label { font-size: 0.82rem; color: #8ba7c4; }
+.num-dots { display: flex; gap: 6px; }
+.num-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  border: none;
+  background: #ffffff44;
+  cursor: pointer;
+  padding: 0;
+}
+.num-dot.active { background: var(--num-gold); }
+
 /* =================== Mi esencia =================== */
 .essence-intro { display: flex; flex-direction: column; gap: 10px; }
 .essence-count { font-size: 0.85rem; margin: 0; }

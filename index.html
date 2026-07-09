@@ -12,6 +12,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Memorias" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
@@ -121,6 +124,87 @@
       </div>
     </section>
 
+    <!-- Vista: El Número -->
+    <section id="view-numero" class="view">
+
+      <!-- Sub-vista: archivo -->
+      <div id="numerosScreen">
+        <div class="view-head">
+          <h2 class="num-title-head"># El Número</h2>
+        </div>
+        <p class="muted">Tu archivo semanal. Cada entrega parte de un número que abre una historia.</p>
+        <button id="newNumeroBtn" class="btn num-btn-primary full">＋ Nueva entrega</button>
+        <div id="numerosGrid" class="numeros-grid"></div>
+        <div id="numerosEmpty" class="empty" hidden>
+          <p class="empty-emoji">#️⃣</p>
+          <h3>Aún sin entregas</h3>
+          <p>Toca <strong>"Nueva entrega"</strong> para escribir tu primer número.</p>
+        </div>
+      </div>
+
+      <!-- Sub-vista: editor + previsualización -->
+      <div id="numeroEditor" hidden>
+        <div class="editor-topbar">
+          <button id="backToNumeros" class="link-btn">‹ El Número</button>
+          <button id="deleteNumeroBtn" class="link-btn danger">Eliminar</button>
+        </div>
+
+        <!-- Carrusel de previsualización -->
+        <div class="num-carousel-wrap">
+          <div id="numCarousel" class="num-carousel"></div>
+          <div class="num-carousel-nav">
+            <button id="numPrev" class="num-nav-btn">‹</button>
+            <span id="numSlideLabel" class="num-slide-label">1 / 7</span>
+            <button id="numNext" class="num-nav-btn">›</button>
+          </div>
+          <div id="numDots" class="num-dots"></div>
+        </div>
+
+        <!-- Formulario editorial -->
+        <div class="card num-editor-card">
+          <h3>Portada (slide 1)</h3>
+          <label class="field">
+            <span>El número</span>
+            <input type="text" id="numNumero" placeholder="Ej: 38, 0.7, 1.000.000" />
+          </label>
+          <label class="field">
+            <span>Gancho — la frase que abre todo</span>
+            <textarea id="numGancho" rows="2" placeholder="La frase que hace que alguien se detenga…"></textarea>
+          </label>
+        </div>
+
+        <div class="card num-editor-card">
+          <h3>Historia (slides 2 – 5)</h3>
+          <p class="muted">Una idea por beat. Economía de palabras.</p>
+          <label class="field"><span>Beat 1</span><textarea id="numBeat1" rows="3" placeholder="El contexto. ¿De dónde viene ese número?"></textarea></label>
+          <label class="field"><span>Beat 2</span><textarea id="numBeat2" rows="3" placeholder="El giro. ¿Qué cambió?"></textarea></label>
+          <label class="field"><span>Beat 3</span><textarea id="numBeat3" rows="3" placeholder="El momento pivote."></textarea></label>
+          <label class="field"><span>Beat 4</span><textarea id="numBeat4" rows="3" placeholder="La consecuencia. ¿Qué pasó después?"></textarea></label>
+        </div>
+
+        <div class="card num-editor-card">
+          <h3>Lección (slide 6)</h3>
+          <p class="muted">La cita. El momento más compartible.</p>
+          <label class="field"><textarea id="numLeccion" rows="3" placeholder=""Lo que aprendí fue…""></textarea></label>
+        </div>
+
+        <div class="card num-editor-card">
+          <h3>CTA (slide 7)</h3>
+          <label class="field"><textarea id="numCta" rows="2" placeholder="¿Cuál es tu número? Cuéntame en los comentarios."></textarea></label>
+        </div>
+
+        <div class="card num-editor-card">
+          <h3>Editorial (solo tuyo)</h3>
+          <p class="muted">Tu reflexión de la semana. Por qué elegiste este número, qué te movió, qué querías decir. No se publica — es tu archivo de intención.</p>
+          <label class="field"><textarea id="numEditorial" rows="5" placeholder="Esta semana pensé en este número porque…"></textarea></label>
+        </div>
+
+        <div class="settings-row" style="padding-bottom:24px">
+          <button id="saveNumeroBtn" class="btn num-btn-primary">Guardar entrega</button>
+        </div>
+      </div>
+    </section>
+
     <!-- Vista: Mi esencia -->
     <section id="view-essence" class="view">
       <div class="view-head">
@@ -191,7 +275,7 @@
         <p class="muted">Esto eliminará todos tus recuerdos de este dispositivo. No se puede deshacer.</p>
         <button id="wipeBtn" class="btn danger-btn">Borrar todos los recuerdos</button>
       </div>
-      <p class="version muted">Memorias · versión 1.5</p>
+      <p class="version muted">Memorias · versión 1.6</p>
     </section>
   </main>
 
@@ -203,6 +287,7 @@
     <button class="tab active" data-view="timeline"><span>📚</span>Recuerdos</button>
     <button class="tab" data-view="map"><span>📍</span>Lugares</button>
     <button class="tab" data-view="book"><span>📖</span>Libro</button>
+    <button class="tab" data-view="numero"><span>#️⃣</span>El Número</button>
     <button class="tab" data-view="essence"><span>🔮</span>Esencia</button>
     <button class="tab" data-view="settings"><span>⚙️</span>Ajustes</button>
   </nav>
