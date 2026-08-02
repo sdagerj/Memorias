@@ -233,6 +233,24 @@
     <!-- Vista: Ajustes -->
     <section id="view-settings" class="view">
       <div class="view-head"><h2>Ajustes</h2></div>
+
+      <div class="card">
+        <h3>✨ Corregir recuerdos con Claude</h3>
+        <p class="muted">Copia todos tus recuerdos, pégalos en Claude para que los corrija, y luego pega la respuesta aquí — se actualizan todos de una vez.</p>
+        <div class="settings-row">
+          <button id="copyAllForCorrectionBtn" class="btn primary">Copiar para Claude</button>
+        </div>
+        <label class="field" style="margin-top:14px">
+          <span>Pega aquí la respuesta de Claude</span>
+          <textarea id="correctionPaste" rows="6" placeholder="Pega la corrección de Claude…"></textarea>
+        </label>
+        <div class="settings-row">
+          <button id="applyCorrectionBtn" class="btn">Aplicar correcciones</button>
+          <button id="clearCorrectionBtn" class="btn ghost">Limpiar</button>
+        </div>
+        <p id="correctionStatus" class="muted small" style="margin-top:8px"></p>
+      </div>
+
       <div class="card">
         <h3>Tus datos</h3>
         <p class="muted">Tus recuerdos se guardan solo en este dispositivo. Haz copias de seguridad con frecuencia.</p>
@@ -260,7 +278,7 @@
         <p class="muted">Esto eliminará todos tus recuerdos de este dispositivo. No se puede deshacer.</p>
         <button id="wipeBtn" class="btn danger-btn">Borrar todos los recuerdos</button>
       </div>
-      <p class="version muted">Memorias · versión 1.8</p>
+      <p class="version muted">Memorias · versión 1.9</p>
     </section>
   </main>
 
