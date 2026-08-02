@@ -192,3 +192,37 @@ export async function importBackup(data) {
     if (data.settings.bookTitle) await setSetting('bookTitle', data.settings.bookTitle);
   }
 }
+
+// Fusiona una copia de seguridad sin sobreescribir los datos locales.
+// Para entradas que ya existen: conserva el título y texto local, pero agrega
+// las fotos nuevas que vengan en el archivo (compara por nombre).
+// Para entradas nuevas: las importa completas.
+export async function mergeBackup(data) {
+  if (!data || !Array.isArray(data.entries)) throw new Error('Archivo no válido');
+  let added = 0, merged = 0;
+  for (const e of data.entries) {
+    const incoming = (e.photos || []).map((p) => ({
+      name: p.name,
+      blob: dataURLToBlob(p.dataURL),
+    }));
+    const existing = await getEntry(e.id);
+    if (existing) {
+      // Agrega solo las fotos que no estén ya (por nombre).
+      const existingNames = new Set((existing.photos || []).map((p) => p.name));
+      const newPhotos = incoming.filter((p) => !existingNames.has(p.name));
+      if (newPhotos.length) {
+        existing.photos = [...(existing.photos || []), ...newPhotos];
+        await saveEntry(existing);
+        merged++;
+      }
+    } else {
+      await saveEntry({ ...e, photos: incoming });
+      added++;
+    }
+  }
+  for (const n of data.numbers || []) {
+    const existing = await getNumber(n.id);
+    if (!existing) await saveNumber(n);
+  }
+  return { added, merged };
+}

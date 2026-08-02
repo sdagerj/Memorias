@@ -673,6 +673,24 @@ $('#importDataInput').addEventListener('change', async (e) => {
   e.target.value = '';
 });
 
+$('#mergeDataInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    const { added, merged } = await db.mergeBackup(data);
+    await loadEntries();
+    const msg = [
+      added ? `${added} recuerdo${added !== 1 ? 's' : ''} nuevo${added !== 1 ? 's' : ''}` : '',
+      merged ? `${merged} con fotos nuevas` : '',
+    ].filter(Boolean).join(', ');
+    toast(msg ? `Fusionado: ${msg} ✨` : 'Sin cambios nuevos');
+  } catch (err) {
+    toast('No se pudo fusionar el archivo');
+  }
+  e.target.value = '';
+});
+
 $('#wipeBtn').addEventListener('click', async () => {
   if (!confirm('¿Seguro? Esto borra TODOS tus recuerdos de este dispositivo.')) return;
   await db.clearAllEntries();
