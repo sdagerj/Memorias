@@ -643,6 +643,90 @@ $('#exportPdfBtn').addEventListener('click', () => {
   setTimeout(() => window.print(), 400);
 });
 
+// =================== Corrección masiva con Claude ===================
+
+function buildCorrectionPrompt(entries) {
+  const lines = [];
+  lines.push('Eres una editora literaria cálida y precisa. Voy a darte mis recuerdos personales para que corrijas la ortografía, la puntuación y la redacción de cada uno, manteniendo mi voz y mis ideas exactamente como las escribí — solo mejora la forma, no el fondo.');
+  lines.push('');
+  lines.push('INSTRUCCIÓN IMPORTANTE: devuélveme los recuerdos en el mismo orden, uno por uno, usando exactamente este separador antes de cada uno (incluyendo el ID):');
+  lines.push('');
+  lines.push('===ID:EL_ID_DEL_RECUERDO===');
+  lines.push('Texto corregido aquí');
+  lines.push('');
+  lines.push('No agregues nada más — solo los separadores y el texto corregido de cada recuerdo.');
+  lines.push('');
+  lines.push('---');
+  lines.push('');
+  entries.forEach((e) => {
+    lines.push(`===ID:${e.id}===`);
+    lines.push(`Título: ${e.title || ''}`);
+    if (e.text) lines.push(e.text);
+    lines.push('');
+  });
+  return lines.join('\n');
+}
+
+$('#copyAllForCorrectionBtn').addEventListener('click', async () => {
+  const entries = await db.getAllEntries();
+  if (!entries.length) { toast('Aún no tienes recuerdos'); return; }
+  const text = buildCorrectionPrompt(entries);
+  try {
+    await navigator.clipboard.writeText(text);
+    toast('Copiado ✨ Pégalo en Claude (claude.ai)');
+  } catch {
+    $('#correctionPaste').value = text;
+    toast('Copia el texto de la caja y pégalo en Claude');
+  }
+});
+
+$('#applyCorrectionBtn').addEventListener('click', async () => {
+  const raw = $('#correctionPaste').value.trim();
+  if (!raw) { toast('Primero pega la respuesta de Claude'); return; }
+
+  const status = $('#correctionStatus');
+  status.textContent = 'Aplicando correcciones…';
+
+  // Parsear bloques: ===ID:xxx=== seguido de texto hasta el siguiente separador
+  const blocks = raw.split(/===ID:([^=\n]+)===/g).slice(1);
+  // blocks = [id, texto, id, texto, ...]
+  let updated = 0;
+  for (let i = 0; i < blocks.length - 1; i += 2) {
+    const id = blocks[i].trim();
+    const correctedBlock = blocks[i + 1].trim();
+    // El bloque puede tener "Título: xxx\n" al inicio — lo separamos
+    const lines = correctedBlock.split('\n');
+    let titulo = null;
+    let textoLines = lines;
+    if (lines[0].startsWith('Título:')) {
+      titulo = lines[0].replace('Título:', '').trim();
+      textoLines = lines.slice(1);
+    }
+    const texto = textoLines.join('\n').trim();
+
+    const entry = await db.getEntry(id);
+    if (!entry) continue;
+    if (titulo) entry.title = titulo;
+    if (texto) entry.text = texto;
+    await db.saveEntry(entry);
+    updated++;
+  }
+
+  if (updated) {
+    await loadEntries();
+    $('#correctionPaste').value = '';
+    status.textContent = `✓ ${updated} recuerdo${updated !== 1 ? 's' : ''} actualizado${updated !== 1 ? 's' : ''}`;
+    toast(`${updated} recuerdos corregidos ✨`);
+  } else {
+    status.textContent = 'No se encontraron correcciones para aplicar. Verifica el formato.';
+  }
+});
+
+$('#clearCorrectionBtn').addEventListener('click', () => {
+  $('#correctionPaste').value = '';
+  $('#correctionStatus').textContent = '';
+});
+
 // =================== Ajustes ===================
 async function loadSettings() {
   $('#authorName').value = await db.getSetting('authorName', '');
