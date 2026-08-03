@@ -28,6 +28,18 @@ function showToast(msg) {
   setTimeout(() => (t.hidden = true), 2600);
 }
 
+function showErrorPanel(msg) {
+  let panel = document.getElementById('claudeErrorPanel');
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.id = 'claudeErrorPanel';
+    panel.style.cssText = 'position:fixed;bottom:1rem;left:1rem;right:1rem;background:#7f1d1d;color:#fef2f2;padding:1rem;border-radius:.75rem;z-index:9999;white-space:pre-wrap;font-size:.875rem;line-height:1.4';
+    document.body.appendChild(panel);
+  }
+  panel.innerHTML = `<strong>⚠️ Claude</strong><br>${msg.replace(/</g,'&lt;')}<br><br><button onclick="document.getElementById('claudeErrorPanel').remove()" style="background:#991b1b;border:none;color:white;padding:.25rem .75rem;border-radius:.5rem;cursor:pointer">Cerrar</button>`;
+  panel.style.display = 'block';
+}
+
 function escHtml(str) {
   return String(str)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -397,14 +409,15 @@ export async function initNumero() {
         const result = await callClaude(prompt);
         onResult(result);
       } catch (err) {
+        console.error('[Claude error]', err);
         if (err.message === 'NO_KEY') {
           await copyToClipboard(prompt, fallbackMsg);
         } else if (err.message === 'KEY_INVALID') {
-          showToast('La API key no es válida. Revísala en Ajustes.');
+          showErrorPanel('La API key no es válida. Ve a Ajustes → Claude API y verifica tu clave.');
         } else if (err.message === 'RATE_LIMIT') {
-          showToast('Demasiadas solicitudes. Espera un momento e intenta de nuevo.');
+          showErrorPanel('Límite de solicitudes alcanzado. Espera un momento e intenta de nuevo.');
         } else {
-          showToast('Error al conectar con Claude: ' + err.message);
+          showErrorPanel('Error al conectar con Claude:\n' + err.message);
         }
       } finally {
         btn.disabled = false;
