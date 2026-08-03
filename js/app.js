@@ -734,7 +734,12 @@ async function loadSettings() {
   const key = await db.getSetting('claudeApiKey', '');
   if (key) {
     $('#claudeApiKeyInput').value = key;
-    $('#apiKeyStatus').textContent = '✓ Key guardada — los botones de El Número usan Claude directamente.';
+    $('#apiKeyStatus').textContent = '✓ Key guardada.';
+  }
+  const proxy = await db.getSetting('claudeProxyUrl', '');
+  if (proxy) {
+    $('#claudeProxyInput').value = proxy;
+    $('#proxyStatus').textContent = '✓ Proxy configurado — ' + proxy;
   }
 }
 
@@ -745,14 +750,31 @@ $('#saveApiKeyBtn').addEventListener('click', async () => {
     return;
   }
   await db.setSetting('claudeApiKey', val);
-  $('#apiKeyStatus').textContent = '✓ Key guardada ✨ — los botones de El Número ya usan Claude directamente.';
+  $('#apiKeyStatus').textContent = '✓ Key guardada ✨';
   toast('API key guardada ✨');
 });
 
 $('#clearApiKeyBtn').addEventListener('click', async () => {
   await db.setSetting('claudeApiKey', '');
   $('#claudeApiKeyInput').value = '';
-  $('#apiKeyStatus').textContent = 'Key borrada. Los botones vuelven al modo copy/paste.';
+  $('#apiKeyStatus').textContent = 'Key borrada.';
+});
+
+$('#saveProxyBtn').addEventListener('click', async () => {
+  const val = $('#claudeProxyInput').value.trim();
+  if (!val.startsWith('https://')) {
+    $('#proxyStatus').textContent = 'La URL debe empezar con https://';
+    return;
+  }
+  await db.setSetting('claudeProxyUrl', val);
+  $('#proxyStatus').textContent = '✓ Proxy guardado ✨ — ' + val;
+  toast('Proxy guardado ✨');
+});
+
+$('#clearProxyBtn').addEventListener('click', async () => {
+  await db.setSetting('claudeProxyUrl', '');
+  $('#claudeProxyInput').value = '';
+  $('#proxyStatus').textContent = 'Proxy borrado.';
 });
 
 $('#authorName').addEventListener('change', (e) => db.setSetting('authorName', e.target.value.trim()));
