@@ -329,6 +329,22 @@
           <input type="text" id="bookTitle" placeholder="Mis Memorias" />
         </label>
       </div>
+      <!-- API Key de Claude -->
+      <div class="card">
+        <h3>🤖 Claude API</h3>
+        <p class="muted">Con tu API key, los botones de El Número consultan a Claude directamente — sin salir de la app ni copiar nada.</p>
+        <label class="field">
+          <span>API Key de Anthropic</span>
+          <input type="password" id="claudeApiKeyInput" placeholder="sk-ant-api03-…" autocomplete="off" />
+        </label>
+        <div class="settings-row" style="margin-top:8px">
+          <button id="saveApiKeyBtn" class="btn primary">Guardar key</button>
+          <button id="clearApiKeyBtn" class="btn ghost">Borrar key</button>
+        </div>
+        <p id="apiKeyStatus" class="muted small" style="margin-top:6px"></p>
+        <p class="muted small">La key se guarda solo en tu dispositivo. Nunca sale de aquí. Obtén la tuya en <strong>console.anthropic.com</strong></p>
+      </div>
+
       <!-- Fuentes RSS de El Número -->
       <div class="card">
         <h3>📰 Fuentes de El Número</h3>
@@ -350,7 +366,7 @@
         <p class="muted">Esto eliminará todos tus recuerdos de este dispositivo. No se puede deshacer.</p>
         <button id="wipeBtn" class="btn danger-btn">Borrar todos los recuerdos</button>
       </div>
-      <p class="version muted">Memorias · versión 2.1</p>
+      <p class="version muted">Memorias · versión 2.2</p>
     </section>
   </main>
 

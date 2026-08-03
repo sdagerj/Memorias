@@ -1,5 +1,5 @@
 // Service worker: permite que la app funcione sin conexión (offline).
-const CACHE = 'memorias-v14';
+const CACHE = 'memorias-v15';
 const ASSETS = [
   './',
   './index.html',
@@ -12,6 +12,7 @@ const ASSETS = [
   './js/essence.js',
   './js/numero.js',
   './js/rss.js',
+  './js/claude-api.js',
   './manifest.webmanifest',
   './icons/icon.svg',
   './icons/icon-maskable.svg',

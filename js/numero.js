@@ -1,6 +1,7 @@
 // Módulo "El Número": editor, archivo y asistente editorial con Claude.
 import * as db from './db.js';
 import { fetchHeadlines, DEFAULT_SOURCES } from './rss.js';
+import { callClaude, getApiKey, hasApiKey } from './claude-api.js';
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
@@ -387,24 +388,62 @@ export async function initNumero() {
 
   // ── Botones Claude ──
 
+  async function runWithClaude(btn, originalLabel, prompt, onResult, fallbackMsg) {
+    const key = await getApiKey();
+    if (hasApiKey(key)) {
+      btn.disabled = true;
+      btn.textContent = 'Consultando a Claude…';
+      try {
+        const result = await callClaude(prompt);
+        onResult(result);
+      } catch (err) {
+        if (err.message === 'NO_KEY') {
+          await copyToClipboard(prompt, fallbackMsg);
+        } else if (err.message === 'KEY_INVALID') {
+          showToast('La API key no es válida. Revísala en Ajustes.');
+        } else if (err.message === 'RATE_LIMIT') {
+          showToast('Demasiadas solicitudes. Espera un momento e intenta de nuevo.');
+        } else {
+          showToast('Error al conectar con Claude: ' + err.message);
+        }
+      } finally {
+        btn.disabled = false;
+        btn.textContent = originalLabel;
+      }
+    } else {
+      await copyToClipboard(prompt, fallbackMsg);
+    }
+  }
+
   // IDEAR
   $('#numIdeaBtn').addEventListener('click', async () => {
     const btn = $('#numIdeaBtn');
     btn.disabled = true;
     btn.textContent = 'Buscando noticias…';
     openPanel('numIdeaPanel');
+    let headlines = [];
     try {
       const saved = await db.getRssSources();
       const sources = saved || DEFAULT_SOURCES;
-      const headlines = await fetchHeadlines(sources);
-      const prompt = buildIdeaPrompt(headlines);
-      await copyToClipboard(prompt, `Copiado ✨ — ${headlines.length} titulares incluidos`);
-    } catch {
-      showToast('Error al cargar noticias');
-    } finally {
-      btn.disabled = false;
-      btn.textContent = '💡 Idear número';
+      headlines = await fetchHeadlines(sources);
+    } catch { /* silencioso */ }
+    const prompt = buildIdeaPrompt(headlines);
+    const key = await getApiKey();
+    if (hasApiKey(key)) {
+      btn.textContent = 'Consultando a Claude…';
+      try {
+        const result = await callClaude(prompt);
+        $('#numIdeaPaste').value = result;
+        showToast('Ideas listas ✨');
+      } catch (err) {
+        if (err.message === 'KEY_INVALID') showToast('La API key no es válida. Revísala en Ajustes.');
+        else showToast('Error al conectar con Claude');
+      }
+    } else {
+      await copyToClipboard(prompt, `Copiado ✨ — ${headlines.length} titulares incluidos. Pégalo en claude.ai`);
     }
+    btn.disabled = false;
+    btn.textContent = '💡 Idear número';
   });
 
   // CORREGIR
@@ -412,12 +451,17 @@ export async function initNumero() {
     const data = readEditor();
     if (!data.editorial) { showToast('Escribe el editorial primero'); return; }
     openPanel('numCorreccionPanel');
-    await copyToClipboard(buildCorrectionPrompt(data), 'Copiado ✨ Pégalo en claude.ai');
+    await runWithClaude(
+      $('#numCorreccionBtn'), '✏️ Corregir',
+      buildCorrectionPrompt(data),
+      (result) => { $('#numCorreccionPaste').value = result; showToast('Corrección lista ✨'); },
+      'Copiado ✨ Pégalo en claude.ai'
+    );
   });
 
   $('#numAplicarCorreccion').addEventListener('click', () => {
     const v = $('#numCorreccionPaste').value.trim();
-    if (!v) { showToast('Primero pega la corrección de Claude'); return; }
+    if (!v) { showToast('Primero obtén la corrección de Claude'); return; }
     const parts = v.split(/\n---\n|\n_{3,}\n/);
     const corrected = parts[0].trim();
     $('#numEditorial').value = corrected;
@@ -432,7 +476,12 @@ export async function initNumero() {
     const data = readEditor();
     if (!data.editorial) { showToast('Escribe el editorial primero'); return; }
     openPanel('numMontajePanel');
-    await copyToClipboard(buildMontajePrompt(data), 'Copiado ✨ Pégalo en claude.ai');
+    await runWithClaude(
+      $('#numMontajeBtn'), '📲 Montar',
+      buildMontajePrompt(data),
+      (result) => { $('#numMontajePaste').value = result; showToast('Formatos listos ✨'); },
+      'Copiado ✨ Pégalo en claude.ai'
+    );
   });
 
   $('#numLimpiarMontaje').addEventListener('click', () => { $('#numMontajePaste').value = ''; });
@@ -441,7 +490,12 @@ export async function initNumero() {
   $('#numPodcastBtn').addEventListener('click', async () => {
     const data = readEditor();
     openPanel('numPodcastPanel');
-    await copyToClipboard(buildPodcastPrompt(data), 'Copiado ✨ Pégalo en claude.ai');
+    await runWithClaude(
+      $('#numPodcastBtn'), '🎙️ Podcast',
+      buildPodcastPrompt(data),
+      (result) => { $('#numPodcastPaste').value = result; showToast('Candidatas listas ✨'); },
+      'Copiado ✨ Pégalo en claude.ai'
+    );
   });
 
   $('#numLimpiarPodcast').addEventListener('click', () => { $('#numPodcastPaste').value = ''; });
