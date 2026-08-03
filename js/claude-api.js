@@ -19,26 +19,32 @@ export async function callClaude(prompt, { onChunk } = {}) {
   const key = await getApiKey();
   if (!hasApiKey(key)) throw new Error('NO_KEY');
 
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: {
-      'x-api-key': key,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
-      'anthropic-dangerous-direct-browser-calls': 'true',
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: 4096,
-      messages: [{ role: 'user', content: prompt }],
-    }),
-  });
+  let res;
+  try {
+    res = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+        'anthropic-dangerous-direct-browser-calls': 'true',
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 4096,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+  } catch (networkErr) {
+    // Error de red o CORS — lo propagamos con detalle
+    throw new Error('NETWORK: ' + (networkErr.message || 'sin conexión'));
+  }
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     if (res.status === 401) throw new Error('KEY_INVALID');
     if (res.status === 429) throw new Error('RATE_LIMIT');
-    throw new Error(err?.error?.message || `Error ${res.status}`);
+    throw new Error('HTTP_' + res.status + ': ' + (err?.error?.message || 'error desconocido'));
   }
 
   const data = await res.json();
