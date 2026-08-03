@@ -436,8 +436,8 @@ export async function initNumero() {
         $('#numIdeaPaste').value = result;
         showToast('Ideas listas ✨');
       } catch (err) {
-        if (err.message === 'KEY_INVALID') showToast('La API key no es válida. Revísala en Ajustes.');
-        else showToast('Error al conectar con Claude');
+        if (err.message === 'KEY_INVALID') showToast('API key inválida. Revísala en Ajustes.');
+        else showToast('Error: ' + err.message);
       }
     } else {
       await copyToClipboard(prompt, `Copiado ✨ — ${headlines.length} titulares incluidos. Pégalo en claude.ai`);
