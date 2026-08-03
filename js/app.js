@@ -731,7 +731,29 @@ $('#clearCorrectionBtn').addEventListener('click', () => {
 async function loadSettings() {
   $('#authorName').value = await db.getSetting('authorName', '');
   $('#bookTitle').value = await db.getSetting('bookTitle', '');
+  const key = await db.getSetting('claudeApiKey', '');
+  if (key) {
+    $('#claudeApiKeyInput').value = key;
+    $('#apiKeyStatus').textContent = '✓ Key guardada — los botones de El Número usan Claude directamente.';
+  }
 }
+
+$('#saveApiKeyBtn').addEventListener('click', async () => {
+  const val = $('#claudeApiKeyInput').value.trim();
+  if (!val.startsWith('sk-ant-')) {
+    $('#apiKeyStatus').textContent = 'La key no parece válida. Debe empezar con sk-ant-…';
+    return;
+  }
+  await db.setSetting('claudeApiKey', val);
+  $('#apiKeyStatus').textContent = '✓ Key guardada ✨ — los botones de El Número ya usan Claude directamente.';
+  toast('API key guardada ✨');
+});
+
+$('#clearApiKeyBtn').addEventListener('click', async () => {
+  await db.setSetting('claudeApiKey', '');
+  $('#claudeApiKeyInput').value = '';
+  $('#apiKeyStatus').textContent = 'Key borrada. Los botones vuelven al modo copy/paste.';
+});
 
 $('#authorName').addEventListener('change', (e) => db.setSetting('authorName', e.target.value.trim()));
 $('#bookTitle').addEventListener('change', (e) => db.setSetting('bookTitle', e.target.value.trim()));
