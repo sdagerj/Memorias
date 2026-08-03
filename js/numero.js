@@ -1,5 +1,6 @@
-// Módulo "El Número": editor y archivo de entregas semanales.
+// Módulo "El Número": editor, archivo y asistente editorial con Claude.
 import * as db from './db.js';
+import { fetchHeadlines, DEFAULT_SOURCES } from './rss.js';
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
@@ -28,10 +29,8 @@ function showToast(msg) {
 
 function escHtml(str) {
   return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 // ── portada (previsualización) ────────────────────────────────────────────────
@@ -104,6 +103,7 @@ async function openNumero(id) {
   populateEditor(currentNumero);
   showEditorScreen();
   renderCover(currentNumero);
+  clearClaudePanels();
 }
 
 function populateEditor(n) {
@@ -127,6 +127,230 @@ function liveUpdate() {
   if (!currentNumero) return;
   currentNumero = { ...currentNumero, ...readEditor() };
   renderCover(currentNumero);
+}
+
+// ── prompts del asistente ─────────────────────────────────────────────────────
+
+const SYSTEM_PROMPT = `Eres el compañero editorial de "El Número", un proyecto de contenido semanal de Stefy (@Yomevoyconel30). Tu trabajo es ayudarla a encontrar el número de la semana, escribir y pulir el texto, convertirlo en publicaciones, y encontrar invitados para el podcast.
+
+LA IDEA
+Cada semana, un número es la puerta de entrada a una historia y a una lección. Los números pueden salir de cualquier parte —mercados, arte, maternidad, algo que se oyó, una observación—, no solo de la vida de Stefy. El número es el gancho; la historia es la recompensa.
+
+LA VOZ
+- En español. Cercana, honesta, con criterio. Directa, sin relleno.
+- Cuando escribas en primera persona, eres la voz de Stefy.
+- Es la evolución de "Yo me voy con el 30": misma voz, nuevo capítulo. Esa conexión es un activo, no la escondas.
+
+LA AUDIENCIA
+Mujeres que están construyendo algo —su carrera, su plata, su familia, su siguiente capítulo—. Base amplia: cabe la profesional y la que no lo es, sin perder nivel. Lo que las une no es el cargo, es el momento.
+
+EL LENTE (por aquí pasa todo)
+Economista, inversionista, mujer que dirige en finanzas, madre, guerrera, mirada de arte. Un número solo sirve si Stefy puede leerlo distinto a como lo leería cualquiera.
+
+EL ARCO DE CADA PIEZA
+Del mundo → a mí → a ellas: arranca en algo de actualidad, pasa por el lente propio, y aterriza en una lección útil.
+
+REGLAS
+- Nada genérico: si cualquiera pudo haberlo escrito, no sirve.
+- Nada de cliché motivacional vacío.
+- Si usas un dato o cifra de actualidad, debe ser real y verificable. Nunca inventes números.
+- LinkedIn no es lo mismo que el carrusel: otro registro (insight en primera persona, no historia ilustrada).
+- Cuando corrijas, sugiere y mejora; no reescribas todo salvo que te lo pidan.`;
+
+function buildIdeaPrompt(headlines) {
+  const lines = [SYSTEM_PROMPT, ''];
+  lines.push('---');
+  lines.push('');
+  lines.push('TITULARES DE LA SEMANA (para contexto de actualidad):');
+  lines.push('');
+  if (headlines.length) {
+    const byCat = {};
+    for (const h of headlines) {
+      if (!byCat[h.category]) byCat[h.category] = [];
+      byCat[h.category].push(`- [${h.source}] ${h.title}`);
+    }
+    for (const [cat, items] of Object.entries(byCat)) {
+      lines.push(`${cat.toUpperCase()}:`);
+      lines.push(...items);
+      lines.push('');
+    }
+  } else {
+    lines.push('(No se pudieron cargar titulares. Usa tu conocimiento actualizado.)');
+    lines.push('');
+  }
+  lines.push('---');
+  lines.push('');
+  lines.push(`Propón 3 números candidatos para esta semana, sacados de estas cinco canteras: (1) mercados y economía, (2) arte y cultura, (3) mujeres y liderazgo, (4) vida y observación, (5) efemérides. Usa los titulares anteriores y la actualidad de la semana.
+
+Para cada candidato da: la cifra, la cantera, el gancho de actualidad (real y verificable), y el ángulo propio (cómo lo leería Stefy con su lente).
+
+Luego córrelo por el TEST y marca sí/no en cada una:
+1. ¿Tiene gancho de actualidad?
+2. ¿Solo Stefy lo contaría así? (ángulo propio)
+3. ¿Sorprende o revela algo?
+4. ¿Le deja algo útil a la audiencia?
+5. ¿Hay alguien con esa historia para entrevistar más adelante?
+
+Un número se gana la semana con mínimo 3 de 5. En empate, gana el del ángulo más filoso. Recomienda uno y explica por qué en dos líneas.`);
+  return lines.join('\n');
+}
+
+function buildCorrectionPrompt(data) {
+  return `${SYSTEM_PROMPT}
+
+---
+
+PROMPT: CORRECCIÓN DEL TEXTO
+
+Te doy el borrador del editorial de esta semana. Corrígelo cuidando:
+- La voz: cercana, honesta, con criterio; directa, sin relleno.
+- El arco: del mundo → a mí → a ellas.
+- Claridad y ritmo.
+- Que no sea genérico ni caiga en cliché.
+
+Sugiere cambios concretos; no reescribas todo salvo que te lo pida. Devuelve el texto corregido y, al final, una nota corta (3–4 líneas) de qué mejoraste y por qué.
+
+---
+
+NÚMERO: #${data.numero || '?'}
+TÍTULO: ${data.gancho || ''}
+
+EDITORIAL:
+${data.editorial || '(vacío)'}`;
+}
+
+function buildMontajePrompt(data) {
+  return `${SYSTEM_PROMPT}
+
+---
+
+PROMPT: MONTAJE DE PUBLICACIONES
+
+A partir del texto final, genera estas cuatro salidas. Mantén la cifra como gancho y el arco del mundo → a mí → a ellas.
+
+1. CARRUSEL DE INSTAGRAM (7 slides): slide 1 portada con el número; slides 2–5 los beats de la historia; slide 6 la lección; slide 7 CTA. Texto breve por slide.
+
+2. EDITORIAL (periódico local): el número como columna de opinión, con la firma de Stefy. Tono de columna, no de post.
+
+3. LINKEDIN: el mismo número como reflexión profesional en primera persona. NO copies el carrusel: otro registro, insight primero, más analítico.
+
+4. REEL (30–60s): guion hablado. Abre con el gancho (el número), desarrolla la revelación, cierra con la lección.
+
+---
+
+NÚMERO: #${data.numero || '?'}
+TÍTULO: ${data.gancho || ''}
+
+TEXTO FINAL:
+${data.editorial || '(vacío)'}
+
+DESTAQUE:
+${data.destaque || '(ninguno)'}`;
+}
+
+function buildPodcastPrompt(data) {
+  return `${SYSTEM_PROMPT}
+
+---
+
+PROMPT: CANDIDATOS PARA EL PODCAST
+
+Con el número de la semana y su historia, sugiere 3–5 personas cuya vida gira en torno a esa cifra o ese tema, como posibles invitadas al podcast. Busca en la actualidad si hace falta.
+
+Para cada una: quién es, por qué encaja con este número, y cómo contactarla si se sabe. Prioriza mujeres y perfiles alcanzables. Marca cuáles valdrían un episodio propio.
+
+---
+
+NÚMERO: #${data.numero || '?'}
+TÍTULO: ${data.gancho || ''}
+TEMA: ${data.editorial ? data.editorial.slice(0, 300) + '…' : '(sin editorial aún)'}`;
+}
+
+// ── panel Claude helpers ──────────────────────────────────────────────────────
+
+function clearClaudePanels() {
+  ['numIdeaPaste', 'numCorreccionPaste', 'numMontajePaste', 'numPodcastPaste'].forEach((id) => {
+    const el = $(`#${id}`);
+    if (el) el.value = '';
+  });
+  ['numIdeaPanel', 'numCorreccionPanel', 'numMontajePanel', 'numPodcastPanel'].forEach((id) => {
+    const el = $(`#${id}`);
+    if (el) el.hidden = true;
+  });
+}
+
+function openPanel(panelId) {
+  ['numIdeaPanel', 'numCorreccionPanel', 'numMontajePanel', 'numPodcastPanel'].forEach((id) => {
+    const el = $(`#${id}`);
+    if (el) el.hidden = id !== panelId;
+  });
+}
+
+async function copyToClipboard(text, successMsg) {
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast(successMsg || 'Copiado ✨ Pégalo en claude.ai');
+  } catch {
+    showToast('No se pudo copiar — revisa permisos del navegador');
+  }
+}
+
+// ── gestión de fuentes RSS (desde Ajustes) ───────────────────────────────────
+
+export async function initRssSources() {
+  const saved = await db.getRssSources();
+  let sources = saved || DEFAULT_SOURCES.map((s) => ({ ...s }));
+
+  function renderSources() {
+    const list = $('#rssSourcesList');
+    if (!list) return;
+    list.innerHTML = '';
+    sources.forEach((s, i) => {
+      const row = document.createElement('div');
+      row.className = 'rss-row';
+      row.innerHTML = `
+        <label class="rss-toggle">
+          <input type="checkbox" ${s.active ? 'checked' : ''} />
+          <span class="rss-name">${escHtml(s.name)}</span>
+          <span class="rss-cat muted">${escHtml(s.category)}</span>
+        </label>
+        <button type="button" class="rss-del link-btn danger" aria-label="Eliminar">✕</button>`;
+      row.querySelector('input').addEventListener('change', async (e) => {
+        sources[i].active = e.target.checked;
+        await db.saveRssSources(sources);
+      });
+      row.querySelector('.rss-del').addEventListener('click', async () => {
+        sources.splice(i, 1);
+        await db.saveRssSources(sources);
+        renderSources();
+      });
+      list.appendChild(row);
+    });
+  }
+
+  renderSources();
+
+  $('#rssAddBtn')?.addEventListener('click', async () => {
+    const name = $('#rssNewName').value.trim();
+    const url = $('#rssNewUrl').value.trim();
+    const cat = $('#rssNewCat').value.trim() || 'general';
+    if (!name || !url) { showToast('Escribe el nombre y la URL'); return; }
+    sources.push({ id: cryptoId(), name, url, category: cat, active: true });
+    await db.saveRssSources(sources);
+    $('#rssNewName').value = '';
+    $('#rssNewUrl').value = '';
+    $('#rssNewCat').value = '';
+    renderSources();
+    showToast('Fuente agregada ✨');
+  });
+
+  $('#rssResetBtn')?.addEventListener('click', async () => {
+    if (!confirm('¿Restaurar las fuentes originales? Se perderán las que hayas agregado.')) return;
+    sources = DEFAULT_SOURCES.map((s) => ({ ...s }));
+    await db.saveRssSources(sources);
+    renderSources();
+    showToast('Fuentes restauradas');
+  });
 }
 
 // ── init ──────────────────────────────────────────────────────────────────────
@@ -156,12 +380,71 @@ export async function initNumero() {
     await renderNumerosList();
   });
 
-  // Ocultar controles de navegación del carrusel (ya no aplican)
   const nav = $('#numCarouselNav');
   if (nav) nav.hidden = true;
 
-  // Live preview de la portada al escribir
   ['numNumero', 'numGancho'].forEach((id) => $(`#${id}`)?.addEventListener('input', liveUpdate));
+
+  // ── Botones Claude ──
+
+  // IDEAR
+  $('#numIdeaBtn').addEventListener('click', async () => {
+    const btn = $('#numIdeaBtn');
+    btn.disabled = true;
+    btn.textContent = 'Buscando noticias…';
+    openPanel('numIdeaPanel');
+    try {
+      const saved = await db.getRssSources();
+      const sources = saved || DEFAULT_SOURCES;
+      const headlines = await fetchHeadlines(sources);
+      const prompt = buildIdeaPrompt(headlines);
+      await copyToClipboard(prompt, `Copiado ✨ — ${headlines.length} titulares incluidos`);
+    } catch {
+      showToast('Error al cargar noticias');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '💡 Idear número';
+    }
+  });
+
+  // CORREGIR
+  $('#numCorreccionBtn').addEventListener('click', async () => {
+    const data = readEditor();
+    if (!data.editorial) { showToast('Escribe el editorial primero'); return; }
+    openPanel('numCorreccionPanel');
+    await copyToClipboard(buildCorrectionPrompt(data), 'Copiado ✨ Pégalo en claude.ai');
+  });
+
+  $('#numAplicarCorreccion').addEventListener('click', () => {
+    const v = $('#numCorreccionPaste').value.trim();
+    if (!v) { showToast('Primero pega la corrección de Claude'); return; }
+    const parts = v.split(/\n---\n|\n_{3,}\n/);
+    const corrected = parts[0].trim();
+    $('#numEditorial').value = corrected;
+    if (currentNumero) currentNumero.editorial = corrected;
+    showToast('Editorial actualizado ✨');
+  });
+
+  $('#numLimpiarCorreccion').addEventListener('click', () => { $('#numCorreccionPaste').value = ''; });
+
+  // MONTAR
+  $('#numMontajeBtn').addEventListener('click', async () => {
+    const data = readEditor();
+    if (!data.editorial) { showToast('Escribe el editorial primero'); return; }
+    openPanel('numMontajePanel');
+    await copyToClipboard(buildMontajePrompt(data), 'Copiado ✨ Pégalo en claude.ai');
+  });
+
+  $('#numLimpiarMontaje').addEventListener('click', () => { $('#numMontajePaste').value = ''; });
+
+  // PODCAST
+  $('#numPodcastBtn').addEventListener('click', async () => {
+    const data = readEditor();
+    openPanel('numPodcastPanel');
+    await copyToClipboard(buildPodcastPrompt(data), 'Copiado ✨ Pégalo en claude.ai');
+  });
+
+  $('#numLimpiarPodcast').addEventListener('click', () => { $('#numPodcastPaste').value = ''; });
 
   await renderNumerosList();
 }

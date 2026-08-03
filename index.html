@@ -184,9 +184,62 @@
           </label>
         </div>
 
-        <div class="settings-row" style="padding-bottom:24px">
+        <div class="settings-row" style="padding-bottom:8px">
           <button id="saveNumeroBtn" class="btn num-btn-primary">Guardar entrega</button>
         </div>
+
+        <!-- Asistente Claude -->
+        <div class="card num-editor-card">
+          <h3>✨ Asistente Claude</h3>
+          <p class="muted">Cada botón copia el prompt listo para pegar en claude.ai.</p>
+          <div class="num-claude-btns">
+            <button type="button" id="numIdeaBtn" class="btn num-claude-btn">💡 Idear número</button>
+            <button type="button" id="numCorreccionBtn" class="btn num-claude-btn">✏️ Corregir</button>
+            <button type="button" id="numMontajeBtn" class="btn num-claude-btn">📲 Montar</button>
+            <button type="button" id="numPodcastBtn" class="btn num-claude-btn">🎙️ Podcast</button>
+          </div>
+
+          <!-- Panel: Idear -->
+          <div id="numIdeaPanel" class="num-claude-panel" hidden>
+            <p class="muted small">Jala titulares de tus fuentes activas, los incluye en el prompt y lo copia. Pégalo en claude.ai para obtener 3 candidatos con su test.</p>
+          </div>
+
+          <!-- Panel: Corrección -->
+          <div id="numCorreccionPanel" class="num-claude-panel" hidden>
+            <p class="muted small">Pega aquí la corrección de Claude y toca "Aplicar" para actualizar el editorial.</p>
+            <label class="field">
+              <textarea id="numCorreccionPaste" rows="6" placeholder="Pega la corrección de Claude…"></textarea>
+            </label>
+            <div class="settings-row">
+              <button type="button" id="numAplicarCorreccion" class="btn num-btn-primary">Aplicar corrección</button>
+              <button type="button" id="numLimpiarCorreccion" class="btn ghost">Limpiar</button>
+            </div>
+          </div>
+
+          <!-- Panel: Montaje -->
+          <div id="numMontajePanel" class="num-claude-panel" hidden>
+            <p class="muted small">Claude te devuelve los 4 formatos: carrusel IG, columna editorial, LinkedIn y guion de reel.</p>
+            <label class="field">
+              <textarea id="numMontajePaste" rows="8" placeholder="Pega aquí los 4 formatos de Claude…"></textarea>
+            </label>
+            <div class="settings-row">
+              <button type="button" id="numLimpiarMontaje" class="btn ghost">Limpiar</button>
+            </div>
+          </div>
+
+          <!-- Panel: Podcast -->
+          <div id="numPodcastPanel" class="num-claude-panel" hidden>
+            <p class="muted small">Claude sugiere 3–5 personas cuya vida gira en torno al número de esta semana, con perfil y cómo contactarlas.</p>
+            <label class="field">
+              <textarea id="numPodcastPaste" rows="6" placeholder="Pega aquí las candidatas de Claude…"></textarea>
+            </label>
+            <div class="settings-row">
+              <button type="button" id="numLimpiarPodcast" class="btn ghost">Limpiar</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding-bottom:32px"></div>
       </div>
     </section>
 
@@ -276,12 +329,28 @@
           <input type="text" id="bookTitle" placeholder="Mis Memorias" />
         </label>
       </div>
+      <!-- Fuentes RSS de El Número -->
+      <div class="card">
+        <h3>📰 Fuentes de El Número</h3>
+        <p class="muted">La app jala titulares de estas fuentes al usar "Idear número". Activa o desactiva cada una, o agrega las tuyas.</p>
+        <div id="rssSourcesList" class="rss-list"></div>
+        <div class="rss-add-form">
+          <input type="text" id="rssNewName" class="rss-input" placeholder="Nombre (ej: Semana)" />
+          <input type="url"  id="rssNewUrl"  class="rss-input" placeholder="URL del RSS" />
+          <input type="text" id="rssNewCat"  class="rss-input" placeholder="Categoría (ej: economía)" />
+          <div class="settings-row" style="margin-top:8px">
+            <button type="button" id="rssAddBtn" class="btn">Agregar fuente</button>
+            <button type="button" id="rssResetBtn" class="btn ghost">Restaurar originales</button>
+          </div>
+        </div>
+      </div>
+
       <div class="card danger">
         <h3>Borrar todo</h3>
         <p class="muted">Esto eliminará todos tus recuerdos de este dispositivo. No se puede deshacer.</p>
         <button id="wipeBtn" class="btn danger-btn">Borrar todos los recuerdos</button>
       </div>
-      <p class="version muted">Memorias · versión 2.0</p>
+      <p class="version muted">Memorias · versión 2.1</p>
     </section>
   </main>
 

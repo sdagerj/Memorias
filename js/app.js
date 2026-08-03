@@ -4,7 +4,7 @@ import { getCurrentPosition, reverseGeocode, formatCoords, mapLink } from './geo
 import { renderBook, formatLongDate } from './book.js';
 import { VoiceDictation, isVoiceSupported } from './voice.js';
 import { initEssence } from './essence.js';
-import { initNumero } from './numero.js';
+import { initNumero, initRssSources } from './numero.js';
 
 // --- Estado del editor en curso ---
 let draftPhotos = [];      // [{ name, blob }]
@@ -849,6 +849,7 @@ async function init() {
   setupVoice();
   await loadSettings();
   await loadEntries();
+  await initRssSources();
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }

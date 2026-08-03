@@ -154,6 +154,16 @@ export async function deleteNumber(id) {
   return reqToPromise(store.delete(id));
 }
 
+// --- Fuentes RSS de El Número ---
+export async function getRssSources() {
+  const val = await getSetting('rssSources', null);
+  return val || null; // null = usar defaults del módulo rss.js
+}
+
+export async function saveRssSources(sources) {
+  return setSetting('rssSources', sources);
+}
+
 export async function getSetting(key, fallback = null) {
   const store = await tx(STORE_SETTINGS, 'readonly');
   const row = await reqToPromise(store.get(key));
