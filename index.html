@@ -343,6 +343,17 @@
         </div>
         <p id="apiKeyStatus" class="muted small" style="margin-top:6px"></p>
         <p class="muted small">La key se guarda solo en tu dispositivo. Nunca sale de aquí. Obtén la tuya en <strong>console.anthropic.com</strong></p>
+        <hr style="margin:12px 0;border:none;border-top:1px solid var(--border)" />
+        <label class="field">
+          <span>URL del proxy (Cloudflare Worker)</span>
+          <input type="url" id="claudeProxyInput" placeholder="https://tu-worker.workers.dev" autocomplete="off" />
+        </label>
+        <div class="settings-row" style="margin-top:8px">
+          <button id="saveProxyBtn" class="btn primary">Guardar proxy</button>
+          <button id="clearProxyBtn" class="btn ghost">Borrar proxy</button>
+        </div>
+        <p id="proxyStatus" class="muted small" style="margin-top:6px"></p>
+        <p class="muted small">Necesario para que la app pueda llamar a Claude. Despliega tu propio worker gratuito en <strong>cloudflare.com/workers</strong></p>
       </div>
 
       <!-- Fuentes RSS de El Número -->
@@ -366,7 +377,7 @@
         <p class="muted">Esto eliminará todos tus recuerdos de este dispositivo. No se puede deshacer.</p>
         <button id="wipeBtn" class="btn danger-btn">Borrar todos los recuerdos</button>
       </div>
-      <p class="version muted">Memorias · versión 2.2</p>
+      <p class="version muted">Memorias · versión 2.3</p>
     </section>
   </main>
 
