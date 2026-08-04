@@ -186,6 +186,7 @@
 
         <div class="settings-row" style="padding-bottom:8px">
           <button id="saveNumeroBtn" class="btn num-btn-primary">Guardar entrega</button>
+          <button id="exportPdfBtn" class="btn ghost">📄 Exportar PDF</button>
         </div>
 
         <!-- Asistente Claude -->
@@ -378,7 +379,7 @@
         <p class="muted">Esto eliminará todos tus recuerdos de este dispositivo. No se puede deshacer.</p>
         <button id="wipeBtn" class="btn danger-btn">Borrar todos los recuerdos</button>
       </div>
-      <p class="version muted">Memorias · versión 2.3</p>
+      <p class="version muted">Memorias · versión 2.4</p>
     </section>
   </main>
 
@@ -460,5 +461,20 @@
   <div id="toast" class="toast" hidden></div>
 
   <script type="module" src="js/app.js"></script>
+  <!-- Contenido para imprimir / exportar PDF -->
+  <div id="printNumero" style="display:none">
+    <div class="print-header">
+      <img src="icons/icon.svg" alt="El Número" class="print-logo" />
+      <div class="print-brand">
+        <span class="print-label">El Número</span>
+        <span id="printNumeroVal" class="print-numero"></span>
+      </div>
+    </div>
+    <h1 id="printTitulo" class="print-titulo"></h1>
+    <div id="printEditorial" class="print-editorial"></div>
+    <div id="printDestaque" class="print-destaque" style="display:none">
+      <blockquote id="printDestaqueText"></blockquote>
+    </div>
+  </div>
 </body>
 </html>

@@ -767,3 +767,18 @@ h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; }
   }
   .book-page p { line-height: 1.6; }
 }
+
+/* Print: El Número editorial */
+@media print {
+  body.printing-numero * { display: none !important; }
+  body.printing-numero #printNumero { display: block !important; }
+  body.printing-numero #printNumero * { display: revert !important; }
+}
+.print-header { display: flex; align-items: center; gap: 12px; margin-bottom: 2rem; border-bottom: 2px solid #1e3a5f; padding-bottom: 1rem; }
+.print-logo { width: 48px; height: 48px; }
+.print-brand { display: flex; flex-direction: column; }
+.print-label { font-size: .75rem; text-transform: uppercase; letter-spacing: .1em; color: #666; }
+.print-numero { font-size: 2rem; font-weight: 700; color: #1e3a5f; line-height: 1; }
+.print-titulo { font-size: 1.5rem; font-weight: 600; color: #1e3a5f; margin-bottom: 1.5rem; }
+.print-editorial { font-size: 1rem; line-height: 1.7; white-space: pre-wrap; color: #222; }
+.print-destaque blockquote { border-left: 4px solid #1e3a5f; padding-left: 1rem; font-style: italic; color: #444; margin: 2rem 0; }
