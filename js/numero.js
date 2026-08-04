@@ -493,9 +493,16 @@ export async function initNumero() {
   $('#numAplicarCorreccion').addEventListener('click', () => {
     const v = $('#numCorreccionPaste').value.trim();
     if (!v) { showToast('Primero obtén la corrección de Claude'); return; }
-    $('#numEditorial').value = v;
-    if (currentNumero) currentNumero.editorial = v;
-    // Scroll al editorial para que la usuaria vea el cambio
+    // Quitar todo desde "Nota editorial", "---", "Ajustes", "Cambios" en adelante
+    const cutPatterns = /^(nota editorial|ajustes|cambios realizados|comentarios|---|\*\*nota|\*\*ajustes|\*\*cambios)/i;
+    const lines = v.split('\n');
+    const cutIndex = lines.findIndex(l => cutPatterns.test(l.trim()));
+    const cleanLines = cutIndex === -1 ? lines : lines.slice(0, cutIndex);
+    // Quitar líneas que sean solo placeholders
+    const placeholderPattern = /^(aquí va|aqui va|\[texto|texto corregido)/i;
+    const editorial = cleanLines.filter(l => !placeholderPattern.test(l.trim())).join('\n').trim();
+    $('#numEditorial').value = editorial;
+    if (currentNumero) currentNumero.editorial = editorial;
     $('#numEditorial').scrollIntoView({ behavior: 'smooth', block: 'center' });
     $('#numEditorial').focus();
     showToast('Editorial actualizado ✨');
