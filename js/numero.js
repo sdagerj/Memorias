@@ -376,6 +376,24 @@ export async function initNumero() {
     await renderNumerosList();
   });
 
+  $('#exportPdfBtn').addEventListener('click', () => {
+    const data = readEditor();
+    if (!data.editorial && !data.numero) { showToast('Escribe el editorial primero'); return; }
+    document.getElementById('printNumeroVal').textContent = data.numero || '';
+    document.getElementById('printTitulo').textContent = data.gancho || '';
+    document.getElementById('printEditorial').textContent = data.editorial || '';
+    const destaqueEl = document.getElementById('printDestaque');
+    if (data.destaque) {
+      document.getElementById('printDestaqueText').textContent = data.destaque;
+      destaqueEl.style.display = '';
+    } else {
+      destaqueEl.style.display = 'none';
+    }
+    document.body.classList.add('printing-numero');
+    window.print();
+    document.body.classList.remove('printing-numero');
+  });
+
   $('#saveNumeroBtn').addEventListener('click', async () => {
     const data = readEditor();
     if (!data.numero) { showToast('Escribe el número primero'); return; }
@@ -475,10 +493,11 @@ export async function initNumero() {
   $('#numAplicarCorreccion').addEventListener('click', () => {
     const v = $('#numCorreccionPaste').value.trim();
     if (!v) { showToast('Primero obtén la corrección de Claude'); return; }
-    const parts = v.split(/\n---\n|\n_{3,}\n/);
-    const corrected = parts[0].trim();
-    $('#numEditorial').value = corrected;
-    if (currentNumero) currentNumero.editorial = corrected;
+    $('#numEditorial').value = v;
+    if (currentNumero) currentNumero.editorial = v;
+    // Scroll al editorial para que la usuaria vea el cambio
+    $('#numEditorial').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    $('#numEditorial').focus();
     showToast('Editorial actualizado ✨');
   });
 
