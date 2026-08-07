@@ -379,19 +379,41 @@ export async function initNumero() {
   $('#exportNumeroPdfBtn').addEventListener('click', () => {
     const data = readEditor();
     if (!data.editorial && !data.numero) { showToast('Escribe el editorial primero'); return; }
-    document.getElementById('printNumeroVal').textContent = data.numero || '';
-    document.getElementById('printTitulo').textContent = data.gancho || '';
-    document.getElementById('printEditorial').textContent = data.editorial || '';
-    const destaqueEl = document.getElementById('printDestaque');
-    if (data.destaque) {
-      document.getElementById('printDestaqueText').textContent = data.destaque;
-      destaqueEl.style.display = '';
-    } else {
-      destaqueEl.style.display = 'none';
+    const destaqueHtml = data.destaque
+      ? `<blockquote style="border-left:4px solid #1e3a5f;padding-left:1rem;font-style:italic;color:#444;margin:2rem 0">${escHtml(data.destaque)}</blockquote>`
+      : '';
+    const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>El Número ${escHtml(data.numero || '')}</title>
+<style>
+  body{font-family:Georgia,serif;max-width:680px;margin:2rem auto;padding:1rem 1.5rem;color:#222;line-height:1.7}
+  .header{display:flex;align-items:center;gap:12px;border-bottom:2px solid #1e3a5f;padding-bottom:1rem;margin-bottom:2rem}
+  .logo{width:48px;height:48px}
+  .label{font-size:.75rem;text-transform:uppercase;letter-spacing:.1em;color:#666}
+  .numero{font-size:2rem;font-weight:700;color:#1e3a5f;line-height:1}
+  h1{font-size:1.5rem;color:#1e3a5f;margin-bottom:1.5rem}
+  .editorial{white-space:pre-wrap;font-size:1rem}
+  @media print{body{margin:0;padding:1rem}}
+</style></head><body>
+<div class="header">
+  <img class="logo" src="https://sdagerj.github.io/Memorias/icons/icon.svg" alt="">
+  <div><div class="label">El Número</div><div class="numero">${escHtml(data.numero || '')}</div></div>
+</div>
+<h1>${escHtml(data.gancho || '')}</h1>
+<div class="editorial">${escHtml(data.editorial || '')}</div>
+${destaqueHtml}
+</body></html>`;
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, '_blank');
+    if (!win) {
+      // Si el popup fue bloqueado, descargamos directamente
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `el-numero-${data.numero || 'editorial'}.html`;
+      a.click();
     }
-    document.body.classList.add('printing-numero');
-    window.print();
-    document.body.classList.remove('printing-numero');
+    showToast('Abre en el navegador → Compartir → Imprimir para guardar PDF');
   });
 
   $('#saveNumeroBtn').addEventListener('click', async () => {
