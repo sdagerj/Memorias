@@ -403,17 +403,20 @@ export async function initNumero() {
 <div class="editorial">${escHtml(data.editorial || '')}</div>
 ${destaqueHtml}
 </body></html>`;
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const win = window.open(url, '_blank');
-    if (!win) {
-      // Si el popup fue bloqueado, descargamos directamente
+    const win = window.open('', '_blank');
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+    } else {
+      // Fallback: descarga como archivo HTML
       const a = document.createElement('a');
-      a.href = url;
-      a.download = `el-numero-${data.numero || 'editorial'}.html`;
+      a.href = 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
+      a.download = `el-numero-${(data.numero || 'editorial').replace(/\s/g, '-')}.html`;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
+      showToast('Descargado — ábrelo en el navegador e imprime como PDF');
     }
-    showToast('Abre en el navegador → Compartir → Imprimir para guardar PDF');
   });
 
   $('#saveNumeroBtn').addEventListener('click', async () => {
