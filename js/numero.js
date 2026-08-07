@@ -171,8 +171,11 @@ REGLAS
 - Cuando corrijas, sugiere y mejora; no reescribas todo salvo que te lo pidan.`;
 
 function buildIdeaPrompt(headlines) {
+  const today = new Date().toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const lines = [SYSTEM_PROMPT, ''];
   lines.push('---');
+  lines.push('');
+  lines.push(`FECHA DE HOY: ${today}`);
   lines.push('');
   lines.push('TITULARES DE LA SEMANA (para contexto de actualidad):');
   lines.push('');
@@ -388,16 +391,25 @@ export async function initNumero() {
 <style>
   body{font-family:Georgia,serif;max-width:680px;margin:2rem auto;padding:1rem 1.5rem;color:#222;line-height:1.7}
   .header{display:flex;align-items:center;gap:12px;border-bottom:2px solid #1e3a5f;padding-bottom:1rem;margin-bottom:2rem}
-  .logo{width:48px;height:48px}
-  .label{font-size:.75rem;text-transform:uppercase;letter-spacing:.1em;color:#666}
-  .numero{font-size:2rem;font-weight:700;color:#1e3a5f;line-height:1}
-  h1{font-size:1.5rem;color:#1e3a5f;margin-bottom:1.5rem}
+  .logo{width:52px;height:52px;flex-shrink:0}
+  .header-text .label{font-size:.7rem;text-transform:uppercase;letter-spacing:.12em;color:#888}
+  .header-text .brand{font-size:1.1rem;font-weight:700;color:#1a4d72;letter-spacing:.02em}
+  .header-text .numero{font-size:2rem;font-weight:700;color:#1a4d72;line-height:1.1}
+  h1{font-size:1.5rem;color:#1a4d72;margin-bottom:1.5rem}
   .editorial{white-space:pre-wrap;font-size:1rem}
   @media print{body{margin:0;padding:1rem}}
 </style></head><body>
 <div class="header">
-  <img class="logo" src="https://sdagerj.github.io/Memorias/icons/icon.svg" alt="">
-  <div><div class="label">El Número</div><div class="numero">${escHtml(data.numero || '')}</div></div>
+  <svg class="logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+    <rect width="100" height="100" rx="14" fill="#1a4d72"/>
+    <text x="46" y="78" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-size="70" fill="#f5f0e6">N</text>
+    <circle cx="76" cy="22" r="13" fill="#f2c840"/>
+  </svg>
+  <div class="header-text">
+    <div class="label">UN NÚMERO · UNA HISTORIA</div>
+    <div class="brand">El Número</div>
+    <div class="numero">#${escHtml(data.numero || '')}</div>
+  </div>
 </div>
 <h1>${escHtml(data.gancho || '')}</h1>
 <div class="editorial">${escHtml(data.editorial || '')}</div>
