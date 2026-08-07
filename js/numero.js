@@ -376,7 +376,7 @@ export async function initNumero() {
     await renderNumerosList();
   });
 
-  $('#exportPdfBtn').addEventListener('click', () => {
+  $('#exportNumeroPdfBtn').addEventListener('click', () => {
     const data = readEditor();
     if (!data.editorial && !data.numero) { showToast('Escribe el editorial primero'); return; }
     document.getElementById('printNumeroVal').textContent = data.numero || '';

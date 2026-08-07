@@ -1,5 +1,5 @@
 // Service worker: permite que la app funcione sin conexión (offline).
-const CACHE = 'memorias-v23';
+const CACHE = 'memorias-v24';
 const ASSETS = [
   './',
   './index.html',
