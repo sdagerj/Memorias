@@ -504,8 +504,16 @@ ${destaqueHtml}
         $('#numIdeaPaste').value = result;
         showToast('Ideas listas ✨');
       } catch (err) {
-        if (err.message === 'KEY_INVALID') showToast('API key inválida. Revísala en Ajustes.');
-        else showToast('Error: ' + err.message);
+        console.error('[Claude Idear]', err);
+        if (err.message === 'NO_KEY') {
+          showErrorPanel('No hay API key configurada. Ve a Ajustes → Claude API.');
+        } else if (err.message === 'KEY_INVALID') {
+          showErrorPanel('La API key no es válida. Ve a Ajustes → Claude API y verifica tu clave.');
+        } else if (err.message === 'RATE_LIMIT') {
+          showErrorPanel('Límite de solicitudes alcanzado. Espera un momento e intenta de nuevo.');
+        } else {
+          showErrorPanel('Error al conectar con Claude:\n' + err.message);
+        }
       }
     } else {
       await copyToClipboard(prompt, `Copiado ✨ — ${headlines.length} titulares incluidos. Pégalo en claude.ai`);
