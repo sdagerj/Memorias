@@ -261,9 +261,17 @@ export async function mergeBackup(data) {
       added++;
     }
   }
+  let numAdded = 0, numUpdated = 0;
   for (const n of data.numbers || []) {
     const existing = await getNumber(n.id);
-    if (!existing) await saveNumber(n);
+    if (!existing) {
+      await saveNumber(n);
+      numAdded++;
+    } else {
+      // Sobreescribe con el entrante (viene del backup más reciente).
+      await saveNumber(n);
+      numUpdated++;
+    }
   }
-  return { added, merged };
+  return { added, merged, numAdded, numUpdated };
 }

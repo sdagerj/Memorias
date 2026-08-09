@@ -911,11 +911,13 @@ $('#mergeDataInput').addEventListener('change', async (e) => {
   if (!file) return;
   try {
     const data = JSON.parse(await file.text());
-    const { added, merged } = await db.mergeBackup(data);
+    const { added, merged, numAdded, numUpdated } = await db.mergeBackup(data);
     await loadEntries();
     const msg = [
       added ? `${added} recuerdo${added !== 1 ? 's' : ''} nuevo${added !== 1 ? 's' : ''}` : '',
       merged ? `${merged} con fotos nuevas` : '',
+      numAdded ? `${numAdded} editorial${numAdded !== 1 ? 'es' : ''} nuevo${numAdded !== 1 ? 's' : ''}` : '',
+      numUpdated ? `${numUpdated} editorial${numUpdated !== 1 ? 'es' : ''} actualizado${numUpdated !== 1 ? 's' : ''}` : '',
     ].filter(Boolean).join(', ');
     toast(msg ? `Fusionado: ${msg} ✨` : 'Sin cambios nuevos');
   } catch (err) {
