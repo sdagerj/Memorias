@@ -667,13 +667,53 @@ function buildCorrectionPrompt(entries) {
   return lines.join('\n');
 }
 
-$('#copyAllForCorrectionBtn').addEventListener('click', async () => {
+function renderCorrectionSelector(entries) {
+  const list = $('#correctionEntriesList');
+  if (!list) return;
+  list.innerHTML = '';
+  if (!entries.length) {
+    list.innerHTML = '<p class="muted" style="padding:8px 12px;font-size:.875rem">Aún no tienes recuerdos.</p>';
+    return;
+  }
+  entries.forEach((e) => {
+    const row = document.createElement('label');
+    row.style.cssText = 'display:flex;align-items:flex-start;gap:10px;padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border,#eee)';
+    row.innerHTML = `
+      <input type="checkbox" data-id="${e.id}" style="margin-top:3px;flex-shrink:0" />
+      <span style="font-size:.9rem;line-height:1.35">
+        <strong>${escapeHTML(e.title || 'Sin título')}</strong>
+        ${e.date ? `<span style="color:var(--muted,#888);font-size:.78rem;margin-left:6px">${formatLongDate(e.date)}</span>` : ''}
+        ${e.text ? `<br><span style="color:var(--muted,#888);font-size:.8rem">${escapeHTML(e.text.slice(0, 80))}${e.text.length > 80 ? '…' : ''}</span>` : ''}
+      </span>`;
+    list.appendChild(row);
+  });
+}
+
+// Poblar el selector cuando se abre el panel
+$('#correctionDetails').addEventListener('toggle', async (e) => {
+  if (!e.target.open) return;
   const entries = await db.getAllEntries();
-  if (!entries.length) { toast('Aún no tienes recuerdos'); return; }
-  const text = buildCorrectionPrompt(entries);
+  renderCorrectionSelector(entries);
+});
+
+$('#selectAllCorrectionBtn').addEventListener('click', () => {
+  $$('#correctionEntriesList input[type=checkbox]').forEach((cb) => (cb.checked = true));
+});
+
+$('#selectNoneCorrectionBtn').addEventListener('click', () => {
+  $$('#correctionEntriesList input[type=checkbox]').forEach((cb) => (cb.checked = false));
+});
+
+$('#copyAllForCorrectionBtn').addEventListener('click', async () => {
+  const checked = $$('#correctionEntriesList input[type=checkbox]:checked');
+  if (!checked.length) { toast('Selecciona al menos un recuerdo'); return; }
+  const ids = new Set(checked.map((cb) => cb.dataset.id));
+  const allEntries = await db.getAllEntries();
+  const selected = allEntries.filter((e) => ids.has(e.id));
+  const text = buildCorrectionPrompt(selected);
   try {
     await navigator.clipboard.writeText(text);
-    toast('Copiado ✨ Pégalo en Claude (claude.ai)');
+    toast(`Copiado ✨ ${selected.length} recuerdo${selected.length !== 1 ? 's' : ''} — pégalo en Claude`);
   } catch {
     $('#correctionPaste').value = text;
     toast('Copia el texto de la caja y pégalo en Claude');

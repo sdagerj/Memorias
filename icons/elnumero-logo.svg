@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" rx="14" fill="#1a4d72"/>
+  <!-- N como polígono, sin depender de fuentes -->
+  <polygon points="14,85 14,15 26,15 74,72 74,15 86,15 86,85 74,85 26,28 26,85" fill="#f5f0e6"/>
+  <!-- Círculo dorado -->
+  <circle cx="77" cy="19" r="13" fill="#f2c840"/>
+</svg>
