@@ -646,47 +646,53 @@ $('#exportPdfBtn').addEventListener('click', () => {
   setTimeout(() => window.print(), 400);
 });
 
+// ── Vista previa PDF dentro de la app (sin popup) ────────────────────────────
+
+function showPrintOverlay(contentHtml) {
+  // Quita overlay previo si existe
+  document.getElementById('printOverlay')?.remove();
+  document.getElementById('printOverlayStyle')?.remove();
+
+  // Estilos de impresión: oculta todo excepto el overlay
+  const style = document.createElement('style');
+  style.id = 'printOverlayStyle';
+  style.textContent = `
+    @media print {
+      body > *:not(#printOverlay) { display: none !important; }
+      #printOverlay { position: static !important; overflow: visible !important; }
+      #printOverlay .pdf-toolbar { display: none !important; }
+    }
+  `;
+  document.head.appendChild(style);
+
+  const overlay = document.createElement('div');
+  overlay.id = 'printOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:#f5f5f5;z-index:10000;overflow-y:auto;padding:1rem';
+  overlay.innerHTML = `
+    <div class=”pdf-toolbar” style=”display:flex;gap:10px;margin-bottom:1rem;position:sticky;top:0;background:#f5f5f5;padding:.5rem 0;z-index:1”>
+      <button id=”printOverlayPrint” style=”background:#1a4d72;color:#fff;border:none;border-radius:8px;padding:.6rem 1.4rem;font-size:1rem;cursor:pointer”>💾 Guardar como PDF</button>
+      <button id=”printOverlayClose” style=”background:#ddd;color:#333;border:none;border-radius:8px;padding:.6rem 1.2rem;font-size:1rem;cursor:pointer”>✕ Cerrar</button>
+    </div>
+    <div style=”background:#fff;max-width:680px;margin:0 auto;padding:2rem 1.5rem;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,.08)”>${contentHtml}</div>`;
+  document.body.appendChild(overlay);
+
+  overlay.querySelector('#printOverlayPrint').addEventListener('click', () => window.print());
+  overlay.querySelector('#printOverlayClose').addEventListener('click', () => {
+    overlay.remove();
+    document.getElementById('printOverlayStyle')?.remove();
+  });
+}
+
 // ── Exportar recuerdo individual como PDF ─────────────────────────────────────
 
 function exportEntryPdf(entry) {
   const fecha = entry.date ? formatLongDate(entry.date) : '';
-  const html = `<!DOCTYPE html><html lang=”es”><head><meta charset=”UTF-8”>
-<meta name=”viewport” content=”width=device-width,initial-scale=1”>
-<title>${escapeHTML(entry.title || 'Recuerdo')}</title>
-<style>
-  body{font-family:Georgia,serif;max-width:640px;margin:0 auto;padding:1rem 1.5rem;color:#222;line-height:1.75}
-  .toolbar{display:flex;gap:10px;padding:.75rem 0 1rem;border-bottom:1px solid #ddd;margin-bottom:1.5rem}
-  .toolbar button{padding:.5rem 1.2rem;border:none;border-radius:8px;font-size:.9rem;cursor:pointer}
-  .btn-print{background:#2d6a4f;color:#fff}
-  .btn-close{background:#eee;color:#333}
-  .meta{font-size:.85rem;color:#666;margin-bottom:1.5rem}
-  h1{font-size:1.6rem;color:#1a3a2a;margin-bottom:.5rem}
-  .text{white-space:pre-wrap;font-size:1rem}
-  .location{margin-top:1.5rem;font-size:.85rem;color:#666}
-  @media print{.toolbar{display:none}body{margin:0;padding:1rem}}
-</style></head><body>
-<div class=”toolbar”>
-  <button class=”btn-print” onclick=”window.print()”>💾 Guardar como PDF</button>
-  <button class=”btn-close” onclick=”window.close()”>✕ Cerrar</button>
-</div>
-${fecha ? `<div class=”meta”>${escapeHTML(fecha)}${entry.mood ? ' · ' + escapeHTML(entry.mood) : ''}</div>` : ''}
-<h1>${escapeHTML(entry.title || 'Sin título')}</h1>
-${entry.text ? `<div class=”text”>${escapeHTML(entry.text)}</div>` : ''}
-${entry.location?.place ? `<div class=”location”>📍 ${escapeHTML(entry.location.place)}</div>` : ''}
-</body></html>`;
-  const win = window.open('', '_blank');
-  if (win) {
-    win.document.write(html);
-    win.document.close();
-  } else {
-    const a = document.createElement('a');
-    a.href = 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
-    a.download = `recuerdo-${(entry.title || 'sin-titulo').replace(/\s/g, '-').slice(0, 40)}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    toast('Descargado — ábrelo en el navegador e imprime como PDF');
-  }
+  const content = `
+    ${fecha ? `<div style=”font-size:.85rem;color:#666;margin-bottom:1rem”>${escapeHTML(fecha)}${entry.mood ? ' · ' + escapeHTML(entry.mood) : ''}</div>` : ''}
+    <h1 style=”font-family:Georgia,serif;font-size:1.6rem;color:#1a3a2a;margin:0 0 1rem”>${escapeHTML(entry.title || 'Sin título')}</h1>
+    ${entry.text ? `<div style=”font-family:Georgia,serif;white-space:pre-wrap;font-size:1rem;line-height:1.75;color:#222”>${escapeHTML(entry.text)}</div>` : ''}
+    ${entry.location?.place ? `<div style=”margin-top:1.5rem;font-size:.85rem;color:#666”>📍 ${escapeHTML(entry.location.place)}</div>` : ''}`;
+  showPrintOverlay(content);
 }
 
 $('#exportEntryPdfBtn').addEventListener('click', async () => {
