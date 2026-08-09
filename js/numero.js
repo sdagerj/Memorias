@@ -177,9 +177,11 @@ function buildIdeaPrompt(headlines) {
   lines.push('');
   lines.push(`FECHA DE HOY: ${today}`);
   lines.push('');
-  lines.push('TITULARES DE LA SEMANA (para contexto de actualidad):');
+  lines.push('CONTEXTO DE ACTUALIDAD:');
   lines.push('');
   if (headlines.length) {
+    lines.push(`Se cargaron ${headlines.length} titulares de fuentes colombianas e internacionales. Úsalos como punto de partida, pero COMPLEMENTA con lo que tú sabes que ha pasado esta semana (${today}) — noticias de mercados, política económica, cifras recientes, eventos culturales, datos de actualidad. Lo importante es que los números y hechos sean de esta semana, no de meses atrás.`);
+    lines.push('');
     const byCat = {};
     for (const h of headlines) {
       if (!byCat[h.category]) byCat[h.category] = [];
@@ -191,17 +193,19 @@ function buildIdeaPrompt(headlines) {
       lines.push('');
     }
   } else {
-    lines.push('(No se pudieron cargar titulares. Usa tu conocimiento actualizado.)');
+    lines.push(`No se pudieron cargar titulares RSS. Usa tu conocimiento propio sobre lo que ha pasado esta semana (${today}) en Colombia y el mundo: economía, mercados, cultura, mujeres líderes, cifras relevantes. Los números deben ser de actualidad reciente, no de meses atrás.`);
     lines.push('');
   }
   lines.push('---');
   lines.push('');
-  lines.push(`Propón 3 números candidatos para esta semana, sacados de estas cinco canteras: (1) mercados y economía, (2) arte y cultura, (3) mujeres y liderazgo, (4) vida y observación, (5) efemérides. Usa los titulares anteriores y la actualidad de la semana.
+  lines.push(`Propón 3 números candidatos para esta semana (${today}), sacados de estas cinco canteras: (1) mercados y economía, (2) arte y cultura, (3) mujeres y liderazgo, (4) vida y observación, (5) efemérides.
 
-Para cada candidato da: la cifra, la cantera, el gancho de actualidad (real y verificable), y el ángulo propio (cómo lo leería Stefy con su lente).
+IMPORTANTE: Los ganchos deben ser de esta semana o los últimos días — no uses noticias viejas o genéricas. Si los titulares de arriba no son suficientes, complementa con tu conocimiento actualizado.
+
+Para cada candidato da: la cifra exacta, la cantera, el gancho de actualidad de esta semana (real y verificable), y el ángulo propio (cómo lo leería Stefy con su lente de economista, inversora, madre, mujer que construye).
 
 Luego córrelo por el TEST y marca sí/no en cada una:
-1. ¿Tiene gancho de actualidad?
+1. ¿Tiene gancho de actualidad de esta semana?
 2. ¿Solo Stefy lo contaría así? (ángulo propio)
 3. ¿Sorprende o revela algo?
 4. ¿Le deja algo útil a la audiencia?
