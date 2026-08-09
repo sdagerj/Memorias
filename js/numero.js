@@ -389,16 +389,24 @@ export async function initNumero() {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>El Número ${escHtml(data.numero || '')}</title>
 <style>
-  body{font-family:Georgia,serif;max-width:680px;margin:2rem auto;padding:1rem 1.5rem;color:#222;line-height:1.7}
-  .header{display:flex;align-items:center;gap:12px;border-bottom:2px solid #1e3a5f;padding-bottom:1rem;margin-bottom:2rem}
+  body{font-family:Georgia,serif;max-width:680px;margin:0 auto;padding:1rem 1.5rem;color:#222;line-height:1.7}
+  .toolbar{display:flex;gap:10px;padding:.75rem 0 1rem;border-bottom:1px solid #ddd;margin-bottom:1.5rem}
+  .toolbar button{padding:.5rem 1.2rem;border:none;border-radius:8px;font-size:.9rem;cursor:pointer}
+  .btn-print{background:#1a4d72;color:#fff}
+  .btn-close{background:#eee;color:#333}
+  .header{display:flex;align-items:center;gap:12px;border-bottom:2px solid #1a4d72;padding-bottom:1rem;margin-bottom:2rem}
   .logo{width:52px;height:52px;flex-shrink:0}
   .header-text .label{font-size:.7rem;text-transform:uppercase;letter-spacing:.12em;color:#888}
   .header-text .brand{font-size:1.1rem;font-weight:700;color:#1a4d72;letter-spacing:.02em}
   .header-text .numero{font-size:2rem;font-weight:700;color:#1a4d72;line-height:1.1}
   h1{font-size:1.5rem;color:#1a4d72;margin-bottom:1.5rem}
   .editorial{white-space:pre-wrap;font-size:1rem}
-  @media print{body{margin:0;padding:1rem}}
+  @media print{.toolbar{display:none}body{margin:0;padding:1rem}}
 </style></head><body>
+<div class="toolbar">
+  <button class="btn-print" onclick="window.print()">💾 Guardar como PDF</button>
+  <button class="btn-close" onclick="window.close()">✕ Cerrar</button>
+</div>
 <div class="header">
   <svg class="logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
     <rect width="100" height="100" rx="14" fill="#1a4d72"/>
