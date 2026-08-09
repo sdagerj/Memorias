@@ -102,6 +102,7 @@ function resetDraft() {
   renderPhotoGrid();
   renderLocationBox();
   $('#deleteEntry').hidden = true;
+  $('#exportEntryPdfBtn').hidden = true;
 }
 
 async function openEditor(id = null) {
@@ -122,9 +123,11 @@ async function openEditor(id = null) {
       renderPhotoGrid();
       renderLocationBox();
       $('#deleteEntry').hidden = false;
+      $('#exportEntryPdfBtn').hidden = false;
     }
   } else {
     $('#editorTitle').textContent = 'Nuevo recuerdo';
+    $('#exportEntryPdfBtn').hidden = true;
   }
   $('#editor').hidden = false;
 }
@@ -641,6 +644,56 @@ $('#clearClaudeBtn').addEventListener('click', () => {
 $('#exportPdfBtn').addEventListener('click', () => {
   toast('Elige “Guardar como PDF” en el diálogo de impresión');
   setTimeout(() => window.print(), 400);
+});
+
+// ── Exportar recuerdo individual como PDF ─────────────────────────────────────
+
+function exportEntryPdf(entry) {
+  const fecha = entry.date ? formatLongDate(entry.date) : '';
+  const html = `<!DOCTYPE html><html lang=”es”><head><meta charset=”UTF-8”>
+<meta name=”viewport” content=”width=device-width,initial-scale=1”>
+<title>${escapeHTML(entry.title || 'Recuerdo')}</title>
+<style>
+  body{font-family:Georgia,serif;max-width:640px;margin:0 auto;padding:1rem 1.5rem;color:#222;line-height:1.75}
+  .toolbar{display:flex;gap:10px;padding:.75rem 0 1rem;border-bottom:1px solid #ddd;margin-bottom:1.5rem}
+  .toolbar button{padding:.5rem 1.2rem;border:none;border-radius:8px;font-size:.9rem;cursor:pointer}
+  .btn-print{background:#2d6a4f;color:#fff}
+  .btn-close{background:#eee;color:#333}
+  .meta{font-size:.85rem;color:#666;margin-bottom:1.5rem}
+  h1{font-size:1.6rem;color:#1a3a2a;margin-bottom:.5rem}
+  .text{white-space:pre-wrap;font-size:1rem}
+  .location{margin-top:1.5rem;font-size:.85rem;color:#666}
+  @media print{.toolbar{display:none}body{margin:0;padding:1rem}}
+</style></head><body>
+<div class=”toolbar”>
+  <button class=”btn-print” onclick=”window.print()”>💾 Guardar como PDF</button>
+  <button class=”btn-close” onclick=”window.close()”>✕ Cerrar</button>
+</div>
+${fecha ? `<div class=”meta”>${escapeHTML(fecha)}${entry.mood ? ' · ' + escapeHTML(entry.mood) : ''}</div>` : ''}
+<h1>${escapeHTML(entry.title || 'Sin título')}</h1>
+${entry.text ? `<div class=”text”>${escapeHTML(entry.text)}</div>` : ''}
+${entry.location?.place ? `<div class=”location”>📍 ${escapeHTML(entry.location.place)}</div>` : ''}
+</body></html>`;
+  const win = window.open('', '_blank');
+  if (win) {
+    win.document.write(html);
+    win.document.close();
+  } else {
+    const a = document.createElement('a');
+    a.href = 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
+    a.download = `recuerdo-${(entry.title || 'sin-titulo').replace(/\s/g, '-').slice(0, 40)}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    toast('Descargado — ábrelo en el navegador e imprime como PDF');
+  }
+}
+
+$('#exportEntryPdfBtn').addEventListener('click', async () => {
+  const id = editingId || $('#entryId').value;
+  if (!id) { toast('Guarda el recuerdo primero'); return; }
+  const entry = await db.getEntry(id);
+  if (entry) exportEntryPdf(entry);
 });
 
 // =================== Corrección masiva con Claude ===================
