@@ -103,7 +103,9 @@ export function Dashboard({
     .filter((f) => f.quantifiedImpact && (f.quantifiedImpact.unit ?? 'COP') === 'COP')
     .slice(0, 8)
     .map((f) => ({
-      name: `${f.id} ${f.sheet}`,
+      // Incluye la celda: sin ella, varios hallazgos del mismo chequeo y hoja
+      // salen con la misma etiqueta y la grafica se vuelve ilegible.
+      name: `${f.id} ${f.sheet}!${f.cellRefs[0] ?? ''}`,
       impacto: Math.abs(f.quantifiedImpact!.delta),
       severity: f.severity,
     }));
@@ -166,11 +168,16 @@ export function Dashboard({
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={impactData} layout="vertical" margin={{ left: 40 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis type="number" fontSize={11} stroke="hsl(var(--muted-foreground))" />
+                  <XAxis
+                    type="number"
+                    fontSize={11}
+                    stroke="hsl(var(--muted-foreground))"
+                    tickFormatter={(v: number) => fmtMoney(v)}
+                  />
                   <YAxis
                     type="category"
                     dataKey="name"
-                    width={120}
+                    width={150}
                     fontSize={10}
                     stroke="hsl(var(--muted-foreground))"
                   />

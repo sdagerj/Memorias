@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import { parseWorkbook } from '@/core/parser/parseWorkbook';
 import { runAudit, DEFAULT_AUDIT_CONFIG, type AuditConfig, type AuditRunResult } from '@/core/findings';
 import { DEFAULT_FUND_CONFIG, type Finding, type FindingStatus, type FundConfig, type ParsedWorkbook } from '@/core/types';
@@ -11,6 +11,58 @@ import { DEFAULT_FUND_CONFIG, type Finding, type FindingStatus, type FundConfig,
  * El workbook nunca toca localStorage: son datos no publicos del family office y
  * viven en memoria mientras dura la sesion.
  */
+
+/**
+ * localStorage puede no estar disponible (iframe con sandbox, modo privado con
+ * cuota en cero). En ese caso la app sigue funcionando: solo se pierde el
+ * recuerdo de los mapeos entre sesiones.
+ */
+const memoryStorage = new Map<string, string>();
+
+const safeStorage: Storage = {
+  get length() {
+    try {
+      return window.localStorage.length;
+    } catch {
+      return memoryStorage.size;
+    }
+  },
+  key(index) {
+    try {
+      return window.localStorage.key(index);
+    } catch {
+      return [...memoryStorage.keys()][index] ?? null;
+    }
+  },
+  getItem(key) {
+    try {
+      return window.localStorage.getItem(key);
+    } catch {
+      return memoryStorage.get(key) ?? null;
+    }
+  },
+  setItem(key, value) {
+    try {
+      window.localStorage.setItem(key, value);
+    } catch {
+      memoryStorage.set(key, value);
+    }
+  },
+  removeItem(key) {
+    try {
+      window.localStorage.removeItem(key);
+    } catch {
+      memoryStorage.delete(key);
+    }
+  },
+  clear() {
+    try {
+      window.localStorage.clear();
+    } catch {
+      memoryStorage.clear();
+    }
+  },
+};
 
 interface PersistedState {
   fundConfigs: Record<string, FundConfig>;
@@ -117,6 +169,7 @@ export const useAuditStore = create<AuditStore>()(
     }),
     {
       name: 'auditor-aritmetika/config',
+      storage: createJSONStorage(() => safeStorage),
       partialize: (state): PersistedState => ({
         fundConfigs: state.fundConfigs,
         auditConfig: state.auditConfig,
