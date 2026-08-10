@@ -235,9 +235,11 @@ export async function importBackup(data) {
 }
 
 // Fusiona una copia de seguridad sin sobreescribir los datos locales.
-// Para entradas que ya existen: conserva el título y texto local, pero agrega
-// las fotos nuevas que vengan en el archivo (compara por nombre).
-// Para entradas nuevas: las importa completas.
+// Recuerdos: los que ya existen conservan su título y texto locales, pero se
+//   les agregan las fotos nuevas que vengan en el archivo (compara por nombre);
+//   los que no existen se importan completos.
+// Libros: si no existe, se agrega; si existe, gana el más reciente (updatedAt).
+// Entregas de El Número: se sobreescriben con las del archivo.
 export async function mergeBackup(data) {
   if (!data || !Array.isArray(data.entries)) throw new Error('Archivo no válido');
   let added = 0, merged = 0;
@@ -261,6 +263,21 @@ export async function mergeBackup(data) {
       added++;
     }
   }
+  // Libros: el archivo de copia siempre los incluye, pero antes se ignoraban
+  // por completo — un libro creado en otro dispositivo nunca llegaba.
+  let bookAdded = 0, bookUpdated = 0;
+  for (const b of data.books || []) {
+    const existing = await getBook(b.id);
+    if (!existing) {
+      await saveBook(b);
+      bookAdded++;
+    } else if ((b.updatedAt || 0) > (existing.updatedAt || 0)) {
+      // Solo pisa el local si el del archivo es más nuevo.
+      await saveBook(b);
+      bookUpdated++;
+    }
+  }
+
   let numAdded = 0, numUpdated = 0;
   for (const n of data.numbers || []) {
     const existing = await getNumber(n.id);
@@ -273,5 +290,5 @@ export async function mergeBackup(data) {
       numUpdated++;
     }
   }
-  return { added, merged, numAdded, numUpdated };
+  return { added, merged, bookAdded, bookUpdated, numAdded, numUpdated };
 }

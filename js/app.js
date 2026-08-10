@@ -669,11 +669,11 @@ function showPrintOverlay(contentHtml) {
   overlay.id = 'printOverlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:#f5f5f5;z-index:10000;overflow-y:auto;padding:1rem';
   overlay.innerHTML = `
-    <div class=”pdf-toolbar” style=”display:flex;gap:10px;margin-bottom:1rem;position:sticky;top:0;background:#f5f5f5;padding:.5rem 0;z-index:1”>
-      <button id=”printOverlayPrint” style=”background:#1a4d72;color:#fff;border:none;border-radius:8px;padding:.6rem 1.4rem;font-size:1rem;cursor:pointer”>💾 Guardar como PDF</button>
-      <button id=”printOverlayClose” style=”background:#ddd;color:#333;border:none;border-radius:8px;padding:.6rem 1.2rem;font-size:1rem;cursor:pointer”>✕ Cerrar</button>
+    <div class="pdf-toolbar" style="display:flex;gap:10px;margin-bottom:1rem;position:sticky;top:0;background:#f5f5f5;padding:.5rem 0;z-index:1">
+      <button id="printOverlayPrint" style="background:#1a4d72;color:#fff;border:none;border-radius:8px;padding:.6rem 1.4rem;font-size:1rem;cursor:pointer">💾 Guardar como PDF</button>
+      <button id="printOverlayClose" style="background:#ddd;color:#333;border:none;border-radius:8px;padding:.6rem 1.2rem;font-size:1rem;cursor:pointer">✕ Cerrar</button>
     </div>
-    <div style=”background:#fff;max-width:680px;margin:0 auto;padding:2rem 1.5rem;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,.08)”>${contentHtml}</div>`;
+    <div style="background:#fff;max-width:680px;margin:0 auto;padding:2rem 1.5rem;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,.08)">${contentHtml}</div>`;
   document.body.appendChild(overlay);
 
   overlay.querySelector('#printOverlayPrint').addEventListener('click', () => window.print());
@@ -688,10 +688,10 @@ function showPrintOverlay(contentHtml) {
 function exportEntryPdf(entry) {
   const fecha = entry.date ? formatLongDate(entry.date) : '';
   const content = `
-    ${fecha ? `<div style=”font-size:.85rem;color:#666;margin-bottom:1rem”>${escapeHTML(fecha)}${entry.mood ? ' · ' + escapeHTML(entry.mood) : ''}</div>` : ''}
-    <h1 style=”font-family:Georgia,serif;font-size:1.6rem;color:#1a3a2a;margin:0 0 1rem”>${escapeHTML(entry.title || 'Sin título')}</h1>
-    ${entry.text ? `<div style=”font-family:Georgia,serif;white-space:pre-wrap;font-size:1rem;line-height:1.75;color:#222”>${escapeHTML(entry.text)}</div>` : ''}
-    ${entry.location?.place ? `<div style=”margin-top:1.5rem;font-size:.85rem;color:#666”>📍 ${escapeHTML(entry.location.place)}</div>` : ''}`;
+    ${fecha ? `<div style="font-size:.85rem;color:#666;margin-bottom:1rem">${escapeHTML(fecha)}${entry.mood ? ' · ' + escapeHTML(entry.mood) : ''}</div>` : ''}
+    <h1 style="font-family:Georgia,serif;font-size:1.6rem;color:#1a3a2a;margin:0 0 1rem">${escapeHTML(entry.title || 'Sin título')}</h1>
+    ${entry.text ? `<div style="font-family:Georgia,serif;white-space:pre-wrap;font-size:1rem;line-height:1.75;color:#222">${escapeHTML(entry.text)}</div>` : ''}
+    ${entry.location?.place ? `<div style="margin-top:1.5rem;font-size:.85rem;color:#666">📍 ${escapeHTML(entry.location.place)}</div>` : ''}`;
   showPrintOverlay(content);
 }
 
@@ -911,13 +911,16 @@ $('#mergeDataInput').addEventListener('change', async (e) => {
   if (!file) return;
   try {
     const data = JSON.parse(await file.text());
-    const { added, merged, numAdded, numUpdated } = await db.mergeBackup(data);
+    const r = await db.mergeBackup(data);
     await loadEntries();
+    const plural = (n, sing, plur) => `${n} ${n === 1 ? sing : plur}`;
     const msg = [
-      added ? `${added} recuerdo${added !== 1 ? 's' : ''} nuevo${added !== 1 ? 's' : ''}` : '',
-      merged ? `${merged} con fotos nuevas` : '',
-      numAdded ? `${numAdded} editorial${numAdded !== 1 ? 'es' : ''} nuevo${numAdded !== 1 ? 's' : ''}` : '',
-      numUpdated ? `${numUpdated} editorial${numUpdated !== 1 ? 'es' : ''} actualizado${numUpdated !== 1 ? 's' : ''}` : '',
+      r.added ? plural(r.added, 'recuerdo nuevo', 'recuerdos nuevos') : '',
+      r.merged ? `${r.merged} con fotos nuevas` : '',
+      r.bookAdded ? plural(r.bookAdded, 'libro nuevo', 'libros nuevos') : '',
+      r.bookUpdated ? plural(r.bookUpdated, 'libro actualizado', 'libros actualizados') : '',
+      r.numAdded ? plural(r.numAdded, 'editorial nuevo', 'editoriales nuevos') : '',
+      r.numUpdated ? plural(r.numUpdated, 'editorial actualizado', 'editoriales actualizados') : '',
     ].filter(Boolean).join(', ');
     toast(msg ? `Fusionado: ${msg} ✨` : 'Sin cambios nuevos');
   } catch (err) {
