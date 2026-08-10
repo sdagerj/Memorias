@@ -84,7 +84,9 @@ export function FindingsPanel({ audit }: { audit: AuditRunResult }) {
         <Select
           value={checkFilter}
           onChange={(e) => setCheckFilter(e.target.value as typeof checkFilter)}
-          className="w-auto"
+          // En movil ocupa el ancho disponible: si se deja dimensionar por su
+          // opcion mas larga, empuja la pagina y aparece scroll horizontal.
+          className="w-full max-w-full sm:w-auto"
         >
           <option value="todos">Todos los chequeos</option>
           {CHECKS.map((c) => (

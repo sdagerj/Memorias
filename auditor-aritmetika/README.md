@@ -33,6 +33,32 @@ npm run format       # Prettier
 npm run fixtures     # regenera los .xlsx sintéticos de prueba
 ```
 
+## Publicarla como app con URL propia
+
+El repo trae un workflow que publica en GitHub Pages en cada push a `main`
+(`.github/workflows/deploy-pages.yml`). Solo publica si el lint, los tests y el build
+pasan, así que una versión rota nunca llega a la URL.
+
+Para activarlo, una sola vez: **Settings → Pages → Source: GitHub Actions**. El primer push
+deja la app en `https://<usuario>.github.io/<repo>/`.
+
+Desde ahí es instalable como app: abre la URL en el celular y usa "Añadir a pantalla de
+inicio". Queda con ícono propio, sin barra de navegador, y **funciona sin conexión** — un
+service worker (`public/sw.js`) guarda la app en el dispositivo. El HTML se pide primero a
+la red para que un despliegue nuevo se vea de inmediato; los assets, que llevan hash en el
+nombre, se sirven desde la caché.
+
+Los íconos se generan con `node scripts/generate-icons.mjs` y están versionados en
+`public/icons`; solo hay que regenerarlos si se cambia el diseño.
+
+### Sin servidor
+
+`npm run build && node scripts/build-single-file.mjs` produce
+`dist/auditor-aritmetika.html`: **la app completa en un solo archivo**, que se abre con doble
+click y funciona sin internet ni instalación. Útil para mandarla por correo o guardarla en
+una carpeta compartida. En esa forma no hay service worker (no aplica sobre `file://`), pero
+tampoco hace falta: todo está dentro del archivo.
+
 ## Cómo se usa
 
 1. **Arrastra el modelo** (`.xlsx` / `.xlsm`) a la zona de carga.

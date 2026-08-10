@@ -174,7 +174,10 @@ export function Tabs({
   return (
     <div
       role="tablist"
-      className={cn('inline-flex items-center gap-1 rounded-lg bg-muted p-1', className)}
+      className={cn(
+        'flex max-w-full items-center gap-1 overflow-x-auto rounded-lg bg-muted p-1',
+        className,
+      )}
     >
       {items.map((item) => (
         <button
@@ -183,7 +186,9 @@ export function Tabs({
           aria-selected={value === item.value}
           onClick={() => onChange(item.value)}
           className={cn(
-            'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+            // shrink-0 + nowrap: en movil las pestañas se desplazan de lado en
+            // vez de partirse en varias lineas o desbordar la pagina.
+            'shrink-0 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
             value === item.value
               ? 'bg-card text-foreground shadow-sm'
               : 'text-muted-foreground hover:text-foreground',
