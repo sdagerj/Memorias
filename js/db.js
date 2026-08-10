@@ -31,10 +31,43 @@ function openDB() {
         db.createObjectStore(STORE_NUMBERS, { keyPath: 'id' });
       }
     };
+    // Si otra pestaña o la app instalada tiene la base abierta, `open` puede
+    // quedarse bloqueado: sin este manejador la promesa no se resolvería nunca
+    // y la app se quedaría en blanco esperando, sin dar ningún aviso.
+    req.onblocked = () => reject(new Error('DB_BLOQUEADA'));
     req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    req.onerror = () => reject(req.error || new Error('DB_ERROR'));
   });
+  // Un fallo no debe quedar cacheado para siempre: así un reintento
+  // (por ejemplo al cerrar la otra pestaña) puede volver a funcionar.
+  _dbPromise.catch(() => { _dbPromise = null; });
   return _dbPromise;
+}
+
+// Diagnóstico: cuántas cosas hay guardadas realmente y si el navegador
+// prometió no borrarlas. Sirve para distinguir "no se ve" de "no está".
+export async function storageReport() {
+  const out = { ok: false, entries: 0, books: 0, numbers: 0, persistent: null, error: null };
+  try {
+    out.entries = (await reqToPromise((await tx(STORE_ENTRIES, 'readonly')).count()));
+    out.books = (await reqToPromise((await tx(STORE_BOOKS, 'readonly')).count()));
+    out.numbers = (await reqToPromise((await tx(STORE_NUMBERS, 'readonly')).count()));
+    out.ok = true;
+  } catch (err) {
+    out.error = err && err.message ? err.message : String(err);
+  }
+  try {
+    if (navigator.storage && navigator.storage.persisted) {
+      out.persistent = await navigator.storage.persisted();
+    }
+  } catch { /* no disponible */ }
+  return out;
+}
+
+// Pide al navegador que no borre los datos por falta de espacio o desuso.
+export async function requestPersistence() {
+  if (!navigator.storage || !navigator.storage.persist) return null;
+  try { return await navigator.storage.persist(); } catch { return null; }
 }
 
 function tx(store, mode) {

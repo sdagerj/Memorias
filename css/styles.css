@@ -782,3 +782,33 @@ h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; }
 .print-titulo { font-size: 1.5rem; font-weight: 600; color: #1e3a5f; margin-bottom: 1.5rem; }
 .print-editorial { font-size: 1rem; line-height: 1.7; white-space: pre-wrap; color: #222; }
 .print-destaque blockquote { border-left: 4px solid #1e3a5f; padding-left: 1rem; font-style: italic; color: #444; margin: 2rem 0; }
+
+/* =================== Estado de los datos (Ajustes) =================== */
+.storage-status {
+  margin: 12px 0 4px;
+  padding: 12px 14px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.storage-counts { display: flex; gap: 8px; }
+.storage-counts > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 4px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.storage-counts b {
+  font-family: Georgia, serif;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--brand);
+  font-variant-numeric: tabular-nums;
+}
+.storage-counts span { font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
+.storage-status .small { margin: 10px 0 0; line-height: 1.45; }
+.storage-status .btn { width: 100%; margin-top: 10px; }

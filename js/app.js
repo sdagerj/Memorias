@@ -879,6 +879,54 @@ $('#clearProxyBtn').addEventListener('click', async () => {
 $('#authorName').addEventListener('change', (e) => db.setSetting('authorName', e.target.value.trim()));
 $('#bookTitle').addEventListener('change', (e) => db.setSetting('bookTitle', e.target.value.trim()));
 
+// La versión se lee del caché real que instaló el service worker, así no puede
+// quedarse desfasada: si aquí dice v35, es que la actualización sí llegó.
+async function showAppVersion() {
+  const el = $('#appVersion');
+  if (!el) return;
+  try {
+    const keys = await caches.keys();
+    const mine = keys.filter((k) => k.startsWith('memorias-v')).sort();
+    el.textContent = mine.length ? mine[mine.length - 1].replace('memorias-', '') : 'sin caché';
+  } catch {
+    el.textContent = 'sin caché';
+  }
+}
+
+// Muestra lo que hay realmente guardado en el dispositivo. Sirve para saber si
+// un recuerdo "no se ve" o de verdad "no está".
+async function refreshStorageStatus() {
+  const r = await db.storageReport();
+  $('#stEntries').textContent = r.ok ? r.entries : '?';
+  $('#stBooks').textContent = r.ok ? r.books : '?';
+  $('#stNumbers').textContent = r.ok ? r.numbers : '?';
+
+  const note = $('#stPersist');
+  const btn = $('#persistBtn');
+  if (!r.ok) {
+    note.textContent = 'No se pudo leer el almacenamiento de este dispositivo.';
+    btn.hidden = true;
+    return;
+  }
+  if (r.persistent === true) {
+    note.textContent = '🔒 Protegido: este navegador se comprometió a no borrar tus datos.';
+    btn.hidden = true;
+  } else if (r.persistent === false) {
+    note.textContent = '⚠️ Sin proteger: el navegador puede borrar tus recuerdos si se queda sin espacio o si pasas días sin abrir la app.';
+    btn.hidden = false;
+  } else {
+    note.textContent = 'Este navegador no permite saber si tus datos están protegidos. Haz copias con frecuencia.';
+    btn.hidden = true;
+  }
+}
+
+$('#persistBtn').addEventListener('click', async () => {
+  const granted = await db.requestPersistence();
+  if (granted) toast('Datos protegidos 🔒');
+  else toast('El navegador no concedió la protección. Haz copias con frecuencia.');
+  await refreshStorageStatus();
+});
+
 $('#exportDataBtn').addEventListener('click', async () => {
   toast('Preparando copia…');
   const data = await db.exportBackup();
@@ -899,6 +947,7 @@ $('#importDataInput').addEventListener('change', async (e) => {
     await db.importBackup(data);
     await loadEntries();
     await loadSettings();
+    await refreshStorageStatus();
     toast('Copia restaurada ✨');
   } catch (err) {
     toast('No se pudo leer el archivo');
@@ -922,6 +971,7 @@ $('#mergeDataInput').addEventListener('change', async (e) => {
       r.numAdded ? plural(r.numAdded, 'editorial nuevo', 'editoriales nuevos') : '',
       r.numUpdated ? plural(r.numUpdated, 'editorial actualizado', 'editoriales actualizados') : '',
     ].filter(Boolean).join(', ');
+    await refreshStorageStatus();
     toast(msg ? `Fusionado: ${msg} ✨` : 'Sin cambios nuevos');
   } catch (err) {
     toast('No se pudo fusionar el archivo');
@@ -933,6 +983,7 @@ $('#wipeBtn').addEventListener('click', async () => {
   if (!confirm('¿Seguro? Esto borra TODOS tus recuerdos de este dispositivo.')) return;
   await db.clearAllEntries();
   await loadEntries();
+  await refreshStorageStatus();
   toast('Todo borrado');
 });
 
@@ -993,13 +1044,38 @@ const numeroReady = (async () => {
   };
 })();
 
+// Si el arranque falla, la app se quedaba en blanco sin decir nada. Este aviso
+// explica qué pasó y qué hacer, en vez de dejar una pantalla vacía.
+function showStartupError(err) {
+  const msg = err && err.message === 'DB_BLOQUEADA'
+    ? 'Tus datos están abiertos en otra ventana o pestaña de Memorias. Ciérralas todas y vuelve a abrir la app.'
+    : 'No se pudieron cargar tus datos guardados en este dispositivo.';
+  const box = document.createElement('div');
+  box.setAttribute('role', 'alert');
+  box.style.cssText = 'margin:16px;padding:16px;border:1px solid #e6c4be;background:#fff;border-radius:12px;color:#b0473a';
+  box.innerHTML =
+    `<strong>No se pudo abrir tu archivo de recuerdos</strong>` +
+    `<p style="color:#50473e;margin:8px 0 0">${escapeHTML(msg)}</p>` +
+    `<p style="color:#8a7f73;margin:8px 0 0;font-size:.85rem">Tus recuerdos no se han borrado por esto. ` +
+    `Si el problema sigue, restaura tu última copia de seguridad desde Ajustes.</p>`;
+  $('#timeline')?.prepend(box);
+  console.error('[Memorias] fallo al arrancar:', err);
+}
+
 async function init() {
   setupVoice();
-  await loadSettings();
-  await loadEntries();
-  await initRssSources();
+  try {
+    await loadSettings();
+    await loadEntries();
+  } catch (err) {
+    showStartupError(err);
+  }
+  // Lo de abajo no debe impedir que la app funcione si falla.
+  try { await initRssSources(); } catch (err) { console.error('[Memorias] RSS:', err); }
+  try { await refreshStorageStatus(); } catch { /* informativo */ }
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
+  showAppVersion();
 }
 init();
