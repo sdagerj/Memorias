@@ -31,10 +31,43 @@ function openDB() {
         db.createObjectStore(STORE_NUMBERS, { keyPath: 'id' });
       }
     };
+    // Si otra pestaña o la app instalada tiene la base abierta, `open` puede
+    // quedarse bloqueado: sin este manejador la promesa no se resolvería nunca
+    // y la app se quedaría en blanco esperando, sin dar ningún aviso.
+    req.onblocked = () => reject(new Error('DB_BLOQUEADA'));
     req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    req.onerror = () => reject(req.error || new Error('DB_ERROR'));
   });
+  // Un fallo no debe quedar cacheado para siempre: así un reintento
+  // (por ejemplo al cerrar la otra pestaña) puede volver a funcionar.
+  _dbPromise.catch(() => { _dbPromise = null; });
   return _dbPromise;
+}
+
+// Diagnóstico: cuántas cosas hay guardadas realmente y si el navegador
+// prometió no borrarlas. Sirve para distinguir "no se ve" de "no está".
+export async function storageReport() {
+  const out = { ok: false, entries: 0, books: 0, numbers: 0, persistent: null, error: null };
+  try {
+    out.entries = (await reqToPromise((await tx(STORE_ENTRIES, 'readonly')).count()));
+    out.books = (await reqToPromise((await tx(STORE_BOOKS, 'readonly')).count()));
+    out.numbers = (await reqToPromise((await tx(STORE_NUMBERS, 'readonly')).count()));
+    out.ok = true;
+  } catch (err) {
+    out.error = err && err.message ? err.message : String(err);
+  }
+  try {
+    if (navigator.storage && navigator.storage.persisted) {
+      out.persistent = await navigator.storage.persisted();
+    }
+  } catch { /* no disponible */ }
+  return out;
+}
+
+// Pide al navegador que no borre los datos por falta de espacio o desuso.
+export async function requestPersistence() {
+  if (!navigator.storage || !navigator.storage.persist) return null;
+  try { return await navigator.storage.persist(); } catch { return null; }
 }
 
 function tx(store, mode) {
@@ -235,9 +268,11 @@ export async function importBackup(data) {
 }
 
 // Fusiona una copia de seguridad sin sobreescribir los datos locales.
-// Para entradas que ya existen: conserva el título y texto local, pero agrega
-// las fotos nuevas que vengan en el archivo (compara por nombre).
-// Para entradas nuevas: las importa completas.
+// Recuerdos: los que ya existen conservan su título y texto locales, pero se
+//   les agregan las fotos nuevas que vengan en el archivo (compara por nombre);
+//   los que no existen se importan completos.
+// Libros: si no existe, se agrega; si existe, gana el más reciente (updatedAt).
+// Entregas de El Número: se sobreescriben con las del archivo.
 export async function mergeBackup(data) {
   if (!data || !Array.isArray(data.entries)) throw new Error('Archivo no válido');
   let added = 0, merged = 0;
@@ -261,9 +296,32 @@ export async function mergeBackup(data) {
       added++;
     }
   }
+  // Libros: el archivo de copia siempre los incluye, pero antes se ignoraban
+  // por completo — un libro creado en otro dispositivo nunca llegaba.
+  let bookAdded = 0, bookUpdated = 0;
+  for (const b of data.books || []) {
+    const existing = await getBook(b.id);
+    if (!existing) {
+      await saveBook(b);
+      bookAdded++;
+    } else if ((b.updatedAt || 0) > (existing.updatedAt || 0)) {
+      // Solo pisa el local si el del archivo es más nuevo.
+      await saveBook(b);
+      bookUpdated++;
+    }
+  }
+
+  let numAdded = 0, numUpdated = 0;
   for (const n of data.numbers || []) {
     const existing = await getNumber(n.id);
-    if (!existing) await saveNumber(n);
+    if (!existing) {
+      await saveNumber(n);
+      numAdded++;
+    } else {
+      // Sobreescribe con el entrante (viene del backup más reciente).
+      await saveNumber(n);
+      numUpdated++;
+    }
   }
-  return { added, merged };
+  return { added, merged, bookAdded, bookUpdated, numAdded, numUpdated };
 }

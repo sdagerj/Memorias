@@ -177,9 +177,11 @@ function buildIdeaPrompt(headlines) {
   lines.push('');
   lines.push(`FECHA DE HOY: ${today}`);
   lines.push('');
-  lines.push('TITULARES DE LA SEMANA (para contexto de actualidad):');
+  lines.push('CONTEXTO DE ACTUALIDAD:');
   lines.push('');
   if (headlines.length) {
+    lines.push(`Se cargaron ${headlines.length} titulares de fuentes colombianas e internacionales. Úsalos como punto de partida, pero COMPLEMENTA con lo que tú sabes que ha pasado esta semana (${today}) — noticias de mercados, política económica, cifras recientes, eventos culturales, datos de actualidad. Lo importante es que los números y hechos sean de esta semana, no de meses atrás.`);
+    lines.push('');
     const byCat = {};
     for (const h of headlines) {
       if (!byCat[h.category]) byCat[h.category] = [];
@@ -191,17 +193,19 @@ function buildIdeaPrompt(headlines) {
       lines.push('');
     }
   } else {
-    lines.push('(No se pudieron cargar titulares. Usa tu conocimiento actualizado.)');
+    lines.push(`No se pudieron cargar titulares RSS. Usa tu conocimiento propio sobre lo que ha pasado esta semana (${today}) en Colombia y el mundo: economía, mercados, cultura, mujeres líderes, cifras relevantes. Los números deben ser de actualidad reciente, no de meses atrás.`);
     lines.push('');
   }
   lines.push('---');
   lines.push('');
-  lines.push(`Propón 3 números candidatos para esta semana, sacados de estas cinco canteras: (1) mercados y economía, (2) arte y cultura, (3) mujeres y liderazgo, (4) vida y observación, (5) efemérides. Usa los titulares anteriores y la actualidad de la semana.
+  lines.push(`Propón 3 números candidatos para esta semana (${today}), sacados de estas cinco canteras: (1) mercados y economía, (2) arte y cultura, (3) mujeres y liderazgo, (4) vida y observación, (5) efemérides.
 
-Para cada candidato da: la cifra, la cantera, el gancho de actualidad (real y verificable), y el ángulo propio (cómo lo leería Stefy con su lente).
+IMPORTANTE: Los ganchos deben ser de esta semana o los últimos días — no uses noticias viejas o genéricas. Si los titulares de arriba no son suficientes, complementa con tu conocimiento actualizado.
+
+Para cada candidato da: la cifra exacta, la cantera, el gancho de actualidad de esta semana (real y verificable), y el ángulo propio (cómo lo leería Stefy con su lente de economista, inversora, madre, mujer que construye).
 
 Luego córrelo por el TEST y marca sí/no en cada una:
-1. ¿Tiene gancho de actualidad?
+1. ¿Tiene gancho de actualidad de esta semana?
 2. ¿Solo Stefy lo contaría así? (ángulo propio)
 3. ¿Sorprende o revela algo?
 4. ¿Le deja algo útil a la audiencia?
@@ -383,61 +387,51 @@ export async function initNumero() {
     const data = readEditor();
     if (!data.editorial && !data.numero) { showToast('Escribe el editorial primero'); return; }
     const destaqueHtml = data.destaque
-      ? `<blockquote style="border-left:4px solid #1e3a5f;padding-left:1rem;font-style:italic;color:#444;margin:2rem 0">${escHtml(data.destaque)}</blockquote>`
+      ? `<blockquote style="border-left:4px solid #1a4d72;padding-left:1rem;font-style:italic;color:#444;margin:2rem 0">${escHtml(data.destaque)}</blockquote>`
       : '';
-    const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>El Número ${escHtml(data.numero || '')}</title>
-<style>
-  body{font-family:Georgia,serif;max-width:680px;margin:0 auto;padding:1rem 1.5rem;color:#222;line-height:1.7}
-  .toolbar{display:flex;gap:10px;padding:.75rem 0 1rem;border-bottom:1px solid #ddd;margin-bottom:1.5rem}
-  .toolbar button{padding:.5rem 1.2rem;border:none;border-radius:8px;font-size:.9rem;cursor:pointer}
-  .btn-print{background:#1a4d72;color:#fff}
-  .btn-close{background:#eee;color:#333}
-  .header{display:flex;align-items:center;gap:12px;border-bottom:2px solid #1a4d72;padding-bottom:1rem;margin-bottom:2rem}
-  .logo{width:52px;height:52px;flex-shrink:0}
-  .header-text .label{font-size:.7rem;text-transform:uppercase;letter-spacing:.12em;color:#888}
-  .header-text .brand{font-size:1.1rem;font-weight:700;color:#1a4d72;letter-spacing:.02em}
-  .header-text .numero{font-size:2rem;font-weight:700;color:#1a4d72;line-height:1.1}
-  h1{font-size:1.5rem;color:#1a4d72;margin-bottom:1.5rem}
-  .editorial{white-space:pre-wrap;font-size:1rem}
-  @media print{.toolbar{display:none}body{margin:0;padding:1rem}}
-</style></head><body>
-<div class="toolbar">
-  <button class="btn-print" onclick="window.print()">💾 Guardar como PDF</button>
-  <button class="btn-close" onclick="window.close()">✕ Cerrar</button>
-</div>
-<div class="header">
-  <svg class="logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+    const content = `
+<div style="display:flex;align-items:center;gap:12px;border-bottom:2px solid #1a4d72;padding-bottom:1rem;margin-bottom:2rem">
+  <svg width="52" height="52" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
     <rect width="100" height="100" rx="14" fill="#1a4d72"/>
     <polygon points="14,85 14,15 26,15 74,72 74,15 86,15 86,85 74,85 26,28 26,85" fill="#f5f0e6"/>
     <circle cx="77" cy="19" r="13" fill="#f2c840"/>
   </svg>
-  <div class="header-text">
-    <div class="label">UN NÚMERO · UNA HISTORIA</div>
-    <div class="brand">El Número</div>
-    <div class="numero">#${escHtml(data.numero || '')}</div>
+  <div>
+    <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.12em;color:#888">UN NÚMERO · UNA HISTORIA</div>
+    <div style="font-size:1.1rem;font-weight:700;color:#1a4d72">El Número</div>
+    <div style="font-size:2rem;font-weight:700;color:#1a4d72;line-height:1.1">#${escHtml(data.numero || '')}</div>
   </div>
 </div>
-<h1>${escHtml(data.gancho || '')}</h1>
-<div class="editorial">${escHtml(data.editorial || '')}</div>
-${destaqueHtml}
-</body></html>`;
-    const win = window.open('', '_blank');
-    if (win) {
-      win.document.write(html);
-      win.document.close();
-    } else {
-      // Fallback: descarga como archivo HTML
-      const a = document.createElement('a');
-      a.href = 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
-      a.download = `el-numero-${(data.numero || 'editorial').replace(/\s/g, '-')}.html`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      showToast('Descargado — ábrelo en el navegador e imprime como PDF');
-    }
+<h1 style="font-family:Georgia,serif;font-size:1.5rem;color:#1a4d72;margin-bottom:1.5rem">${escHtml(data.gancho || '')}</h1>
+<div style="font-family:Georgia,serif;white-space:pre-wrap;font-size:1rem;line-height:1.7;color:#222">${escHtml(data.editorial || '')}</div>
+${destaqueHtml}`;
+
+    showNumPrintOverlay(content);
   });
+
+function showNumPrintOverlay(contentHtml) {
+  document.getElementById('numPrintOverlay')?.remove();
+  document.getElementById('numPrintStyle')?.remove();
+  const style = document.createElement('style');
+  style.id = 'numPrintStyle';
+  style.textContent = '@media print{body>*:not(#numPrintOverlay){display:none!important}#numPrintOverlay{position:static!important;overflow:visible!important}#numPrintOverlay .pdf-tb{display:none!important}}';
+  document.head.appendChild(style);
+  const ov = document.createElement('div');
+  ov.id = 'numPrintOverlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:#f5f5f5;z-index:10000;overflow-y:auto;padding:1rem;font-family:Georgia,serif';
+  ov.innerHTML = `
+    <div class="pdf-tb" style="display:flex;gap:10px;margin-bottom:1rem;position:sticky;top:0;background:#f5f5f5;padding:.5rem 0;z-index:1">
+      <button id="numOvPrint" style="background:#1a4d72;color:#fff;border:none;border-radius:8px;padding:.6rem 1.4rem;font-size:1rem;cursor:pointer">💾 Guardar como PDF</button>
+      <button id="numOvClose" style="background:#ddd;color:#333;border:none;border-radius:8px;padding:.6rem 1.2rem;font-size:1rem;cursor:pointer">✕ Cerrar</button>
+    </div>
+    <div style="background:#fff;max-width:680px;margin:0 auto;padding:2rem 1.5rem;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,.08)">${contentHtml}</div>`;
+  document.body.appendChild(ov);
+  ov.querySelector('#numOvPrint').addEventListener('click', () => window.print());
+  ov.querySelector('#numOvClose').addEventListener('click', () => {
+    ov.remove();
+    document.getElementById('numPrintStyle')?.remove();
+  });
+}
 
   $('#saveNumeroBtn').addEventListener('click', async () => {
     const data = readEditor();

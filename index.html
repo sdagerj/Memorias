@@ -314,6 +314,17 @@
       <div class="card">
         <h3>Tus datos</h3>
         <p class="muted">Tus recuerdos se guardan solo en este dispositivo. Haz copias de seguridad con frecuencia.</p>
+
+        <div id="storageStatus" class="storage-status">
+          <div class="storage-counts">
+            <div><b id="stEntries">–</b><span>recuerdos</span></div>
+            <div><b id="stBooks">–</b><span>libros</span></div>
+            <div><b id="stNumbers">–</b><span>entregas</span></div>
+          </div>
+          <p id="stPersist" class="muted small"></p>
+          <button type="button" id="persistBtn" class="btn" hidden>🔒 Proteger mis datos en este dispositivo</button>
+        </div>
+
         <div class="settings-row">
           <button id="exportDataBtn" class="btn">Exportar copia de seguridad</button>
           <label class="btn file-btn">Restaurar copia
@@ -384,7 +395,7 @@
         <p class="muted">Esto eliminará todos tus recuerdos de este dispositivo. No se puede deshacer.</p>
         <button id="wipeBtn" class="btn danger-btn">Borrar todos los recuerdos</button>
       </div>
-      <p class="version muted">Memorias · versión 2.5.1</p>
+      <p class="version muted">Memorias · <span id="appVersion">…</span></p>
     </section>
   </main>
 

@@ -646,47 +646,53 @@ $('#exportPdfBtn').addEventListener('click', () => {
   setTimeout(() => window.print(), 400);
 });
 
+// ── Vista previa PDF dentro de la app (sin popup) ────────────────────────────
+
+function showPrintOverlay(contentHtml) {
+  // Quita overlay previo si existe
+  document.getElementById('printOverlay')?.remove();
+  document.getElementById('printOverlayStyle')?.remove();
+
+  // Estilos de impresión: oculta todo excepto el overlay
+  const style = document.createElement('style');
+  style.id = 'printOverlayStyle';
+  style.textContent = `
+    @media print {
+      body > *:not(#printOverlay) { display: none !important; }
+      #printOverlay { position: static !important; overflow: visible !important; }
+      #printOverlay .pdf-toolbar { display: none !important; }
+    }
+  `;
+  document.head.appendChild(style);
+
+  const overlay = document.createElement('div');
+  overlay.id = 'printOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:#f5f5f5;z-index:10000;overflow-y:auto;padding:1rem';
+  overlay.innerHTML = `
+    <div class="pdf-toolbar" style="display:flex;gap:10px;margin-bottom:1rem;position:sticky;top:0;background:#f5f5f5;padding:.5rem 0;z-index:1">
+      <button id="printOverlayPrint" style="background:#1a4d72;color:#fff;border:none;border-radius:8px;padding:.6rem 1.4rem;font-size:1rem;cursor:pointer">💾 Guardar como PDF</button>
+      <button id="printOverlayClose" style="background:#ddd;color:#333;border:none;border-radius:8px;padding:.6rem 1.2rem;font-size:1rem;cursor:pointer">✕ Cerrar</button>
+    </div>
+    <div style="background:#fff;max-width:680px;margin:0 auto;padding:2rem 1.5rem;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,.08)">${contentHtml}</div>`;
+  document.body.appendChild(overlay);
+
+  overlay.querySelector('#printOverlayPrint').addEventListener('click', () => window.print());
+  overlay.querySelector('#printOverlayClose').addEventListener('click', () => {
+    overlay.remove();
+    document.getElementById('printOverlayStyle')?.remove();
+  });
+}
+
 // ── Exportar recuerdo individual como PDF ─────────────────────────────────────
 
 function exportEntryPdf(entry) {
   const fecha = entry.date ? formatLongDate(entry.date) : '';
-  const html = `<!DOCTYPE html><html lang=”es”><head><meta charset=”UTF-8”>
-<meta name=”viewport” content=”width=device-width,initial-scale=1”>
-<title>${escapeHTML(entry.title || 'Recuerdo')}</title>
-<style>
-  body{font-family:Georgia,serif;max-width:640px;margin:0 auto;padding:1rem 1.5rem;color:#222;line-height:1.75}
-  .toolbar{display:flex;gap:10px;padding:.75rem 0 1rem;border-bottom:1px solid #ddd;margin-bottom:1.5rem}
-  .toolbar button{padding:.5rem 1.2rem;border:none;border-radius:8px;font-size:.9rem;cursor:pointer}
-  .btn-print{background:#2d6a4f;color:#fff}
-  .btn-close{background:#eee;color:#333}
-  .meta{font-size:.85rem;color:#666;margin-bottom:1.5rem}
-  h1{font-size:1.6rem;color:#1a3a2a;margin-bottom:.5rem}
-  .text{white-space:pre-wrap;font-size:1rem}
-  .location{margin-top:1.5rem;font-size:.85rem;color:#666}
-  @media print{.toolbar{display:none}body{margin:0;padding:1rem}}
-</style></head><body>
-<div class=”toolbar”>
-  <button class=”btn-print” onclick=”window.print()”>💾 Guardar como PDF</button>
-  <button class=”btn-close” onclick=”window.close()”>✕ Cerrar</button>
-</div>
-${fecha ? `<div class=”meta”>${escapeHTML(fecha)}${entry.mood ? ' · ' + escapeHTML(entry.mood) : ''}</div>` : ''}
-<h1>${escapeHTML(entry.title || 'Sin título')}</h1>
-${entry.text ? `<div class=”text”>${escapeHTML(entry.text)}</div>` : ''}
-${entry.location?.place ? `<div class=”location”>📍 ${escapeHTML(entry.location.place)}</div>` : ''}
-</body></html>`;
-  const win = window.open('', '_blank');
-  if (win) {
-    win.document.write(html);
-    win.document.close();
-  } else {
-    const a = document.createElement('a');
-    a.href = 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
-    a.download = `recuerdo-${(entry.title || 'sin-titulo').replace(/\s/g, '-').slice(0, 40)}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    toast('Descargado — ábrelo en el navegador e imprime como PDF');
-  }
+  const content = `
+    ${fecha ? `<div style="font-size:.85rem;color:#666;margin-bottom:1rem">${escapeHTML(fecha)}${entry.mood ? ' · ' + escapeHTML(entry.mood) : ''}</div>` : ''}
+    <h1 style="font-family:Georgia,serif;font-size:1.6rem;color:#1a3a2a;margin:0 0 1rem">${escapeHTML(entry.title || 'Sin título')}</h1>
+    ${entry.text ? `<div style="font-family:Georgia,serif;white-space:pre-wrap;font-size:1rem;line-height:1.75;color:#222">${escapeHTML(entry.text)}</div>` : ''}
+    ${entry.location?.place ? `<div style="margin-top:1.5rem;font-size:.85rem;color:#666">📍 ${escapeHTML(entry.location.place)}</div>` : ''}`;
+  showPrintOverlay(content);
 }
 
 $('#exportEntryPdfBtn').addEventListener('click', async () => {
@@ -873,6 +879,54 @@ $('#clearProxyBtn').addEventListener('click', async () => {
 $('#authorName').addEventListener('change', (e) => db.setSetting('authorName', e.target.value.trim()));
 $('#bookTitle').addEventListener('change', (e) => db.setSetting('bookTitle', e.target.value.trim()));
 
+// La versión se lee del caché real que instaló el service worker, así no puede
+// quedarse desfasada: si aquí dice v35, es que la actualización sí llegó.
+async function showAppVersion() {
+  const el = $('#appVersion');
+  if (!el) return;
+  try {
+    const keys = await caches.keys();
+    const mine = keys.filter((k) => k.startsWith('memorias-v')).sort();
+    el.textContent = mine.length ? mine[mine.length - 1].replace('memorias-', '') : 'sin caché';
+  } catch {
+    el.textContent = 'sin caché';
+  }
+}
+
+// Muestra lo que hay realmente guardado en el dispositivo. Sirve para saber si
+// un recuerdo "no se ve" o de verdad "no está".
+async function refreshStorageStatus() {
+  const r = await db.storageReport();
+  $('#stEntries').textContent = r.ok ? r.entries : '?';
+  $('#stBooks').textContent = r.ok ? r.books : '?';
+  $('#stNumbers').textContent = r.ok ? r.numbers : '?';
+
+  const note = $('#stPersist');
+  const btn = $('#persistBtn');
+  if (!r.ok) {
+    note.textContent = 'No se pudo leer el almacenamiento de este dispositivo.';
+    btn.hidden = true;
+    return;
+  }
+  if (r.persistent === true) {
+    note.textContent = '🔒 Protegido: este navegador se comprometió a no borrar tus datos.';
+    btn.hidden = true;
+  } else if (r.persistent === false) {
+    note.textContent = '⚠️ Sin proteger: el navegador puede borrar tus recuerdos si se queda sin espacio o si pasas días sin abrir la app.';
+    btn.hidden = false;
+  } else {
+    note.textContent = 'Este navegador no permite saber si tus datos están protegidos. Haz copias con frecuencia.';
+    btn.hidden = true;
+  }
+}
+
+$('#persistBtn').addEventListener('click', async () => {
+  const granted = await db.requestPersistence();
+  if (granted) toast('Datos protegidos 🔒');
+  else toast('El navegador no concedió la protección. Haz copias con frecuencia.');
+  await refreshStorageStatus();
+});
+
 $('#exportDataBtn').addEventListener('click', async () => {
   toast('Preparando copia…');
   const data = await db.exportBackup();
@@ -893,6 +947,7 @@ $('#importDataInput').addEventListener('change', async (e) => {
     await db.importBackup(data);
     await loadEntries();
     await loadSettings();
+    await refreshStorageStatus();
     toast('Copia restaurada ✨');
   } catch (err) {
     toast('No se pudo leer el archivo');
@@ -905,12 +960,18 @@ $('#mergeDataInput').addEventListener('change', async (e) => {
   if (!file) return;
   try {
     const data = JSON.parse(await file.text());
-    const { added, merged } = await db.mergeBackup(data);
+    const r = await db.mergeBackup(data);
     await loadEntries();
+    const plural = (n, sing, plur) => `${n} ${n === 1 ? sing : plur}`;
     const msg = [
-      added ? `${added} recuerdo${added !== 1 ? 's' : ''} nuevo${added !== 1 ? 's' : ''}` : '',
-      merged ? `${merged} con fotos nuevas` : '',
+      r.added ? plural(r.added, 'recuerdo nuevo', 'recuerdos nuevos') : '',
+      r.merged ? `${r.merged} con fotos nuevas` : '',
+      r.bookAdded ? plural(r.bookAdded, 'libro nuevo', 'libros nuevos') : '',
+      r.bookUpdated ? plural(r.bookUpdated, 'libro actualizado', 'libros actualizados') : '',
+      r.numAdded ? plural(r.numAdded, 'editorial nuevo', 'editoriales nuevos') : '',
+      r.numUpdated ? plural(r.numUpdated, 'editorial actualizado', 'editoriales actualizados') : '',
     ].filter(Boolean).join(', ');
+    await refreshStorageStatus();
     toast(msg ? `Fusionado: ${msg} ✨` : 'Sin cambios nuevos');
   } catch (err) {
     toast('No se pudo fusionar el archivo');
@@ -922,6 +983,7 @@ $('#wipeBtn').addEventListener('click', async () => {
   if (!confirm('¿Seguro? Esto borra TODOS tus recuerdos de este dispositivo.')) return;
   await db.clearAllEntries();
   await loadEntries();
+  await refreshStorageStatus();
   toast('Todo borrado');
 });
 
@@ -982,13 +1044,38 @@ const numeroReady = (async () => {
   };
 })();
 
+// Si el arranque falla, la app se quedaba en blanco sin decir nada. Este aviso
+// explica qué pasó y qué hacer, en vez de dejar una pantalla vacía.
+function showStartupError(err) {
+  const msg = err && err.message === 'DB_BLOQUEADA'
+    ? 'Tus datos están abiertos en otra ventana o pestaña de Memorias. Ciérralas todas y vuelve a abrir la app.'
+    : 'No se pudieron cargar tus datos guardados en este dispositivo.';
+  const box = document.createElement('div');
+  box.setAttribute('role', 'alert');
+  box.style.cssText = 'margin:16px;padding:16px;border:1px solid #e6c4be;background:#fff;border-radius:12px;color:#b0473a';
+  box.innerHTML =
+    `<strong>No se pudo abrir tu archivo de recuerdos</strong>` +
+    `<p style="color:#50473e;margin:8px 0 0">${escapeHTML(msg)}</p>` +
+    `<p style="color:#8a7f73;margin:8px 0 0;font-size:.85rem">Tus recuerdos no se han borrado por esto. ` +
+    `Si el problema sigue, restaura tu última copia de seguridad desde Ajustes.</p>`;
+  $('#timeline')?.prepend(box);
+  console.error('[Memorias] fallo al arrancar:', err);
+}
+
 async function init() {
   setupVoice();
-  await loadSettings();
-  await loadEntries();
-  await initRssSources();
+  try {
+    await loadSettings();
+    await loadEntries();
+  } catch (err) {
+    showStartupError(err);
+  }
+  // Lo de abajo no debe impedir que la app funcione si falla.
+  try { await initRssSources(); } catch (err) { console.error('[Memorias] RSS:', err); }
+  try { await refreshStorageStatus(); } catch { /* informativo */ }
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
+  showAppVersion();
 }
 init();
