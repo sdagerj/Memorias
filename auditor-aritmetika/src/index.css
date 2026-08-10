@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --primary: 221 66% 28%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 214 32% 91%;
+    --secondary-foreground: 222 47% 20%;
+    --muted: 214 32% 94%;
+    --muted-foreground: 215 16% 42%;
+    --accent: 199 89% 94%;
+    --accent-foreground: 199 89% 24%;
+    --destructive: 0 72% 42%;
+    --destructive-foreground: 0 0% 100%;
+    --warn: 35 92% 44%;
+    --warn-foreground: 0 0% 100%;
+    --ok: 152 60% 30%;
+    --ok-foreground: 0 0% 100%;
+    --border: 214 25% 86%;
+    --input: 214 25% 86%;
+    --ring: 221 66% 40%;
+    --radius: 0.5rem;
+  }
+
+  :root.dark {
+    --background: 222 47% 8%;
+    --foreground: 210 40% 96%;
+    --card: 222 40% 12%;
+    --card-foreground: 210 40% 96%;
+    --primary: 210 90% 66%;
+    --primary-foreground: 222 47% 10%;
+    --secondary: 217 33% 20%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 217 33% 18%;
+    --muted-foreground: 215 20% 68%;
+    --accent: 199 60% 22%;
+    --accent-foreground: 199 89% 88%;
+    --destructive: 0 63% 52%;
+    --destructive-foreground: 0 0% 100%;
+    --warn: 35 90% 58%;
+    --warn-foreground: 222 47% 10%;
+    --ok: 152 50% 48%;
+    --ok-foreground: 222 47% 10%;
+    --border: 217 33% 24%;
+    --input: 217 33% 24%;
+    --ring: 210 90% 60%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      'Segoe UI',
+      Roboto,
+      sans-serif;
+  }
+}
+
+@layer utilities {
+  .cell-mono {
+    @apply font-mono text-[11px] leading-tight;
+  }
+}
