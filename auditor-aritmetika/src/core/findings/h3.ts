@@ -16,7 +16,7 @@ export function detectH3(ctx: AuditContext): Finding[] {
 
   for (const sheet of ctx.workbook.sheets) {
     for (const row of sheet.rows) {
-      if (out.length >= ctx.config.maxPerCheck) return out;
+      if (out.length >= ctx.config.maxRawPerCheck) return out;
       if (!isObsoleteLabel(row.label) && !looksLikeVersionSheet(row.label ?? '')) continue;
 
       const numericCells = row.cells.filter(

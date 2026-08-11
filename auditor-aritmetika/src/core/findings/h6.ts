@@ -121,7 +121,7 @@ export function detectH6(ctx: AuditContext): Finding[] {
         : null;
 
     for (const row of sheet.rows) {
-      if (out.length >= ctx.config.maxPerCheck) return out;
+      if (out.length >= ctx.config.maxRawPerCheck) return out;
       if (sheet.timeHeaderRow !== null && row.row === sheet.timeHeaderRow) continue;
       const seed = analyzeRow(sheet, row, timeCols);
       if (seed) out.push(makeFinding(seed, out.length));

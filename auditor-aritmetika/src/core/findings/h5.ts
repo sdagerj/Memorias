@@ -21,19 +21,30 @@ const IRR_FUNCS = new Set(['IRR', 'XIRR', 'TIR', 'TIR.NO.PER', 'MIRR', 'TIRX', '
 const PAID_RE = /(pagad|paid|cobrad|recaudad|liquidad)/;
 const PORTFOLIO_RE = /(portafolio|portfolio|vigente|total|todas|completo|global)/;
 
+/**
+ * Solo interesan las TIR que pueden decidir el escalon de carry. Un modelo real
+ * calcula decenas de TIR de activo por entidad (Fiscalía, Policía, Armada) que
+ * no alimentan ninguna cascada: reportarlas todas ahogaba el hallazgo que si
+ * importa. El modelo Marco traia 64 TIR y solo un punado eran relevantes.
+ */
+const CARRY_RE =
+  /(carry|split|catch|cascada|waterfall|tier|escalon|participacion|hurdle|preferred|pref)/;
+const DISTRIBUTION_RE =
+  /(net irr|irr net|investor|inversionista|\blp\b|\bgp\b|junior|senior|fondo|fund)/;
+
 export function detectH5(ctx: AuditContext): Finding[] {
   const out: Finding[] = [];
 
   for (const sheet of ctx.workbook.sheets) {
     for (const cell of sheet.cells) {
-      if (out.length >= ctx.config.maxPerCheck) return out;
+      if (out.length >= ctx.config.maxRawPerCheck) return out;
       if (cell.kind !== 'formula' || !cell.formula) continue;
 
       const funcs = extractFunctions(cell.formula);
       if (!funcs.some((f) => IRR_FUNCS.has(f))) continue;
 
       const rowLabel = ctx.labelForCell(cell) ?? '';
-      const normalized = normalizeLabel(rowLabel);
+      // El haystack de abajo ya normaliza etiqueta + filas del rango.
 
       // Etiquetas de las filas que el rango de la TIR toca: la mejor pista
       // disponible sobre que base de flujos se esta usando.
@@ -68,9 +79,13 @@ export function detectH5(ctx: AuditContext): Finding[] {
         severity = 'media';
       }
 
-      const feedsCarry = /(carry|split|catch|cascada|waterfall|tier|participacion)/.test(
-        normalized,
-      );
+      const feedsCarry = CARRY_RE.test(haystack);
+      const feedsDistribution = DISTRIBUTION_RE.test(haystack);
+
+      // Una TIR de activo suelta, sin relación con la cascada ni con el reparto,
+      // no es un hallazgo: es simplemente una TIR.
+      if (!feedsCarry && !feedsDistribution && !looksPortfolio) continue;
+
       const location = ref(sheet.name, cell.ref);
 
       out.push(
@@ -79,7 +94,7 @@ export function detectH5(ctx: AuditContext): Finding[] {
             id: 'H5',
             sheet: sheet.name,
             cellRefs: [cell.ref],
-            title: `Base de la TIR a verificar${rowLabel ? ` — ${rowLabel}` : ''}${
+            title: `Verificar sobre qué flujos corre la TIR${rowLabel ? ` — ${rowLabel}` : ''}${
               feedsCarry ? ' (alimenta decisión de carry)' : ''
             }`,
             description: `${location} calcula una TIR${

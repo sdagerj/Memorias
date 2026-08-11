@@ -14,14 +14,21 @@ export interface AuditConfig {
   cdThresholds: number[];
   /** Tasa de preferred yield esperada (EA) */
   prefRateAnnual: number;
-  /** Máximo de hallazgos por chequeo, para no inundar la UI */
+  /**
+   * Máximo de hallazgos por chequeo DESPUES de agrupar por patrón. Antes de
+   * agrupar el tope es mucho mas alto: una fórmula replicada en 217 columnas
+   * debe llegar entera al agrupador para que el conteo sea real.
+   */
   maxPerCheck: number;
+  /** Tope crudo por chequeo, antes de agrupar. Defensa contra archivos patológicos. */
+  maxRawPerCheck: number;
 }
 
 export const DEFAULT_AUDIT_CONFIG: AuditConfig = {
   cdThresholds: [0.9, 0.95, 0.975, 1.0],
   prefRateAnnual: 0.15,
   maxPerCheck: 40,
+  maxRawPerCheck: 5000,
 };
 
 export class AuditContext {

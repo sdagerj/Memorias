@@ -18,10 +18,38 @@ import { isTotalLabel } from '../parser/labels';
  */
 
 const SUM_FUNCS = new Set(['SUM', 'SUMA', 'SUMIF', 'SUMIFS', 'SUBTOTAL', 'SUMPRODUCT']);
+/**
+ * Funciones que convierten una suma en otra cosa. El modelo Marco calcula
+ * `=-MIN(AT240,SUM(AT249:AT250))`: un pago de catch-up TOPADO, no el total de
+ * un bloque. Que deje filas por fuera es el punto de la fórmula, no un olvido.
+ */
+const CAP_FUNCS = new Set([
+  'MIN',
+  'MAX',
+  'IF',
+  'IFS',
+  'IFERROR',
+  'SI',
+  'SI.ERROR',
+  'CHOOSE',
+  'ELEGIR',
+  'ABS',
+  'SIGN',
+]);
 /** Cuantas filas sin datos toleramos antes de dar por cerrado el bloque hacia arriba */
 const MAX_GAP = 2;
 /** Mínimo de filas referenciadas para considerar que la fórmula es un total de bloque */
 const MIN_REFERENCED = 2;
+/**
+ * Proporción mínima del bloque que la fórmula debe cubrir.
+ *
+ * `TOTAL Fund Profits = +F371+F370` toma 2 de 7 filas de su bloque: no es un
+ * total al que se le olvidaron cinco, es una suma selectiva de dos conceptos
+ * (las otras filas son capital, no utilidad). Un total que de verdad agrega un
+ * bloque cubre la mayoria de sus filas; por debajo de esto la fórmula está
+ * eligiendo, y elegir no es omitir.
+ */
+const MIN_BLOCK_COVERAGE = 0.5;
 
 interface BlockRow {
   row: number;
@@ -100,13 +128,15 @@ export function detectH2(ctx: AuditContext): Finding[] {
       if (!isTotalLabel(row.label)) continue;
 
       for (const cell of row.cells) {
-        if (out.length >= ctx.config.maxPerCheck) return out;
+        if (out.length >= ctx.config.maxRawPerCheck) return out;
         if (cell.kind !== 'formula' || !cell.formula) continue;
 
         const funcs = extractFunctions(cell.formula);
         const isSumLike =
           funcs.some((f) => SUM_FUNCS.has(f)) || (funcs.length === 0 && cell.formula.includes('+'));
         if (!isSumLike) continue;
+        // Una suma con tope o condicion excluye filas a proposito.
+        if (funcs.some((f) => CAP_FUNCS.has(f))) continue;
 
         const covered = cellsCoveredInSheet(cell.formula, sheet.name, sheet.name);
         const coveredRows = new Set<number>();
@@ -128,6 +158,7 @@ export function detectH2(ctx: AuditContext): Finding[] {
         // cosa (otro bloque, otra hoja): no es una omisión, es otro total.
         const hits = block.filter((b) => coveredRows.has(b.row));
         if (hits.length === 0) continue;
+        if (hits.length / block.length < MIN_BLOCK_COVERAGE) continue;
 
         const totalShown = AuditContext.numeric(cell) ?? hits.reduce((a, b) => a + b.value, 0);
         const missingSum = missing.reduce((a, b) => a + b.value, 0);

@@ -1,6 +1,7 @@
 import type { Finding, FindingId, ParsedWorkbook } from '../types';
 import { AuditContext, DEFAULT_AUDIT_CONFIG, type AuditConfig } from './context';
 import { sortFindings } from './boardLanguage';
+import { groupFindings } from './group';
 import { detectH1 } from './h1';
 import { detectH2 } from './h2';
 import { detectH3 } from './h3';
@@ -177,7 +178,10 @@ export interface AuditRunResult {
     id: FindingId;
     name: string;
     mode: CheckDefinition['mode'];
+    /** Hallazgos distintos, ya agrupados por patrón de fila */
     count: number;
+    /** Celdas que dispararon el chequeo antes de agrupar */
+    cells?: number;
     error?: string;
   }[];
   runMs: number;
@@ -201,9 +205,18 @@ export function runAudit(
 
   for (const check of CHECKS) {
     try {
-      const result = check.run(ctx);
+      // Se agrupa por chequeo: una fórmula replicada a lo ancho de la serie es
+      // un hallazgo con N ocurrencias, no N hallazgos.
+      const raw = check.run(ctx);
+      const result = groupFindings(raw).slice(0, config.maxPerCheck);
       findings.push(...result);
-      byCheck.push({ id: check.id, name: check.name, mode: check.mode, count: result.length });
+      byCheck.push({
+        id: check.id,
+        name: check.name,
+        mode: check.mode,
+        count: result.length,
+        cells: raw.length,
+      });
     } catch (err) {
       byCheck.push({
         id: check.id,

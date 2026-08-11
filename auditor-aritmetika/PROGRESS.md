@@ -10,7 +10,7 @@
 | 3 — Configurador de fondo + GP economics / NPV | ✅ funcional |
 | 4 — Dashboard consolidado y export | ✅ funcional, con una parte manual |
 
-Verificado: `npm test` → **94 tests en verde**. `npm run build` → build de producción OK.
+Verificado: `npm test` → **103 tests en verde**. `npm run build` → build de producción OK.
 `npm run lint` → limpio. Probado además en navegador de punta a punta (cargar archivo → ver
 estructura → ver hallazgos → mapear fondo → generar memo).
 
@@ -69,6 +69,31 @@ entender. Esto es lo que cambió:
 - **Memo con forma de documento.** La vista previa dejó de ser un cuadro de texto monoespaciado:
   ahora tiene títulos, ficha de datos, cifras destacadas y tablas. Es el mismo documento que sale a
   Word y a texto plano, renderizado.
+
+### 🔬 Primera corrida contra un modelo real (agosto 2026)
+
+Se corrió el auditor contra `Model_MARCO_20260610_75M.xlsm` — 20 hojas, 76.614 fórmulas, 37.673
+valores digitados, parseado en 3 segundos. Fue la primera prueba con un archivo de verdad y rompió
+cosas que los fixtures sintéticos nunca iban a mostrar.
+
+**Devolvió 837 hallazgos.** De esos, apenas ~26 eran distintos. Correcciones aplicadas:
+
+| Problema | Causa | Corrección |
+|---|---|---|
+| 653 hallazgos de H1 con 3 patrones | Se reportaba por celda: la misma fórmula copiada en 217 columnas mensuales | `groupFindings` agrupa por chequeo + hoja + fila + patrón del título; los años que varían se muestran como rango |
+| 45 de 46 falsos positivos en H2 | `=-MIN(cap, SUM(a:b))` es un pago **topado**; excluir filas es el punto de la fórmula | `CAP_FUNCS`: un SUM envuelto en MIN/MAX/IF no es un total de bloque |
+| `TOTAL Fund Profits = +F371+F370` marcado como omisión | Toma 2 de 7 filas: es una suma **selectiva**, no un total al que le faltan cinco | `MIN_BLOCK_COVERAGE` 0.5 — un total real cubre la mayoría de su bloque |
+| "RATE"/"DATE", "IRR"/"IBR" como el mismo término | Distancia de edición 1 entre palabras que no tienen relación | Lista de palabras conocidas, longitud mínima 4, se ignoran plurales y tildes, y el término raro debe ser raro de verdad (≤3 apariciones) |
+| 27 hallazgos de nomenclatura | Cada par ocupaba un slot | Los términos del negocio mal escritos (SOFR→SORF) siguen sueltos; el resto se consolida en un solo hallazgo de higiene |
+| `FJ Purchased` −300.000MM vs +300.000MM | Convención de signo (salida vs entrada) | H7 ignora pares de igual magnitud y signo opuesto |
+| 64 hallazgos de H5 | Marcaba **toda** TIR del archivo, incluidas las de activo por entidad (Fiscalía, Policía, Armada) | Solo se reportan las que tocan carry, cascada o reparto |
+| 16 hallazgos de H7 sobre el mismo par de hojas | Cada parámetro por separado | Con 3 o más divergencias entre las mismas dos hojas se emite **un** hallazgo con la tabla |
+| "Las diferencias suman $X" | Sumaba impactos que miden cosas distintas | Se cita la **mayor diferencia individual**, nunca un agregado sin significado |
+
+Resultado: **837 → 26 hallazgos**, y el primero de la lista es el que de verdad importa —
+14 cifras que no coinciden entre la hoja `Summary Scenarios` (69 valores digitados, cero fórmulas)
+y el motor vivo en `Nota Marco`, con una diferencia de $24.596 millones en "Junior Profits
+before taxes".
 
 ### ⚠️ Pendiente
 

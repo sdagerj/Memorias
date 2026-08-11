@@ -116,31 +116,36 @@ describe('H1 — convencion de tasa', () => {
 describe('H2 — total que omite una fila', () => {
   const found = byId(dirtyFindings, 'H2');
 
-  it('encuentra la omision en las cinco columnas de la serie', () => {
-    expect(found).toHaveLength(5);
-    expect(found.every((f) => f.sheet === 'Ingresos')).toBe(true);
+  it('reporta la fila una sola vez, no una por columna', () => {
+    // Las cinco columnas de la serie son UNA decision de modelo replicada.
+    expect(found).toHaveLength(1);
+    expect(found[0].sheet).toBe('Ingresos');
+    expect(found[0].occurrences).toBe(5);
   });
 
-  it('nombra el periodo en el titulo para distinguir las cinco columnas', () => {
-    const titulos = found.map((f) => f.title);
-    expect(new Set(titulos).size).toBe(5);
-    expect(titulos.some((t) => t.includes('2024'))).toBe(true);
+  it('nombra el rango de periodos cubierto en el titulo', () => {
+    expect(found[0].title).toBe('"Total ingresos" de 2024–2028 no suma una fila del bloque');
   });
 
   it('identifica cual fila quedo por fuera', () => {
-    const y2024 = found.find((f) => f.cellRefs[0] === 'D8')!;
-    expect(y2024.description).toContain('C1/C2/C3');
-    expect(y2024.cellRefs).toContain('D5');
+    expect(found[0].description).toContain('C1/C2/C3');
+    expect(found[0].cellRefs).toContain('D5');
+    expect(found[0].cellRefs).toContain('D8');
   });
 
-  it('cuantifica cuanto subestima el total', () => {
-    const y2024 = found.find((f) => f.cellRefs[0] === 'D8')!;
-    const impact = y2024.quantifiedImpact!;
-    expect(impact.before).toBe(59_034);
-    expect(impact.after).toBe(86_916);
-    expect(impact.delta).toBe(27_882);
-    // La misma subestimacion del ~32% sobre el valor real del caso de 2024.
-    expect(y2024.description).toMatch(/subestima el valor real en 32\.1%/);
+  it('acumula lo que subestima el total en toda la serie', () => {
+    const impact = found[0].quantifiedImpact!;
+    // 2024 solo: 59.034 mostrado vs 86.916 real. Sumados los cinco anios:
+    expect(impact.delta).toBe(163_282);
+    expect(impact.after - impact.before).toBe(impact.delta);
+    // La subestimacion del ~32% del caso real de 2024 sigue en la descripcion.
+    expect(found[0].description).toMatch(/subestima el valor real en 32\.1%/);
+  });
+
+  it('no confunde una suma con tope con un total de bloque', () => {
+    // `=-MIN(cap, SUM(a:b))` excluye filas a proposito: es un pago topado.
+    // El modelo Marco producia 45 falsos positivos por esto.
+    expect(found.every((f) => !/MIN\(/.test(f.evidence.join(' ')))).toBe(true);
   });
 
   it('no reporta nada cuando el total cubre todo el bloque', () => {

@@ -218,6 +218,9 @@ function FindingRow({
             <span className="cell-mono">{location}</span>
             <span aria-hidden>·</span>
             <span>{finding.id}</span>
+            {(finding.occurrences ?? 1) > 1 && (
+              <Badge variant="muted">se repite en {finding.occurrences} celdas</Badge>
+            )}
             {finding.status === 'needs-review' ? (
               <Badge variant="outline">requiere confirmación</Badge>
             ) : (
@@ -335,6 +338,12 @@ function ChecklistSummary({ audit }: { audit: AuditRunResult }) {
                 <p className="font-medium">{plain?.question ?? check.name}</p>
                 <p className="text-xs text-muted-foreground">
                   {check.id} · {check.name}
+                  {check.cells !== undefined && check.cells > check.count && (
+                    <>
+                      {' '}
+                      · {check.cells} celdas agrupadas en {check.count}
+                    </>
+                  )}
                   {check.error && ` · error: ${check.error}`}
                 </p>
               </div>

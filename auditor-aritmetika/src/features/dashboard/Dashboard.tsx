@@ -34,7 +34,7 @@ import {
   buildMemoHtml,
   buildMemoText,
   downloadFile,
-  totalQuantifiedImpact,
+  largestQuantifiedImpact,
 } from '@/core/export/memo';
 import { formatAmount, formatAmountShort, formatImpactValue } from '@/core/format/money';
 import { MoneyScaleBar } from '@/features/shared/MoneyScaleBar';
@@ -110,7 +110,10 @@ export function Dashboard({
 
   const altas = findings.filter((f) => f.severity === 'alta');
   const pendientes = findings.filter((f) => f.status === 'needs-review');
-  const impactoTotal = totalQuantifiedImpact(findings);
+  // No se suma el impacto de todos los hallazgos: miden cosas distintas y el
+  // agregado no significa nada. Se cita la mayor diferencia individual.
+  const mayor = largestQuantifiedImpact(findings);
+  const mayorMonto = mayor ? Math.abs(mayor.quantifiedImpact!.delta) : 0;
   // Los conteos no compiten por el podio: sin una cifra que dimensione el
   // efecto, "2 hojas abandonadas" no es lo primero que hay que mirar.
   const top = findings
@@ -150,11 +153,11 @@ export function Dashboard({
                 <strong className="text-destructive">
                   {altas.length} {altas.length === 1 ? 'punto' : 'puntos'} de prioridad alta
                 </strong>
-                {impactoTotal > 0 && (
+                {mayor && (
                   <>
                     {' '}
-                    y las diferencias cuantificables suman{' '}
-                    <strong>{formatAmount(impactoTotal, money)}</strong>
+                    y la mayor diferencia cuantificada es de{' '}
+                    <strong>{formatAmount(mayorMonto, money)}</strong>
                   </>
                 )}
                 .
@@ -174,8 +177,8 @@ export function Dashboard({
             <Stat label="Prioridad alta" value={fmtNumber(altas.length)} tone="warn" />
             <Stat label="Por confirmar" value={fmtNumber(pendientes.length)} />
             <Stat
-              label="Diferencia agregada"
-              value={formatAmount(impactoTotal, money)}
+              label="Mayor diferencia"
+              value={formatAmount(mayorMonto, money)}
               tone="warn"
               small
             />
@@ -207,6 +210,8 @@ export function Dashboard({
                     <p className="cell-mono mt-1 text-muted-foreground">
                       {finding.sheet}
                       {finding.cellRefs[0] ? `!${finding.cellRefs[0]}` : ''}
+                      {(finding.occurrences ?? 1) > 1 &&
+                        ` y ${finding.occurrences! - 1} celdas más de la misma fila`}
                     </p>
                   </div>
                   <div className="shrink-0 text-right">

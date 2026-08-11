@@ -29,7 +29,7 @@ export function detectH4(ctx: AuditContext): Finding[] {
       if (!labelMatches(row.label, CD_CONTEXT_RE)) continue;
 
       for (const cell of row.cells) {
-        if (out.length >= ctx.config.maxPerCheck) return out;
+        if (out.length >= ctx.config.maxRawPerCheck) return out;
         if (cell.kind !== 'hardcoded' && cell.kind !== 'formula') continue;
 
         let value = AuditContext.numeric(cell);

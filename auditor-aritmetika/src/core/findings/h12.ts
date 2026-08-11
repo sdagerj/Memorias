@@ -22,7 +22,7 @@ export function detectH12(ctx: AuditContext): Finding[] {
 
   for (const sheet of ctx.workbook.sheets) {
     for (const row of sheet.rows) {
-      if (out.length >= ctx.config.maxPerCheck) return out;
+      if (out.length >= ctx.config.maxRawPerCheck) return out;
       if (!labelMatches(row.label, COST_LABEL_RE)) continue;
       // Un bloque rotulado como obsoleto ya lo reporta H3; no lo duplicamos aquí.
       if (isObsoleteLabel(row.label)) continue;

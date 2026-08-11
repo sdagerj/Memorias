@@ -151,3 +151,32 @@ con expresiones regulares, lo que hacía que cualquier cambio de redacción romp
 
 La sección de trazabilidad se renumera sola según entre o no la de GP economics: un memo con
 sección 5 y sin sección 4 se lee como un error.
+
+## Un hallazgo es un patrón, no una celda
+
+Un modelo real copia la misma fórmula a lo ancho de toda la serie temporal. El primer archivo de
+verdad que pasó por el auditor traía la composición de tasas replicada en 217 columnas mensuales y
+devolvió 837 hallazgos donde había 26.
+
+`groupFindings` agrupa por chequeo + hoja + fila + patrón del título, entendiendo por patrón el
+título con los números sustituidos, de modo que "de 2024" y "de 2028" caen en el mismo grupo y se
+reportan como rango. El tope por chequeo se aplica **después** de agrupar; antes de agrupar el tope
+es alto a propósito, para que el conteo de ocurrencias sea real.
+
+Al fusionar impactos, el dinero se suma y las tasas no: 217 celdas con la misma desviación de 10,9
+puntos básicos son 10,9 puntos básicos, no 2.360.
+
+## No se suma lo que no es sumable
+
+La portada mostraba "las diferencias cuantificables suman $X". Con un archivo real eso dio una cifra
+absurda, porque una hoja de resumen desactualizada y un total que omite una fila no se suman: miden
+cosas distintas. Ahora se cita la **mayor diferencia individual**, con el nombre del hallazgo que la
+produce. `totalQuantifiedImpact` sigue existiendo para trazabilidad, pero no va a la portada.
+
+## Elegir no es omitir
+
+H2 asumía que toda fila encima de un total le pertenece. Un modelo real tiene varios totales
+solapados sobre el mismo bloque (`TOTAL Fund Profits = GP + Junior`, `Total GP Profits = MF + GP`) y
+sumas con tope (`=-MIN(caja, SUM(saldo, catch-up))`). Dos guardas: un SUM envuelto en MIN/MAX/IF no
+es un total de bloque, y un total debe cubrir al menos la mitad de su bloque para que las filas
+faltantes cuenten como omisión.

@@ -90,7 +90,7 @@ export function detectH11(ctx: AuditContext): Finding[] {
 
     for (const flag of flags) {
       for (const value of values) {
-        if (out.length >= ctx.config.maxPerCheck) return out;
+        if (out.length >= ctx.config.maxRawPerCheck) return out;
         const conflict = rule.conflict(flag.value, value.value);
         if (!conflict) continue;
 

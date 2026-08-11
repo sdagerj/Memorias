@@ -107,6 +107,11 @@ export interface Finding {
   quantifiedImpact?: QuantifiedImpact;
   status: FindingStatus;
   severity: Severity;
+  /**
+   * Celdas del mismo patrón que este hallazgo representa. Una fórmula copiada
+   * a lo ancho de 217 columnas es UN hallazgo con 217 ocurrencias, no 217.
+   */
+  occurrences?: number;
   /** Texto en tono "oportunidad de mejora identificada", listo para memo */
   boardLanguage: string;
   /**

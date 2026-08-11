@@ -64,12 +64,30 @@ const SEVERITY_TITLE: Record<Finding['severity'], string> = {
   informativa: 'Observaciones de higiene del modelo',
 };
 
-/** Suma del impacto cuantificado en dinero de los hallazgos no descartados. */
+/**
+ * Suma del impacto cuantificado en dinero de los hallazgos no descartados.
+ *
+ * Se conserva para trazabilidad, pero NO se presenta como cifra de portada: los
+ * hallazgos miden cosas distintas (una hoja de resumen desactualizada y un total
+ * que omite una fila no se suman) y el agregado da un número sin significado.
+ * Para la portada se usa `largestQuantifiedImpact`.
+ */
 export function totalQuantifiedImpact(findings: Finding[]): number {
   return findings
     .filter((f) => f.status !== 'dismissed')
     .filter((f) => isMoneyImpact(f.quantifiedImpact))
     .reduce((acc, f) => acc + Math.abs(f.quantifiedImpact?.delta ?? 0), 0);
+}
+
+/** El hallazgo con la mayor diferencia en dinero: la cifra que sí se puede citar. */
+export function largestQuantifiedImpact(findings: Finding[]): Finding | null {
+  const withMoney = findings
+    .filter((f) => f.status !== 'dismissed')
+    .filter((f) => isMoneyImpact(f.quantifiedImpact));
+  if (withMoney.length === 0) return null;
+  return withMoney.reduce((a, b) =>
+    Math.abs(b.quantifiedImpact!.delta) > Math.abs(a.quantifiedImpact!.delta) ? b : a,
+  );
 }
 
 function statusLabel(status: Finding['status']): string {
@@ -87,7 +105,9 @@ function statusLabel(status: Finding['status']): string {
 
 function reference(finding: Finding): string {
   const refs = finding.cellRefs.slice(0, 6).join(', ');
-  return refs ? `${finding.sheet}!${refs}` : finding.sheet;
+  const base = refs ? `${finding.sheet}!${refs}` : finding.sheet;
+  const occurrences = finding.occurrences ?? 1;
+  return occurrences > 1 ? `${base} (mismo patrón en ${occurrences} celdas)` : base;
 }
 
 /** El memo completo como documento estructurado. */
@@ -123,7 +143,7 @@ export function buildMemoDocument(input: MemoInput): MemoDocument {
     media: active.filter((f) => f.severity === 'media').length,
     informativa: active.filter((f) => f.severity === 'informativa').length,
   };
-  const impact = totalQuantifiedImpact(active);
+  const largest = largestQuantifiedImpact(active);
   const pendientes = active.filter((f) => f.status === 'needs-review').length;
 
   const resumen: MemoBlock[] = [
@@ -132,11 +152,11 @@ export function buildMemoDocument(input: MemoInput): MemoDocument {
       text: `Se identificaron ${active.length} oportunidades de mejora: ${bySeverity.alta} de prioridad alta, ${bySeverity.media} de prioridad media y ${bySeverity.informativa} de higiene del modelo.`,
     },
   ];
-  if (impact > 0) {
+  if (largest) {
     resumen.push({
       kind: 'highlight',
-      label: 'Efecto agregado de las observaciones cuantificables',
-      value: formatAmount(impact, money),
+      label: `Mayor diferencia identificada — ${largest.title}`,
+      value: formatAmount(Math.abs(largest.quantifiedImpact!.delta), money),
     });
   }
   if (pendientes > 0) {

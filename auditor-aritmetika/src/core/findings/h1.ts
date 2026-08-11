@@ -73,7 +73,7 @@ export function detectH1(ctx: AuditContext): Finding[] {
   for (const sheet of ctx.workbook.sheets) {
     for (const cell of sheet.cells) {
       if (cell.kind !== 'formula' || !cell.formula) continue;
-      if (out.length >= ctx.config.maxPerCheck) return out;
+      if (out.length >= ctx.config.maxRawPerCheck) return out;
 
       const formula = stripStringLiterals(cell.formula);
       const label = ctx.labelForCell(cell) ?? '';
