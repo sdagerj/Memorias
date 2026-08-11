@@ -1,7 +1,7 @@
 /**
  * TIR / XIRR reimplementadas en TypeScript.
  *
- * Necesarias porque la TIR alimenta la decision de split de carry, y esa TIR
+ * Necesarias porque la TIR alimenta la decisión de split de carry, y esa TIR
  * debe calcularse sobre SENTENCIAS PAGADAS ("paid rights"), no sobre el
  * portafolio completo. Poder recalcular ambas es lo que convierte H5 en un
  * hallazgo cuantificado en vez de una sospecha.
@@ -13,14 +13,14 @@ import { yearFraction } from './npv';
 const MAX_ITER = 200;
 const TOL = 1e-9;
 
-/** NPV a tasa r de flujos periodicos (periodo 0, 1, 2, ...). */
+/** NPV a tasa r de flujos periódicos (periodo 0, 1, 2, ...). */
 export function npvAtRate(cashflows: number[], rate: number): number {
   return cashflows.reduce((acc, cf, i) => acc + cf / Math.pow(1 + rate, i), 0);
 }
 
 /**
- * TIR de flujos periodicos. Biseccion sobre un rango amplio: mas lenta que
- * Newton pero no diverge, y aqui la auditabilidad importa mas que los ms.
+ * TIR de flujos periódicos. Biseccion sobre un rango amplio: mas lenta que
+ * Newton pero no diverge, y aquí la auditabilidad importa mas que los ms.
  */
 export function irr(cashflows: number[], lo = -0.9999, hi = 10): number | null {
   if (cashflows.length < 2) return null;
@@ -104,7 +104,7 @@ export function paidRightsIrr(judgments: Judgment[]): number | null {
 }
 
 /**
- * TIR de TODO el portafolio (incluye lo aun no cobrado). Se calcula solo para
+ * TIR de TODO el portafolio (incluye lo aún no cobrado). Se calcula solo para
  * contrastar: usar esta base para el split de carry es el error H5.
  */
 export function totalPortfolioIrr(judgments: Judgment[]): number | null {
@@ -114,7 +114,11 @@ export function totalPortfolioIrr(judgments: Judgment[]): number | null {
 export function judgmentsToFlows(judgments: Judgment[]): DatedFlow[] {
   const flows: DatedFlow[] = [];
   for (const j of judgments) {
-    flows.push({ date: j.purchaseDate, amount: -Math.abs(j.purchaseValue), label: `${j.id} compra` });
+    flows.push({
+      date: j.purchaseDate,
+      amount: -Math.abs(j.purchaseValue),
+      label: `${j.id} compra`,
+    });
     flows.push({ date: j.maturityDate, amount: Math.abs(j.maturityValue), label: `${j.id} pago` });
   }
   return flows.sort((a, b) => a.date.localeCompare(b.date));

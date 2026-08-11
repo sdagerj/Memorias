@@ -8,8 +8,8 @@ import { runWaterfall, selectCarryTier } from '../finance/waterfall';
 /**
  * Fase 3 — comparacion lado a lado.
  *
- * SheetJS lee el valor que Excel dejo cacheado, pero no re-ejecuta formulas. Por
- * eso el motor reimplementa la logica de negocio en TypeScript y la contrasta
+ * SheetJS lee el valor que Excel dejó cacheado, pero no re-ejecuta fórmulas. Por
+ * eso el motor reimplementa la lógica de negocio en TypeScript y la contrasta
  * contra lo cacheado: LA DIFERENCIA ES EL HALLAZGO CUANTIFICADO.
  */
 
@@ -27,14 +27,30 @@ export function readCell(wb: ParsedWorkbook, mapping: string | undefined): CellR
   }
   const { sheet, ref } = splitSheetRef(mapping);
   if (!sheet) {
-    return { ok: false, value: null, location: mapping, problem: 'falta el nombre de la hoja (Hoja!Celda)' };
+    return {
+      ok: false,
+      value: null,
+      location: mapping,
+      problem: 'falta el nombre de la hoja (Hoja!Celda)',
+    };
   }
   const ctx = new AuditContext(wb);
   const cell = ctx.resolveRef(sheet, sheet, ref);
-  if (!cell) return { ok: false, value: null, location: mapping, problem: 'la celda no existe o esta vacia' };
+  if (!cell)
+    return {
+      ok: false,
+      value: null,
+      location: mapping,
+      problem: 'la celda no existe o esta vacia',
+    };
   const value = AuditContext.numeric(cell);
   if (value === null) {
-    return { ok: false, value: null, location: mapping, problem: `la celda no es numerica (${cell.value})` };
+    return {
+      ok: false,
+      value: null,
+      location: mapping,
+      problem: `la celda no es numérica (${cell.value})`,
+    };
   }
   return { ok: true, value, location: mapping };
 }
@@ -66,7 +82,7 @@ export interface Comparison {
   metric: string;
   /** Lo que el Excel trae cacheado, si esta mapeado */
   excelCached: number | null;
-  /** Lo que calcula el motor con la convencion validada */
+  /** Lo que calcula el motor con la convención validada */
   engine: number | null;
   delta: number | null;
   unit: 'COP' | 'pct' | 'bp';
@@ -231,20 +247,23 @@ export function evaluateFund(
       metric: `Preferred Yield devengado (${months} meses)`,
       excelCached: cachedPref.value,
       engine: prefYield.simple,
-      delta: cachedPref.value !== null && prefYield.simple !== null ? prefYield.simple - cachedPref.value : null,
+      delta:
+        cachedPref.value !== null && prefYield.simple !== null
+          ? prefYield.simple - cachedPref.value
+          : null,
       unit: 'COP',
-      note: 'Motor: tasa simple mensual (r/12) segun Side Letter.',
+      note: 'Motor: tasa simple mensual (r/12) según Side Letter.',
     },
     {
-      metric: 'Efecto de convencion (simple − EA compuesta)',
+      metric: 'Efecto de convención (simple − EA compuesta)',
       excelCached: prefYield.compounded,
       engine: prefYield.simple,
       delta: prefYield.conventionDelta,
       unit: 'COP',
-      note: 'Cuanto cambia el devengo solo por la convencion de tasa.',
+      note: 'Cuanto cambia el devengo solo por la convención de tasa.',
     },
     {
-      metric: 'NPV con convencion validada',
+      metric: 'NPV con convención validada',
       excelCached: cachedNpv.value,
       engine: npv.breakdown?.total ?? null,
       delta:
@@ -254,8 +273,7 @@ export function evaluateFund(
     },
     {
       metric: 'Carry del GP por base de TIR',
-      excelCached:
-        tierPortfolio && residual > 0 ? residual * tierPortfolio.gpShare : null,
+      excelCached: tierPortfolio && residual > 0 ? residual * tierPortfolio.gpShare : null,
       engine: tierPaid && residual > 0 ? residual * tierPaid.gpShare : null,
       delta: gpDelta,
       unit: 'COP',
@@ -277,8 +295,8 @@ export function toIsoDate(cell: ParsedCell | undefined): string | null {
     return null;
   }
   if (typeof cell.value === 'number') {
-    // Serial de Excel (base 1899-12-30). Solo se interpreta asi cuando el
-    // formato numerico de la celda indica fecha, para no convertir un monto.
+    // Serial de Excel (base 1899-12-30). Solo se interpreta así cuando el
+    // formato numérico de la celda indica fecha, para no convertir un monto.
     if (!cell.numFmt || !/[ymd]/i.test(cell.numFmt)) return null;
     const ms = (cell.value - 25569) * 86_400_000;
     if (!Number.isFinite(ms)) return null;

@@ -1,12 +1,12 @@
 import type { Finding, ParsedCell } from '../types';
 import { AuditContext, labelMatches, makeFinding, ref } from './context';
-import { boardParagraph } from './boardLanguage';
+import { boardFields } from './boardLanguage';
 
 /**
- * H11 — Inconsistencias logicas internas entre dos celdas relacionadas.
+ * H11 — Inconsistencias lógicas internas entre dos celdas relacionadas.
  *
  * Caso real: un flag de "modo deuda" indica apalancamiento pero el % de tramo
- * senior esta en 0% (no deberia haber deuda). La app no puede resolver estas
+ * senior esta en 0% (no debería haber deuda). La app no puede resolver estas
  * por si sola; su trabajo es poner las dos celdas juntas para que Stephanie las
  * revise de un vistazo.
  */
@@ -26,9 +26,9 @@ const RULES: RulePair[] = [
     valueRe: /(tramo senior|senior|% senior|senior tranche|participacion senior)/,
     conflict: (flag, value) =>
       flag && value === 0
-        ? 'el modelo indica que opera con deuda, pero la participacion del tramo senior es 0%'
+        ? 'el modelo indica que opera con deuda, pero la participación del tramo senior es 0%'
         : !flag && value > 0
-          ? 'el modelo indica que no opera con deuda, pero hay una participacion de tramo senior mayor a 0%'
+          ? 'el modelo indica que no opera con deuda, pero hay una participación de tramo senior mayor a 0%'
           : null,
   },
   {
@@ -46,7 +46,7 @@ const RULES: RulePair[] = [
     valueRe: /(carry gp|% carry|tasa de carry|gp share|participacion gp)/,
     conflict: (flag, value) =>
       flag && value === 0
-        ? 'el modelo contempla carry pero la participacion del GP esta en 0%; conviene confirmar si es una decision de diseno (por ejemplo, un buyout de tramo con carry 100% al LP) o una omision'
+        ? 'el modelo contempla carry pero la participación del GP esta en 0%; conviene confirmar si es una decisión de diseño (por ejemplo, un buyout de tramo con carry 100% al LP) o una omisión'
         : null,
   },
 ];
@@ -77,11 +77,13 @@ export function detectH11(ctx: AuditContext): Finding[] {
 
         if (labelMatches(row.label, rule.flagRe)) {
           const flagValue = truthy(dataCells[0]);
-          if (flagValue !== null) flags.push({ cell: dataCells[0], label: row.label!, value: flagValue });
+          if (flagValue !== null)
+            flags.push({ cell: dataCells[0], label: row.label!, value: flagValue });
         }
         if (labelMatches(row.label, rule.valueRe)) {
           const numeric = AuditContext.numeric(dataCells[0]);
-          if (numeric !== null) values.push({ cell: dataCells[0], label: row.label!, value: numeric });
+          if (numeric !== null)
+            values.push({ cell: dataCells[0], label: row.label!, value: numeric });
         }
       }
     }
@@ -109,11 +111,11 @@ export function detectH11(ctx: AuditContext): Finding[] {
               ],
               status: 'needs-review',
               severity: 'media',
-              boardLanguage: boardParagraph({
-                observation: `${conflict}, por lo que conviene confirmar cual de las dos celdas refleja la intencion del modelo.`,
+              ...boardFields({
+                observation: `${conflict}, por lo que conviene confirmar cual de las dos celdas refleja la intención del modelo.`,
                 location: `${flagLoc} y ${valueLoc}`,
                 suggestion:
-                  'alinear ambas celdas (o vincular una a la otra por formula) para que la configuracion del escenario quede definida en un solo lugar.',
+                  'alinear ambas celdas (o vincular una a la otra por fórmula) para que la configuración del escenario quede definida en un solo lugar.',
               }),
             },
             out.length,

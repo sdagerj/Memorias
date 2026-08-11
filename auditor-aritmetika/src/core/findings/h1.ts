@@ -1,6 +1,6 @@
 import type { Finding } from '../types';
 import { AuditContext, makeFinding, ref } from './context';
-import { boardParagraph } from './boardLanguage';
+import { boardFields } from './boardLanguage';
 import { extractSingleRefs, stripStringLiterals } from '../parser/refs';
 import { monthlyRateSimple, rateCompositionGapBp } from '../finance/rates';
 
@@ -9,16 +9,16 @@ import { monthlyRateSimple, rateCompositionGapBp } from '../finance/rates';
  *
  * Por Side Letter el pref es 15% EA pero se liquida como tasa simple mensual
  * (r/12 = 1.25%). Escribirlo como (1+r)^(1/12)-1 da 1.171% y en C4 esa sola
- * convencion valia $6,631M COP.
+ * convención valia $6,631M COP.
  *
- * Este detector tambien captura su primo hermano de las notas offshore: componer
+ * Este detector también captura su primo hermano de las notas offshore: componer
  * SOFR + Spread de forma multiplicativa ((1+a)*(1+b)-1) en vez de aditiva.
  */
 
 /** (1+X)^(1/N) y POWER(1+X, 1/N) */
 const COMPOUND_CARET = /\(\s*1\s*\+\s*([^()]+?)\s*\)\s*\^\s*\(?\s*1\s*\/\s*(\d{1,3})\s*\)?/i;
 const COMPOUND_POWER = /POWER\s*\(\s*1\s*\+\s*([^,]+?)\s*,\s*1\s*\/\s*(\d{1,3})\s*\)/i;
-/** (1+A)*(1+B)-1 : composicion multiplicativa de tasas */
+/** (1+A)*(1+B)-1 : composición multiplicativa de tasas */
 const MULTIPLICATIVE = /\(\s*1\s*\+\s*([^()]+?)\s*\)\s*\*\s*\(\s*1\s*\+\s*([^()]+?)\s*\)/i;
 
 const PERIODS_PER_YEAR = new Set([2, 3, 4, 6, 12, 24, 52, 360, 365]);
@@ -46,10 +46,14 @@ function resolveOperand(ctx: AuditContext, sheetName: string, text: string): Ope
 }
 
 /**
- * Busca en la formula un operando que se vea como saldo (numero grande) para
+ * Busca en la fórmula un operando que se vea como saldo (número grande) para
  * poder traducir la diferencia de tasa a pesos.
  */
-function findBalanceOperand(ctx: AuditContext, sheetName: string, formula: string): { ref: string; value: number } | null {
+function findBalanceOperand(
+  ctx: AuditContext,
+  sheetName: string,
+  formula: string,
+): { ref: string; value: number } | null {
   let best: { ref: string; value: number } | null = null;
   for (const single of extractSingleRefs(formula)) {
     const a1 = single.raw.split('!').pop() ?? '';
@@ -102,15 +106,17 @@ export function detectH1(ctx: AuditContext): Finding[] {
         // contexto de la fila habla de tasas.
         const looksRate = (o: Operand) => o.value !== null && o.value > 0 && o.value < 1;
         if ((looksRate(a) && looksRate(b)) || RATE_CONTEXT_RE.test(label)) {
-          out.push(buildMultiplicativeFinding(ctx, {
-            sheetName: sheet.name,
-            cellRef: cell.ref,
-            formula: cell.formula,
-            label,
-            a: a.value,
-            b: b.value,
-            index: out.length,
-          }));
+          out.push(
+            buildMultiplicativeFinding(ctx, {
+              sheetName: sheet.name,
+              cellRef: cell.ref,
+              formula: cell.formula,
+              label,
+              a: a.value,
+              b: b.value,
+              index: out.length,
+            }),
+          );
         }
       }
     }
@@ -140,7 +146,7 @@ function buildCompoundFinding(
   const gapBp = (simple - compounded) * 10_000;
 
   const balance = findBalanceOperand(ctx, args.sheetName, args.formula);
-  const periodicity = args.periods === 12 ? 'mensual' : `de 1/${args.periods} de anio`;
+  const periodicity = args.periods === 12 ? 'mensual' : `de 1/${args.periods} de año`;
 
   const impact = balance
     ? {
@@ -164,19 +170,19 @@ function buildCompoundFinding(
         ).toFixed(2)}% EA`,
       };
 
-  const observation = `la formula liquida el rendimiento con tasa efectiva anual compuesta ((1+r)^(1/${args.periods})−1) en lugar de la convencion de tasa simple pactada en Side Letter (r/${args.periods}).`;
+  const observation = `la fórmula liquida el rendimiento con tasa efectiva anual compuesta ((1+r)^(1/${args.periods})−1) en lugar de la convención de tasa simple pactada en Side Letter (r/${args.periods}).`;
 
   return makeFinding(
     {
       id: 'H1',
       sheet: args.sheetName,
       cellRefs: [args.cellRef],
-      title: `Convencion de tasa compuesta donde corresponde tasa simple${
+      title: `Convención de tasa compuesta donde corresponde tasa simple${
         args.label ? ` — ${args.label}` : ''
       }`,
-      description: `La celda ${location} usa capitalizacion compuesta para llevar la tasa anual a periodo ${periodicity}. Con ${(
+      description: `La celda ${location} usa capitalización compuesta para llevar la tasa anual a periodo ${periodicity}. Con ${(
         rate * 100
-      ).toFixed(2)}% EA la convencion simple da ${(simple * 100).toFixed(
+      ).toFixed(2)}% EA la convención simple da ${(simple * 100).toFixed(
         3,
       )}% y la compuesta ${(compounded * 100).toFixed(3)}%: una diferencia de ${gapBp.toFixed(
         1,
@@ -185,10 +191,10 @@ function buildCompoundFinding(
       quantifiedImpact: impact,
       status: 'auto-detected',
       severity: 'alta',
-      boardLanguage: boardParagraph({
+      ...boardFields({
         observation,
         location,
-        suggestion: `homologar la formula a tasa simple (tasa_anual/${args.periods}) para alinear el devengo con la convencion del Side Letter, y dejar la tasa anual como parametro editable en una sola celda de supuestos.`,
+        suggestion: `homologar la fórmula a tasa simple (tasa_anual/${args.periods}) para alinear el devengo con la convención del Side Letter, y dejar la tasa anual como parámetro editable en una sola celda de supuestos.`,
         impact,
       }),
     },
@@ -228,20 +234,20 @@ function buildMultiplicativeFinding(
       id: 'H1',
       sheet: args.sheetName,
       cellRefs: [args.cellRef],
-      title: `Composicion multiplicativa de tasas${args.label ? ` — ${args.label}` : ''}`,
-      description: `La celda ${location} compone dos tasas como (1+a)x(1+b)−1. La convencion validada para tasa de referencia + spread (ej. SOFR + Spread) es aditiva; la multiplicativa sobreestima la tasa en ${gapBp.toFixed(
+      title: `Composición multiplicativa de tasas${args.label ? ` — ${args.label}` : ''}`,
+      description: `La celda ${location} compone dos tasas como (1+a)x(1+b)−1. La convención validada para tasa de referencia + spread (ej. SOFR + Spread) es aditiva; la multiplicativa sobreestima la tasa en ${gapBp.toFixed(
         1,
       )} bp.`,
       evidence: [`${location} = ${args.formula}`],
       quantifiedImpact: impact,
       status: 'auto-detected',
       severity: 'alta',
-      boardLanguage: boardParagraph({
+      ...boardFields({
         observation:
           'la tasa del tramo se compone de forma multiplicativa ((1+SOFR)x(1+Spread)−1) en lugar de aditiva (SOFR + Spread), lo que sobreestima el costo de la deuda.',
         location,
         suggestion:
-          'ajustar la composicion a formato aditivo y verificar que el dashboard y el motor de cascada consuman la misma celda de tasa.',
+          'ajustar la composición a formato aditivo y verificar que el dashboard y el motor de cascada consuman la misma celda de tasa.',
         impact,
       }),
     },

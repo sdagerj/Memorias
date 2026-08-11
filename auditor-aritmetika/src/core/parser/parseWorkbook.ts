@@ -99,8 +99,8 @@ function parseSheet(
         if (hasFormula) {
           parsed.formula = cell.f as string;
           for (const s of extractSheetNames(cell.f as string)) references.add(s);
-          // Un #REF! puede vivir dentro del string de la formula aunque el
-          // valor cacheado siga siendo numerico.
+          // Un #REF! puede vivir dentro del string de la fórmula aunque el
+          // valor cacheado siga siendo numérico.
           if (!isError && /#REF!/.test(cell.f as string)) errors++;
         }
         cells.push(parsed);
@@ -148,8 +148,8 @@ function buildRows(cells: ParsedCell[], labelCol: number | null): SheetRow[] {
 }
 
 /**
- * Busca la fila de cabecera temporal (anios o fechas en columnas contiguas).
- * Sirve para H6: un parametro que deberia tener curva pero esta plano.
+ * Busca la fila de cabecera temporal (años o fechas en columnas contiguas).
+ * Sirve para H6: un parámetro que debería tener curva pero esta plano.
  */
 function detectTimeHeader(rows: SheetRow[]): {
   timeHeaderRow: number | null;
@@ -165,7 +165,9 @@ function detectTimeHeader(rows: SheetRow[]): {
       best = { row: row.row, cols };
     }
   }
-  return best ? { timeHeaderRow: best.row, timeHeaderCols: best.cols } : { timeHeaderRow: null, timeHeaderCols: [] };
+  return best
+    ? { timeHeaderRow: best.row, timeHeaderCols: best.cols }
+    : { timeHeaderRow: null, timeHeaderCols: [] };
 }
 
 function isYearLike(v: ParsedCell['value']): boolean {
@@ -203,7 +205,9 @@ export function parseWorkbook(
   // referencedBy: quien menciona a quien. La comparacion es case-insensitive
   // porque Excel no distingue mayusculas en nombres de hoja.
   const byLower = new Map(partial.map((s) => [s.name.toLowerCase(), s.name]));
-  const referencedBy = new Map<string, Set<string>>(partial.map((s) => [s.name, new Set<string>()]));
+  const referencedBy = new Map<string, Set<string>>(
+    partial.map((s) => [s.name, new Set<string>()]),
+  );
   for (const sheet of partial) {
     for (const target of sheet.references) {
       const real = byLower.get(target.toLowerCase());
@@ -235,13 +239,17 @@ export function parseWorkbook(
   };
 }
 
-/** Nombre de hoja "sospechoso de version abandonada", independiente de si es huerfana. */
+/** Nombre de hoja "sospechoso de versión abandonada", independiente de si es huérfana. */
 export function looksLikeVersionSheet(name: string): boolean {
   return ORPHAN_NAME_RE.test(name);
 }
 
 /** Busca una celda por "Hoja!Ref" en un workbook ya parseado. */
-export function findCell(wb: ParsedWorkbook, sheetName: string, ref: string): ParsedCell | undefined {
+export function findCell(
+  wb: ParsedWorkbook,
+  sheetName: string,
+  ref: string,
+): ParsedCell | undefined {
   const sheet = wb.sheets.find((s) => s.name.toLowerCase() === sheetName.toLowerCase());
   if (!sheet) return undefined;
   const upper = ref.replace(/\$/g, '').toUpperCase();

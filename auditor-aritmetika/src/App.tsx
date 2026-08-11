@@ -12,7 +12,7 @@ type View = 'estructura' | 'hallazgos' | 'fondo' | 'resumen';
 
 export default function App() {
   const { workbook, audit, clearWorkbook } = useAuditStore();
-  const [view, setView] = useState<View>('hallazgos');
+  const [view, setView] = useState<View>('resumen');
   const [dark, setDark] = useState(false);
 
   const toggleTheme = () => {
@@ -29,7 +29,7 @@ export default function App() {
           <ScanSearch className="h-5 w-5 text-primary" />
           <div>
             <h1 className="text-sm font-semibold leading-tight">
-              Auditor de Modelos Economicos — Aritmetika
+              Auditor de Modelos Económicos — Aritmetika
             </h1>
             <p className="text-[11px] text-muted-foreground">
               Mapeo estructural · checklist de doce puntos · GP economics con las convenciones
@@ -69,10 +69,10 @@ export default function App() {
               value={view}
               onChange={(v) => setView(v as View)}
               items={[
-                { value: 'hallazgos', label: `Hallazgos (${audit.findings.length})` },
-                { value: 'estructura', label: 'Estructura' },
+                { value: 'resumen', label: 'Resumen' },
+                { value: 'hallazgos', label: `Oportunidades (${audit.findings.length})` },
                 { value: 'fondo', label: 'Fondo / GP economics' },
-                { value: 'resumen', label: 'Resumen y memo' },
+                { value: 'estructura', label: 'Estructura del archivo' },
               ]}
             />
 
@@ -93,7 +93,7 @@ function Intro() {
       <IntroCard
         step="1"
         title="Mapeo estructural"
-        body="Se parsean todas las hojas y se clasifica cada celda como formula, valor digitado o etiqueta. Se detectan las hojas huerfanas y la columna donde viven las etiquetas."
+        body="Se parsean todas las hojas y se clasifica cada celda como fórmula, valor digitado o etiqueta. Se detectan las hojas huérfanas y la columna donde viven las etiquetas."
       />
       <IntroCard
         step="2"
@@ -103,7 +103,7 @@ function Intro() {
       <IntroCard
         step="3"
         title="GP economics y memo"
-        body="Pref yield con tasa simple, NPV con la convencion validada y split de carry por TIR de pagadas. La diferencia contra lo que trae el Excel es el hallazgo cuantificado."
+        body="Pref yield con tasa simple, NPV con la convención validada y split de carry por TIR de pagadas. La diferencia contra lo que trae el Excel es el hallazgo cuantificado."
       />
     </div>
   );

@@ -1,13 +1,25 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { parseWorkbook } from '@/core/parser/parseWorkbook';
-import { runAudit, DEFAULT_AUDIT_CONFIG, type AuditConfig, type AuditRunResult } from '@/core/findings';
-import { DEFAULT_FUND_CONFIG, type Finding, type FindingStatus, type FundConfig, type ParsedWorkbook } from '@/core/types';
+import {
+  runAudit,
+  DEFAULT_AUDIT_CONFIG,
+  type AuditConfig,
+  type AuditRunResult,
+} from '@/core/findings';
+import {
+  DEFAULT_FUND_CONFIG,
+  type Finding,
+  type FindingStatus,
+  type FundConfig,
+  type ParsedWorkbook,
+} from '@/core/types';
+import { DEFAULT_MONEY_FORMAT, type MoneyFormat } from '@/core/format/money';
 
 /**
  * Estado de la app.
  *
- * Se persiste SOLO la configuracion (mapeos de fondo, parametros del auditor).
+ * Se persiste SOLO la configuración (mapeos de fondo, parámetros del auditor).
  * El workbook nunca toca localStorage: son datos no publicos del family office y
  * viven en memoria mientras dura la sesion.
  */
@@ -68,6 +80,8 @@ interface PersistedState {
   fundConfigs: Record<string, FundConfig>;
   auditConfig: AuditConfig;
   activeFundName: string | null;
+  /** Escala y moneda con que se leen las cifras del archivo */
+  money: MoneyFormat;
 }
 
 interface SessionState {
@@ -89,6 +103,7 @@ interface Actions {
   upsertFundConfig: (config: FundConfig) => void;
   setActiveFund: (name: string | null) => void;
   deleteFundConfig: (name: string) => void;
+  setMoneyFormat: (patch: Partial<MoneyFormat>) => void;
 }
 
 export type AuditStore = PersistedState & SessionState & Actions;
@@ -108,6 +123,7 @@ export const useAuditStore = create<AuditStore>()(
       fundConfigs: {},
       auditConfig: DEFAULT_AUDIT_CONFIG,
       activeFundName: null,
+      money: DEFAULT_MONEY_FORMAT,
 
       loadFile: async (file: File) => {
         set({ status: 'parsing', error: null });
@@ -157,6 +173,8 @@ export const useAuditStore = create<AuditStore>()(
 
       setActiveFund: (name) => set({ activeFundName: name }),
 
+      setMoneyFormat: (patch) => set((state) => ({ money: { ...state.money, ...patch } })),
+
       deleteFundConfig: (name) =>
         set((state) => {
           const next = { ...state.fundConfigs };
@@ -174,12 +192,13 @@ export const useAuditStore = create<AuditStore>()(
         fundConfigs: state.fundConfigs,
         auditConfig: state.auditConfig,
         activeFundName: state.activeFundName,
+        money: state.money,
       }),
     },
   ),
 );
 
-/** Hallazgos con el estado manual aplicado encima del automatico. */
+/** Hallazgos con el estado manual aplicado encima del automático. */
 export function applyStatusOverrides(
   findings: Finding[],
   overrides: Record<string, FindingStatus>,

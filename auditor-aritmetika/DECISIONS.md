@@ -123,3 +123,31 @@ motor despejando el saldo-mes implícito en la brecha de $6,631M de C4.
 
 En cuanto los archivos reales estén en `fixtures/`, esos tests se cambian por comparaciones
 directas con tolerancia <1%.
+
+## La escala de las cifras se pregunta, no se adivina
+
+Un modelo puede expresar $6.631 millones como `6631000000`, como `6631000` o como `6631`, y el
+archivo no dice cuál. Intentar inferirlo por el orden de magnitud de las celdas funciona hasta que
+un modelo mezcla escalas entre hojas, y cuando falla lo hace en silencio y por un factor de mil.
+
+Por eso hay un selector explícito (unidades / miles / millones, COP o USD) que se guarda con el
+resto de la configuración y se aplica a toda la app y al memo. Toda cifra en pantalla lleva la
+unidad escrita — `$27.882 millones COP`, nunca `27.882`.
+
+Consecuencia de diseño: el texto de junta de cada hallazgo no se puede congelar en el momento de la
+detección, porque las cifras que lleva dependen de una escala que se elige después. Cada `Finding`
+guarda las piezas del párrafo (`boardInput`) y `renderBoardText` lo rearma con la escala vigente.
+`boardLanguage` sigue existiendo con la escala por defecto para que nada dependa del orden de carga.
+
+Los impactos que no son dinero (puntos básicos, porcentajes, conteos de hojas o celdas) no se
+reescalan nunca. Y los conteos no se muestran como cifra destacada del hallazgo: "1" al lado de
+"1 fórmula rota" no agrega nada y ocupa el lugar de una cifra que sí importa.
+
+## El memo es un documento, no un string
+
+`buildMemoDocument` arma secciones y bloques tipados; `buildMemoText`, `buildMemoHtml` y el
+componente `MemoPreview` los recorren. Antes el HTML de Word se generaba re-parseando el texto plano
+con expresiones regulares, lo que hacía que cualquier cambio de redacción rompiera el formato.
+
+La sección de trazabilidad se renumera sola según entre o no la de GP economics: un memo con
+sección 5 y sin sección 4 se lee como un error.

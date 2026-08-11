@@ -1,20 +1,20 @@
 import type { Finding } from '../types';
 import { AuditContext, labelMatches, makeFinding, ref } from './context';
-import { boardParagraph } from './boardLanguage';
+import { boardFields } from './boardLanguage';
 import { isObsoleteLabel } from '../parser/labels';
 
 /**
- * H12 — Lineas de costo sin definir o sospechosamente en cero.
+ * H12 — Líneas de costo sin definir o sospechosamente en cero.
  *
- * Ej: una linea "Otros" sin desglose, o una comision comercial en 0% cuando se
- * esperaria un fee de colocacion. No son errores: son huecos de informacion, y
+ * Ej: una línea "Otros" sin desglose, o una comisión comercial en 0% cuando se
+ * esperaria un fee de colocación. No son errores: son huecos de información, y
  * se reportan como preguntas pendientes, no como hallazgos confirmados.
  */
 
 const COST_LABEL_RE =
   /(otros|otras|other|comision|comisiones|fee|fees|honorarios|gasto|gastos|costo|costos|expense|servicing|colocacion|estructuracion|administracion|legal|auditoria)/;
 
-/** Etiquetas genericas que ademas no dicen de que se trata. */
+/** Etiquetas genericas que además no dicen de que se trata. */
 const VAGUE_RE = /^(otros|otras|other|others|varios|misc|miscelaneos|no definido|pendiente)\b/;
 
 export function detectH12(ctx: AuditContext): Finding[] {
@@ -24,7 +24,7 @@ export function detectH12(ctx: AuditContext): Finding[] {
     for (const row of sheet.rows) {
       if (out.length >= ctx.config.maxPerCheck) return out;
       if (!labelMatches(row.label, COST_LABEL_RE)) continue;
-      // Un bloque rotulado como obsoleto ya lo reporta H3; no lo duplicamos aqui.
+      // Un bloque rotulado como obsoleto ya lo reporta H3; no lo duplicamos aquí.
       if (isObsoleteLabel(row.label)) continue;
 
       const dataCells = row.cells.filter(
@@ -38,8 +38,8 @@ export function detectH12(ctx: AuditContext): Finding[] {
 
       const location = `${ref(sheet.name, row.labelRef ?? dataCells[0].ref)}`;
       const reason = allZero
-        ? `la linea esta en cero en sus ${dataCells.length} periodo(s)`
-        : 'la linea no tiene desglose que permita identificar su composicion';
+        ? `la línea esta en cero en sus ${dataCells.length} periodo(s)`
+        : 'la línea no tiene desglose que permita identificar su composición';
 
       out.push(
         makeFinding(
@@ -47,19 +47,19 @@ export function detectH12(ctx: AuditContext): Finding[] {
             id: 'H12',
             sheet: sheet.name,
             cellRefs: [row.labelRef ?? dataCells[0].ref, ...dataCells.map((c) => c.ref)],
-            title: `Linea de costo por definir — ${row.label}`,
-            description: `La linea "${row.label}" (${location}) queda como pregunta pendiente: ${reason}. Conviene confirmar si corresponde a una decision de diseno (el rubro efectivamente no aplica) o a informacion aun por incorporar.`,
+            title: `Línea de costo por definir — ${row.label}`,
+            description: `La línea "${row.label}" (${location}) queda como pregunta pendiente: ${reason}. Conviene confirmar si corresponde a una decisión de diseño (el rubro efectivamente no aplica) o a información aún por incorporar.`,
             evidence: [
               `${location} = "${row.label}"`,
               `Valores: ${dataCells.map((c) => `${c.ref}=${c.value}`).join(', ')}`,
             ],
             status: 'needs-review',
             severity: 'informativa',
-            boardLanguage: boardParagraph({
-              observation: `la linea "${row.label}" ${reason}, por lo que no es posible verificar si el rubro esta completo.`,
+            ...boardFields({
+              observation: `la línea "${row.label}" ${reason}, por lo que no es posible verificar si el rubro esta completo.`,
               location,
               suggestion:
-                'documentar el desglose del rubro o confirmar explicitamente que no aplica para este vehiculo, dejando la nota en la hoja de supuestos.',
+                'documentar el desglose del rubro o confirmar explícitamente que no aplica para este vehículo, dejando la nota en la hoja de supuestos.',
             }),
           },
           out.length,

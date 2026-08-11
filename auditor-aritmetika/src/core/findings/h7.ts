@@ -1,6 +1,6 @@
 import type { Finding } from '../types';
 import { AuditContext, makeFinding, ref } from './context';
-import { boardParagraph } from './boardLanguage';
+import { boardFields } from './boardLanguage';
 import { normalizeLabel } from '../parser/labels';
 
 /**
@@ -11,10 +11,10 @@ import { normalizeLabel } from '../parser/labels';
  * 20 bp de diferencia silenciosa.
  *
  * Estrategia: agrupar por etiqueta normalizada las filas que se comportan como
- * parametro (pocas celdas numericas) y comparar el valor entre hojas distintas.
+ * parámetro (pocas celdas numéricas) y comparar el valor entre hojas distintas.
  */
 
-/** Filas con mas celdas numericas que esto son series, no parametros. */
+/** Filas con mas celdas numéricas que esto son series, no parámetros. */
 const MAX_NUMERIC_CELLS = 3;
 const MIN_LABEL_LENGTH = 3;
 const REL_TOLERANCE = 1e-9;
@@ -41,7 +41,12 @@ export function detectH7(ctx: AuditContext): Finding[] {
       const value = AuditContext.numeric(cell)!;
       const key = normalizeLabel(row.label);
       const list = byLabel.get(key);
-      const occurrence: ParamOccurrence = { sheet: sheet.name, ref: cell.ref, label: row.label, value };
+      const occurrence: ParamOccurrence = {
+        sheet: sheet.name,
+        ref: cell.ref,
+        label: row.label,
+        value,
+      };
       if (list) list.push(occurrence);
       else byLabel.set(key, [occurrence]);
     }
@@ -69,11 +74,14 @@ export function detectH7(ctx: AuditContext): Finding[] {
       after: isRateLike ? max * 10_000 : max,
       delta: isRateLike ? delta * 10_000 : delta,
       unit: (isRateLike ? 'bp' : 'COP') as 'bp' | 'COP',
-      basis: 'diferencia entre el valor maximo y minimo del mismo parametro en hojas distintas',
+      basis: 'diferencia entre el valor máximo y mínimo del mismo parámetro en hojas distintas',
     };
 
     const locations = occurrences
-      .map((o) => `${ref(o.sheet, o.ref)} = ${isRateLike ? `${(o.value * 100).toFixed(3)}%` : o.value}`)
+      .map(
+        (o) =>
+          `${ref(o.sheet, o.ref)} = ${isRateLike ? `${(o.value * 100).toFixed(3)}%` : o.value}`,
+      )
       .join('; ');
 
     out.push(
@@ -82,17 +90,17 @@ export function detectH7(ctx: AuditContext): Finding[] {
           id: 'H7',
           sheet: occurrences[0].sheet,
           cellRefs: occurrences.map((o) => o.ref),
-          title: `Mismo parametro con valores distintos entre hojas — ${label}`,
-          description: `El parametro "${label}" aparece con valores diferentes en ${sheets.size} hojas: ${locations}. Cuando el resumen y el motor de calculo leen numeros distintos para la misma variable, la cifra presentada deja de ser la que efectivamente corre en la cascada.`,
+          title: `Mismo parámetro con valores distintos entre hojas — ${label}`,
+          description: `El parámetro "${label}" aparece con valores diferentes en ${sheets.size} hojas: ${locations}. Cuando el resumen y el motor de cálculo leen números distintos para la misma variable, la cifra presentada deja de ser la que efectivamente corre en la cascada.`,
           evidence: occurrences.map((o) => `${ref(o.sheet, o.ref)} (${o.label}) = ${o.value}`),
           quantifiedImpact: impact,
           status: 'needs-review',
           severity: 'alta',
-          boardLanguage: boardParagraph({
-            observation: `el parametro "${label}" toma valores distintos segun la hoja donde se consulte, de modo que la cifra del resumen no necesariamente es la que alimenta el motor de calculo.`,
+          ...boardFields({
+            observation: `el parámetro "${label}" toma valores distintos según la hoja donde se consulte, de modo que la cifra del resumen no necesariamente es la que alimenta el motor de cálculo.`,
             location: locations,
             suggestion:
-              'consolidar el parametro en una unica celda de supuestos y hacer que tanto el resumen como el motor de cascada la referencien, eliminando la copia manual.',
+              'consolidar el parámetro en una única celda de supuestos y hacer que tanto el resumen como el motor de cascada la referencien, eliminando la copia manual.',
             impact,
           }),
         },

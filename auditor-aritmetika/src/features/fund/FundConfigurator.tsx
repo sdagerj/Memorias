@@ -18,24 +18,37 @@ import {
 import type { FundConfig, ParsedWorkbook } from '@/core/types';
 import { evaluateFund } from '@/core/fund/evaluate';
 import { activeFundConfig, useAuditStore } from '@/store/useAuditStore';
-import { cn, fmtMoney, fmtPct } from '@/lib/utils';
+import { formatAmount } from '@/core/format/money';
+import { cn, fmtPct } from '@/lib/utils';
 
 /**
  * Fase 3 — configurador de fondo + calculadora GP economics / NPV.
  *
- * El mapeo de celdas se hace UNA vez por fondo y queda guardado: la proxima
- * version del mismo modelo se audita sin volver a mapear. Ningun parametro esta
- * hardcodeado — todos son editables aqui.
+ * El mapeo de celdas se hace UNA vez por fondo y queda guardado: la próxima
+ * versión del mismo modelo se audita sin volver a mapear. Ningún parámetro está
+ * hardcodeado — todos son editables aquí.
  */
 
 const CELL_FIELDS: { key: keyof FundConfig['cellMap']; label: string; hint: string }[] = [
   { key: 'lpBalance', label: 'Saldo LP', hint: 'Hoja!D3 — saldo sobre el que corre el pref' },
-  { key: 'cachedPrefYield', label: 'Pref Yield del Excel', hint: 'Hoja!D5 — valor cacheado a contrastar' },
+  {
+    key: 'cachedPrefYield',
+    label: 'Pref Yield del Excel',
+    hint: 'Hoja!D5 — valor cacheado a contrastar',
+  },
   { key: 'flowsRange', label: 'Rango de flujos', hint: 'Hoja!D3:D30' },
-  { key: 'flowDatesRange', label: 'Rango de fechas', hint: 'Hoja!C3:C30 — mismo tamano que los flujos' },
+  {
+    key: 'flowDatesRange',
+    label: 'Rango de fechas',
+    hint: 'Hoja!C3:C30 — mismo tamano que los flujos',
+  },
   { key: 'cachedNpv', label: 'NPV del Excel', hint: 'Hoja!D40 — valor cacheado a contrastar' },
   { key: 'paidRightsIrr', label: 'TIR sentencias pagadas', hint: 'Hoja!D6 — la base correcta' },
-  { key: 'totalPortfolioIrr', label: 'TIR portafolio total', hint: 'Hoja!D7 — solo para contraste' },
+  {
+    key: 'totalPortfolioIrr',
+    label: 'TIR portafolio total',
+    hint: 'Hoja!D7 — solo para contraste',
+  },
 ];
 
 export function FundConfigurator({ workbook }: { workbook: ParsedWorkbook }) {
@@ -62,8 +75,8 @@ export function FundConfigurator({ workbook }: { workbook: ParsedWorkbook }) {
         <CardHeader className="pb-2">
           <CardTitle>Configuracion del fondo</CardTitle>
           <CardDescription>
-            Los parametros son editables y nunca se hardcodean en el calculo. El mapeo se guarda por
-            nombre de fondo y se reutiliza con la proxima version del modelo.
+            Los parámetros son editables y nunca se hardcodean en el cálculo. El mapeo se guarda por
+            nombre de fondo y se reutiliza con la próxima versión del modelo.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -262,12 +275,13 @@ function Field({
 }
 
 function ComparisonTable({ evaluation }: { evaluation: ReturnType<typeof evaluateFund> }) {
+  const money = useAuditStore((s) => s.money);
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle>Excel cacheado vs. motor con la convencion validada</CardTitle>
+        <CardTitle>Excel cacheado vs. motor con la convención validada</CardTitle>
         <CardDescription>
-          SheetJS lee el ultimo valor que Excel guardo, pero no re-ejecuta formulas. La diferencia
+          SheetJS lee el último valor que Excel guardó, pero no re-ejecuta fórmulas. La diferencia
           entre esa cifra y la del motor es el hallazgo cuantificado.
         </CardDescription>
       </CardHeader>
@@ -277,7 +291,7 @@ function ComparisonTable({ evaluation }: { evaluation: ReturnType<typeof evaluat
             <tr>
               <Th>Metrica</Th>
               <Th className="text-right">Excel / contraste</Th>
-              <Th className="text-right">Motor (convencion validada)</Th>
+              <Th className="text-right">Motor (convención validada)</Th>
               <Th className="text-right">Diferencia</Th>
               <Th>Nota</Th>
             </tr>
@@ -286,8 +300,8 @@ function ComparisonTable({ evaluation }: { evaluation: ReturnType<typeof evaluat
             {evaluation.comparisons.map((row) => (
               <tr key={row.metric}>
                 <Td className="text-xs font-medium">{row.metric}</Td>
-                <Td className="text-right tabular-nums">{fmtMoney(row.excelCached)}</Td>
-                <Td className="text-right tabular-nums">{fmtMoney(row.engine)}</Td>
+                <Td className="text-right tabular-nums">{formatAmount(row.excelCached, money)}</Td>
+                <Td className="text-right tabular-nums">{formatAmount(row.engine, money)}</Td>
                 <Td
                   className={cn(
                     'text-right font-semibold tabular-nums',
@@ -295,7 +309,7 @@ function ComparisonTable({ evaluation }: { evaluation: ReturnType<typeof evaluat
                     row.delta !== null && row.delta < 0 && 'text-destructive',
                   )}
                 >
-                  {fmtMoney(row.delta)}
+                  {formatAmount(row.delta, money)}
                 </Td>
                 <Td className="text-[11px] text-muted-foreground">{row.note}</Td>
               </tr>
@@ -314,6 +328,7 @@ function EngineDetail({
   evaluation: ReturnType<typeof evaluateFund>;
   config: FundConfig;
 }) {
+  const money = useAuditStore((s) => s.money);
   const { prefYield, npv, carry } = evaluation;
   const problems = [...prefYield.problems, ...npv.problems, ...carry.problems];
 
@@ -324,17 +339,20 @@ function EngineDetail({
           <CardTitle>Preferred Yield</CardTitle>
         </CardHeader>
         <CardContent className="space-y-1 text-sm">
-          <Line label="Saldo LP" value={fmtMoney(prefYield.lpBalance)} />
+          <Line label="Saldo LP" value={formatAmount(prefYield.lpBalance, money)} />
           <Line label="Tasa mensual simple" value={fmtPct(prefYield.monthlyRateSimple, 3)} />
           <Line
             label="Tasa mensual EA compuesta"
             value={fmtPct(prefYield.monthlyRateCompounded, 3)}
           />
-          <Line label={`Devengado simple (${prefYield.months}m)`} value={fmtMoney(prefYield.simple)} />
-          <Line label="Devengado EA compuesta" value={fmtMoney(prefYield.compounded)} />
           <Line
-            label="Diferencia por convencion"
-            value={fmtMoney(prefYield.conventionDelta)}
+            label={`Devengado simple (${prefYield.months}m)`}
+            value={formatAmount(prefYield.simple, money)}
+          />
+          <Line label="Devengado EA compuesta" value={formatAmount(prefYield.compounded, money)} />
+          <Line
+            label="Diferencia por convención"
+            value={formatAmount(prefYield.conventionDelta, money)}
             strong
           />
         </CardContent>
@@ -348,14 +366,21 @@ function EngineDetail({
           <Line label="Flujos leidos" value={String(npv.flows.length)} />
           <Line
             label="Recibido (sin descontar)"
-            value={fmtMoney(npv.breakdown?.receivedUndiscounted ?? null)}
+            value={formatAmount(npv.breakdown?.receivedUndiscounted ?? null, money)}
           />
-          <Line label="Futuro nominal" value={fmtMoney(npv.breakdown?.futureNominal ?? null)} />
+          <Line
+            label="Futuro nominal"
+            value={formatAmount(npv.breakdown?.futureNominal ?? null, money)}
+          />
           <Line
             label={`Futuro a VP (${fmtPct(config.discountRateAnnual)})`}
-            value={fmtMoney(npv.breakdown?.futureDiscounted ?? null)}
+            value={formatAmount(npv.breakdown?.futureDiscounted ?? null, money)}
           />
-          <Line label="NPV total" value={fmtMoney(npv.breakdown?.total ?? null)} strong />
+          <Line
+            label="NPV total"
+            value={formatAmount(npv.breakdown?.total ?? null, money)}
+            strong
+          />
         </CardContent>
       </Card>
 
@@ -382,12 +407,12 @@ function EngineDetail({
                 : '—'
             }
           />
-          <Line label="Impacto en GP" value={fmtMoney(carry.gpDeltaOnResidual)} strong />
+          <Line label="Impacto en GP" value={formatAmount(carry.gpDeltaOnResidual, money)} strong />
         </CardContent>
       </Card>
 
       {problems.length > 0 && (
-        <Card className="lg:col-span-3 border-warn/50">
+        <Card className="border-warn/50 lg:col-span-3">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2">
               <TriangleAlert className="h-4 w-4 text-warn" />

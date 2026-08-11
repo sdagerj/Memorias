@@ -1,20 +1,20 @@
 import type { Finding } from '../types';
 import { AuditContext, makeFinding, ref } from './context';
-import { boardParagraph } from './boardLanguage';
+import { boardFields } from './boardLanguage';
 
 /**
- * H10 — Terminologia o siglas inconsistentes dentro del mismo archivo.
+ * H10 — Terminología o siglas inconsistentes dentro del mismo archivo.
  *
  * Casos reales: "SOFR" en una hoja y "SORF" en otra; "CPACA" (el regimen
  * correcto) escrito como "CPCA". Se usa distancia de Damerau-Levenshtein para
- * que una transposicion cuente como una sola edicion.
+ * que una transposición cuente como una sola edición.
  */
 
-/** Terminos de negocio cuya grafia correcta ya conocemos. */
+/** Términos de negocio cuya grafia correcta ya conocemos. */
 const CANONICAL_TERMS = ['CPACA', 'CCA', 'SOFR', 'DTF', 'TRM', 'NDF', 'SBLC', 'IBR', 'APD'];
 
 const MIN_TOKEN_LENGTH = 3;
-/** El termino raro debe aparecer al menos esta proporcion menos que el frecuente. */
+/** El término raro debe aparecer al menos esta proporcion menos que el frecuente. */
 const FREQUENCY_RATIO = 3;
 
 interface TokenInfo {
@@ -23,7 +23,7 @@ interface TokenInfo {
   locations: { sheet: string; ref: string; label: string }[];
 }
 
-/** Distancia de edicion con transposiciones (Damerau-Levenshtein). */
+/** Distancia de edición con transposiciones (Damerau-Levenshtein). */
 export function damerauLevenshtein(a: string, b: string): number {
   const m = a.length;
   const n = b.length;
@@ -84,7 +84,7 @@ export function detectH10(ctx: AuditContext): Finding[] {
     if (out.length >= ctx.config.maxPerCheck) return out;
     if (reported.has(rare.token)) continue;
 
-    // Un termino canonico bien escrito nunca se reporta como typo.
+    // Un término canonico bien escrito nunca se reporta como typo.
     if (CANONICAL_TERMS.includes(rare.token)) continue;
 
     const candidates = [
@@ -115,16 +115,18 @@ export function detectH10(ctx: AuditContext): Finding[] {
           id: 'H10',
           sheet: rare.locations[0].sheet,
           cellRefs: rare.locations.map((l) => l.ref),
-          title: `Posible inconsistencia de terminologia — "${rare.token}" vs "${expected.token}"`,
-          description: `El termino "${rare.token}" aparece ${rare.count} vez(ces) en el archivo, mientras que "${
+          title: `"${rare.token}" y "${expected.token}" parecen el mismo concepto escrito de dos formas`,
+          description: `El término "${rare.token}" aparece ${rare.count} vez(ces) en el archivo, mientras que "${
             expected.token
           }"${
-            expected.count > 0 ? ` aparece ${expected.count} vez(ces)` : ' es la grafia estandar del negocio'
-          }. Se diferencian en una sola edicion, lo que sugiere una variante tipografica del mismo concepto.`,
+            expected.count > 0
+              ? ` aparece ${expected.count} vez(ces)`
+              : ' es la grafia estandar del negocio'
+          }. Se diferencian en una sola edición, lo que sugiere una variante tipográfica del mismo concepto.`,
           evidence: rare.locations.map((l) => `${ref(l.sheet, l.ref)}: "${l.label}"`),
           status: 'auto-detected',
           severity: 'informativa',
-          boardLanguage: boardParagraph({
+          ...boardFields({
             observation: `el archivo usa dos grafias para lo que parece el mismo concepto ("${rare.token}" y "${expected.token}"), lo que dificulta las busquedas y las referencias cruzadas.`,
             location: locations,
             suggestion:

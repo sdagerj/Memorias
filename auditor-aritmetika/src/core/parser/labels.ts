@@ -1,9 +1,9 @@
 import type { ParsedCell } from '../types';
 
 /**
- * Deteccion de la columna de etiquetas.
+ * Detección de la columna de etiquetas.
  *
- * Regla de Stephanie: probar primero la columna C (indice 2), que es donde casi
+ * Regla de Stephanie: probar primero la columna C (índice 2), que es donde casi
  * siempre estan en los archivos de Nicolas; si ahi no hay contenido suficiente,
  * expandir a A-E. Nunca asumir A o B por defecto.
  */
@@ -16,7 +16,7 @@ function isLabelish(cell: ParsedCell): boolean {
   if (cell.kind !== 'label') return false;
   const txt = String(cell.value ?? '').trim();
   if (txt.length < 2) return false;
-  // Un numero guardado como texto no es una etiqueta.
+  // Un número guardado como texto no es una etiqueta.
   if (/^[\d.,%$()\-\s]+$/.test(txt)) return false;
   return true;
 }
@@ -42,7 +42,7 @@ export function detectLabelColumn(cells: ParsedCell[]): number | null {
   for (const col of CANDIDATE_COLS) {
     const score = scoreColumn(cells, col);
     // Empate a favor de la columna mas a la izquierda ya evaluada; C gana empates
-    // porque se evalua primero arriba solo si supera el minimo.
+    // porque se evalua primero arriba solo si supera el mínimo.
     if (score > bestScore) {
       bestScore = score;
       bestCol = col;

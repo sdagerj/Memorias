@@ -10,7 +10,7 @@
 | 3 — Configurador de fondo + GP economics / NPV | ✅ funcional |
 | 4 — Dashboard consolidado y export | ✅ funcional, con una parte manual |
 
-Verificado: `npm test` → **80 tests en verde**. `npm run build` → build de producción OK.
+Verificado: `npm test` → **94 tests en verde**. `npm run build` → build de producción OK.
 `npm run lint` → limpio. Probado además en navegador de punta a punta (cargar archivo → ver
 estructura → ver hallazgos → mapear fondo → generar memo).
 
@@ -43,6 +43,32 @@ estructura → ver hallazgos → mapear fondo → generar memo).
   descartados no entran.
 - **Fixtures sintéticos** que replican los 12 patrones a propósito, más un modelo limpio de control
   que hoy produce **cero** hallazgos (medida de falsos positivos).
+
+### 🆕 Rediseño de la presentación (agosto 2026)
+
+Después de usar la app por primera vez me dijiste que el resumen y los hallazgos eran difíciles de
+entender. Esto es lo que cambió:
+
+- **Tildes.** Todo el texto que ves estaba escrito sin tildes por comodidad técnica mía. Un texto
+  así no se puede pegar en un memo de junta. Corregido en toda la app y en el memo.
+- **Escala de las cifras.** Arriba de todo hay ahora un selector: *las cifras del Excel están en
+  unidades / miles / millones, de pesos o de dólares*. La app no puede adivinar si un 27.882 es
+  27 mil pesos o 27 mil millones, así que lo pregunta una vez y lo recuerda. Toda cifra en pantalla
+  y en el memo lleva la unidad escrita: **$27.882 millones COP**, nunca un número suelto.
+- **Hallazgos como lista, no como muro de texto.** Antes cada hallazgo repetía tres veces lo mismo
+  (descripción, impacto, borrador de memo). Ahora es una línea por hallazgo — qué pasa, dónde,
+  cuánto vale — agrupada por prioridad, y el detalle se abre solo si lo pedís.
+- **Cada hallazgo explica qué significa.** Los doce chequeos tienen ahora una pregunta en castellano
+  llano ("¿El total suma todas las filas que debería sumar?") y una frase de riesgo, que aparecen al
+  abrir el hallazgo y también en el memo.
+- **Títulos que se distinguen entre sí.** Los cinco hallazgos H2 de una misma serie decían
+  exactamente lo mismo; ahora dicen *"Total ingresos" de 2024 no suma una fila del bloque*.
+- **Resumen que abre con una frase.** La vista de Resumen empieza con algo que se puede leer en voz
+  alta en junta, sigue con "Lo primero que hay que mirar" (los tres de mayor efecto) y deja las
+  gráficas abajo, plegadas.
+- **Memo con forma de documento.** La vista previa dejó de ser un cuadro de texto monoespaciado:
+  ahora tiene títulos, ficha de datos, cifras destacadas y tablas. Es el mismo documento que sale a
+  Word y a texto plano, renderizado.
 
 ### ⚠️ Pendiente
 
@@ -109,6 +135,9 @@ estructura → ver hallazgos → mapear fondo → generar memo).
   evaluación del fondo con tabla comparativa Excel vs. motor, y persistencia del mapeo por fondo.
 - **Fase 4** — Dashboard con gráficas de hallazgos e impacto, captura de GP economics por año, y
   generador de memo en texto y Word.
+- **Rediseño de presentación** — Tildes en todo el texto, escala de cifras explícita y global,
+  hallazgos plegables agrupados por prioridad, explicación en castellano llano por chequeo, y memo
+  como documento estructurado (`buildMemoDocument`) del que salen texto, Word y vista previa.
 
 ### Falsos positivos encontrados y corregidos durante el desarrollo
 

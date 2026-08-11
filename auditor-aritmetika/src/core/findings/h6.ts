@@ -1,20 +1,20 @@
 import type { Finding, ParsedCell, ParsedSheet, SheetRow } from '../types';
 import { AuditContext, labelMatches, makeFinding, ref, type FindingSeed } from './context';
-import { boardParagraph } from './boardLanguage';
+import { boardFields } from './boardLanguage';
 
 /**
- * H6 — Parametros que deberian variar en el tiempo pero estan hardcodeados
- * planos (ej. SOFR fijo en todos los meses de proyeccion cuando deberia tener
+ * H6 — Parámetros que deberían variar en el tiempo pero estan hardcodeados
+ * planos (ej. SOFR fijo en todos los meses de proyección cuando debería tener
  * curva).
  *
- * Se detecta buscando el mismo valor numerico repetido a lo largo de una fila
+ * Se detecta buscando el mismo valor numérico repetido a lo largo de una fila
  * que representa una serie temporal.
  */
 
 const RATE_LIKE_RE =
   /(tasa|rate|sofr|libor|ibr|dtf|trm|ipc|inflacion|devaluacion|usura|spread|curva|yield|descuento|discount|indice)/;
 
-/** Minimo de periodos planos para considerar que es una serie que deberia moverse */
+/** Mínimo de periodos planos para considerar que es una serie que debería moverse */
 const MIN_FLAT_WITH_HEADER = 4;
 const MIN_FLAT_WITHOUT_HEADER = 8;
 
@@ -66,7 +66,11 @@ function longestFlatRun(cells: ParsedCell[], allowedCols: Set<number> | null): F
   return best;
 }
 
-function analyzeRow(sheet: ParsedSheet, row: SheetRow, timeCols: Set<number> | null): FindingSeed | null {
+function analyzeRow(
+  sheet: ParsedSheet,
+  row: SheetRow,
+  timeCols: Set<number> | null,
+): FindingSeed | null {
   const isRateLike = labelMatches(row.label, RATE_LIKE_RE);
   const minFlat = timeCols ? MIN_FLAT_WITH_HEADER : MIN_FLAT_WITHOUT_HEADER;
 
@@ -90,19 +94,19 @@ function analyzeRow(sheet: ParsedSheet, row: SheetRow, timeCols: Set<number> | n
     id: 'H6',
     sheet: sheet.name,
     cellRefs: run.cells.map((c) => c.ref),
-    title: `Parametro plano en serie temporal — ${labelTxt} (${valueTxt} x ${run.cells.length} periodos)`,
-    description: `La fila "${labelTxt}" repite el valor ${valueTxt} de forma identica y hardcodeada en ${run.cells.length} periodos consecutivos (${location}). Un parametro de este tipo normalmente deberia venir de una curva o de una celda unica de supuestos, no replicado como constante en cada periodo.`,
+    title: `Parámetro plano en serie temporal — ${labelTxt} (${valueTxt} x ${run.cells.length} periodos)`,
+    description: `La fila "${labelTxt}" repite el valor ${valueTxt} de forma idéntica y hardcodeada en ${run.cells.length} periodos consecutivos (${location}). Un parámetro de este tipo normalmente debería venir de una curva o de una celda única de supuestos, no replicado como constante en cada periodo.`,
     evidence: [
       `${location} = ${valueTxt} en los ${run.cells.length} periodos`,
-      'Todas las celdas del rango son valores digitados, no formulas.',
+      'Todas las celdas del rango son valores digitados, no fórmulas.',
     ],
     status: 'auto-detected',
     severity: isRateLike ? 'media' : 'informativa',
-    boardLanguage: boardParagraph({
-      observation: `el parametro "${labelTxt}" se mantiene constante en ${run.cells.length} periodos de proyeccion con valor digitado en cada celda, sin una curva o fuente unica que lo alimente.`,
+    ...boardFields({
+      observation: `el parámetro "${labelTxt}" se mantiene constante en ${run.cells.length} periodos de proyección con valor digitado en cada celda, sin una curva o fuente única que lo alimente.`,
       location,
       suggestion:
-        'parametrizar la variable en una fila de supuestos (curva por periodo) y referenciarla desde el motor de calculo, de modo que una actualizacion de mercado se refleje en un solo punto del modelo.',
+        'parametrizar la variable en una fila de supuestos (curva por periodo) y referenciarla desde el motor de cálculo, de modo que una actualización de mercado se refleje en un solo punto del modelo.',
     }),
   };
 }

@@ -1,7 +1,7 @@
 /**
- * Cascada de distribucion (waterfall) y economia del GP.
+ * Cascada de distribución (waterfall) y economía del GP.
  *
- * Orden tipico:
+ * Orden típico:
  *   1. Retorno de capital al LP
  *   2. Preferred Yield acumulado al LP
  *   3. Catch-up al GP
@@ -38,13 +38,16 @@ export interface WaterfallResult {
   tier: CarryTier | null;
   lpTotal: number;
   gpTotal: number;
-  /** Caja que sobra sin asignar (no deberia pasar; se muestra si pasa) */
+  /** Caja que sobra sin asignar (no debería pasar; se muestra si pasa) */
   unallocated: number;
   steps: { step: string; amount: number; toLp: number; toGp: number }[];
 }
 
-/** Tier aplicable segun la TIR: el de mayor umbral que la TIR alcanza. */
-export function selectCarryTier(irrValue: number | null, tiers: CarryTier[] = DEFAULT_CARRY_TIERS): CarryTier | null {
+/** Tier aplicable según la TIR: el de mayor umbral que la TIR alcanza. */
+export function selectCarryTier(
+  irrValue: number | null,
+  tiers: CarryTier[] = DEFAULT_CARRY_TIERS,
+): CarryTier | null {
   if (irrValue === null || !Number.isFinite(irrValue)) return null;
   const sorted = [...tiers].sort((a, b) => a.minIrr - b.minIrr);
   let selected: CarryTier | null = null;
@@ -60,7 +63,12 @@ export function runWaterfall(input: WaterfallInput): WaterfallResult {
 
   const returnOfCapital = Math.min(cash, Math.max(0, input.lpContributedCapital));
   cash -= returnOfCapital;
-  steps.push({ step: '1. Retorno de capital al LP', amount: returnOfCapital, toLp: returnOfCapital, toGp: 0 });
+  steps.push({
+    step: '1. Retorno de capital al LP',
+    amount: returnOfCapital,
+    toLp: returnOfCapital,
+    toGp: 0,
+  });
 
   const preferredYieldPaid = Math.min(cash, Math.max(0, input.accruedPreferredYield));
   cash -= preferredYieldPaid;
@@ -114,7 +122,7 @@ export interface GpEconomicsInput {
   /** Capital comprometido/aportado sobre el que corre el MF */
   aumByYear: { year: number; aum: number }[];
   managementFeeRate: number;
-  /** Carry por anio y tipo, ya calculado o mapeado desde el modelo */
+  /** Carry por año y tipo, ya calculado o mapeado desde el modelo */
   carryByYear: { year: number; carry: number; type?: string }[];
 }
 
@@ -125,7 +133,7 @@ export interface GpEconomicsRow {
   total: number;
 }
 
-/** GP earnings por anio: MF + carry. Es la vista que va a junta. */
+/** GP earnings por año: MF + carry. Es la vista que va a junta. */
 export function gpEconomics(input: GpEconomicsInput): GpEconomicsRow[] {
   const years = new Set<number>([
     ...input.aumByYear.map((r) => r.year),
@@ -136,7 +144,9 @@ export function gpEconomics(input: GpEconomicsInput): GpEconomicsRow[] {
     .map((year) => {
       const aum = input.aumByYear.filter((r) => r.year === year).reduce((a, r) => a + r.aum, 0);
       const managementFee = aum * input.managementFeeRate;
-      const carry = input.carryByYear.filter((r) => r.year === year).reduce((a, r) => a + r.carry, 0);
+      const carry = input.carryByYear
+        .filter((r) => r.year === year)
+        .reduce((a, r) => a + r.carry, 0);
       return { year, managementFee, carry, total: managementFee + carry };
     });
 }

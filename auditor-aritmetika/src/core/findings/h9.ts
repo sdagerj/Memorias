@@ -1,14 +1,14 @@
 import type { Finding, ParsedSheet } from '../types';
 import { AuditContext, makeFinding } from './context';
-import { boardParagraph } from './boardLanguage';
+import { boardFields } from './boardLanguage';
 import { looksLikeVersionSheet } from '../parser/parseWorkbook';
 
 /**
  * H9 — Bloat de versiones abandonadas dentro del mismo archivo.
  *
- * Cuenta hojas de produccion reales vs. ruido. Una hoja es candidata a bloat si
- * ninguna otra hoja la referencia Y su nombre sugiere version/prueba/backup.
- * Tambien se listan (con menor severidad) las hojas no referenciadas cuyo nombre
+ * Cuenta hojas de producción reales vs. ruido. Una hoja es candidata a bloat si
+ * ninguna otra hoja la referencia Y su nombre sugiere versión/prueba/backup.
+ * También se listan (con menor severidad) las hojas no referenciadas cuyo nombre
  * no delata nada: pueden ser hojas de entrada legitimas.
  */
 
@@ -38,7 +38,7 @@ export function detectH9(ctx: AuditContext): Finding[] {
   const names = bloat.map((v) => v.sheet.name);
   const detail = bloat.map(
     (v) =>
-      `${v.sheet.name}: ${v.sheet.counts.formulas} formulas, ${v.sheet.counts.hardcoded} valores digitados, ${v.sheet.counts.errors} errores — no referenciada por ninguna otra hoja`,
+      `${v.sheet.name}: ${v.sheet.counts.formulas} fórmulas, ${v.sheet.counts.hardcoded} valores digitados, ${v.sheet.counts.errors} errores — no referenciada por ninguna otra hoja`,
   );
 
   const impact = {
@@ -47,7 +47,7 @@ export function detectH9(ctx: AuditContext): Finding[] {
     after: production,
     delta: -bloat.length,
     unit: 'unidades' as const,
-    basis: 'hojas no referenciadas cuyo nombre sugiere version, prueba o respaldo',
+    basis: 'hojas no referenciadas cuyo nombre sugiere versión, prueba o respaldo',
   };
 
   return [
@@ -57,7 +57,7 @@ export function detectH9(ctx: AuditContext): Finding[] {
         sheet: bloat[0].sheet.name,
         cellRefs: [],
         title: `${bloat.length} de ${total} hojas parecen versiones abandonadas`,
-        description: `El archivo tiene ${total} hojas, de las cuales ${production} participan en la cadena de calculo y ${
+        description: `El archivo tiene ${total} hojas, de las cuales ${production} participan en la cadena de cálculo y ${
           bloat.length
         } aparentan ser versiones o pruebas sin uso: ${names.join(
           ', ',
@@ -66,11 +66,11 @@ export function detectH9(ctx: AuditContext): Finding[] {
         quantifiedImpact: impact,
         status: 'auto-detected',
         severity: 'informativa',
-        boardLanguage: boardParagraph({
-          observation: `el archivo conserva ${bloat.length} hojas de versiones o pruebas anteriores que no alimentan ningun calculo, lo que dificulta identificar rapidamente cual es la version vigente.`,
+        ...boardFields({
+          observation: `el archivo conserva ${bloat.length} hojas de versiones o pruebas anteriores que no alimentan ningun cálculo, lo que dificulta identificar rapidamente cual es la versión vigente.`,
           location: names.join(', '),
           suggestion:
-            'consolidar el entregable en una version limpia con solo las hojas activas y mantener las versiones historicas en archivos aparte con fecha en el nombre.',
+            'consolidar el entregable en una versión limpia con solo las hojas activas y mantener las versiones historicas en archivos aparte con fecha en el nombre.',
           impact,
         }),
       },

@@ -1,38 +1,36 @@
 import type { Finding, QuantifiedImpact } from '../types';
+import { DEFAULT_MONEY_FORMAT, formatImpactValue, type MoneyFormat } from '../format/money';
 
 /**
  * Generador de lenguaje de junta.
  *
  * Regla de Stephanie: los hallazgos se presentan como "oportunidades de mejora
- * identificadas", nunca como errores de Nicolas. Este modulo es el unico lugar
+ * identificadas", nunca como errores de Nicolas. Este módulo es el único lugar
  * donde se decide el tono, para que no se cuele lenguaje acusatorio desde los
  * detectores.
+ *
+ * El texto se guarda ademas en piezas (`boardInput`) para poder re-armarlo
+ * cuando cambia la escala de las cifras, sin volver a correr el checklist.
  */
 
-const MILLION = 1e6;
-
-export function formatMoney(value: number, unit: QuantifiedImpact['unit'] = 'COP'): string {
-  if (unit === 'pct') return `${(value * 100).toFixed(2)}%`;
-  if (unit === 'bp') return `${value.toFixed(1)} bp`;
-  if (unit === 'unidades') return new Intl.NumberFormat('es-CO').format(Math.round(value));
-
-  const abs = Math.abs(value);
-  const sign = value < 0 ? '-' : '';
-  const symbol = unit === 'USD' ? 'USD ' : '$';
-  if (abs >= MILLION) {
-    return `${sign}${symbol}${new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(
-      abs / MILLION,
-    )}MM`;
-  }
-  return `${sign}${symbol}${new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(abs)}`;
+export function formatMoney(
+  value: number,
+  unit: QuantifiedImpact['unit'] = 'COP',
+  money: MoneyFormat = DEFAULT_MONEY_FORMAT,
+): string {
+  return formatImpactValue(value, unit, money);
 }
 
-export function formatImpact(impact: QuantifiedImpact): string {
+export function formatImpact(
+  impact: QuantifiedImpact,
+  money: MoneyFormat = DEFAULT_MONEY_FORMAT,
+): string {
   const unit = impact.unit ?? 'COP';
-  return `${impact.metric}: ${formatMoney(impact.before, unit)} → ${formatMoney(
+  return `${impact.metric}: ${formatMoney(impact.before, unit, money)} → ${formatMoney(
     impact.after,
     unit,
-  )} (delta ${formatMoney(impact.delta, unit)})`;
+    money,
+  )} (diferencia ${formatMoney(impact.delta, unit, money)})`;
 }
 
 export interface BoardTextInput {
@@ -43,23 +41,40 @@ export interface BoardTextInput {
 }
 
 /**
- * Arma el parrafo estandar: observacion → ubicacion → impacto → sugerencia.
- * Siempre en tono de oportunidad, siempre con la ubicacion para que sea
+ * Arma el párrafo estándar: observación → ubicación → impacto → sugerencia.
+ * Siempre en tono de oportunidad, siempre con la ubicación para que sea
  * rastreable hasta la celda.
  */
-export function boardParagraph(input: BoardTextInput): string {
+export function boardParagraph(
+  input: BoardTextInput,
+  money: MoneyFormat = DEFAULT_MONEY_FORMAT,
+): string {
   const parts: string[] = [];
   parts.push(`Oportunidad de mejora identificada: ${input.observation}`);
-  parts.push(`Ubicacion: ${input.location}.`);
+  parts.push(`Ubicación: ${input.location}.`);
   if (input.impact) {
     parts.push(
-      `Impacto cuantificado — ${formatImpact(input.impact)}${
-        input.impact.basis ? ` (base de calculo: ${input.impact.basis})` : ''
+      `Impacto cuantificado — ${formatImpact(input.impact, money)}${
+        input.impact.basis ? ` (base de cálculo: ${input.impact.basis})` : ''
       }.`,
     );
   }
-  parts.push(`Recomendacion: ${input.suggestion}`);
+  parts.push(`Recomendación: ${input.suggestion}`);
   return parts.join(' ');
+}
+
+/**
+ * Campos de texto de junta listos para el objeto Finding: el párrafo ya armado
+ * y las piezas que permiten re-armarlo con otra escala de cifras.
+ */
+export function boardFields(input: BoardTextInput): Pick<Finding, 'boardLanguage' | 'boardInput'> {
+  return { boardLanguage: boardParagraph(input), boardInput: input };
+}
+
+/** Párrafo del hallazgo con la escala de cifras que eligió el usuario. */
+export function renderBoardText(finding: Finding, money: MoneyFormat): string {
+  if (!finding.boardInput) return finding.boardLanguage;
+  return boardParagraph(finding.boardInput, money);
 }
 
 const SEVERITY_ORDER: Record<Finding['severity'], number> = {

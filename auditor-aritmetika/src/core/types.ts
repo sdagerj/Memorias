@@ -1,8 +1,8 @@
 /**
  * Modelo de datos del auditor.
  *
- * Punto de partida tomado del prompt de Stephanie, extendido con lo minimo que
- * el motor de hallazgos necesita para poder cuantificar impacto (indices por
+ * Punto de partida tomado del prompt de Stephanie, extendido con lo mínimo que
+ * el motor de hallazgos necesita para poder cuantificar impacto (índices por
  * fila/columna, etiquetas detectadas, y valores de error de Excel).
  */
 
@@ -12,18 +12,18 @@ export interface ParsedCell {
   /** Referencia A1 dentro de la hoja, ej. "B12" */
   ref: string;
   sheet: string;
-  /** Indice de fila 0-based (fila 1 de Excel === 0) */
+  /** Índice de fila 0-based (fila 1 de Excel === 0) */
   row: number;
-  /** Indice de columna 0-based (columna A === 0) */
+  /** Índice de columna 0-based (columna A === 0) */
   col: number;
   kind: CellKind;
   /** Valor cacheado por Excel. Para kind === 'error' es el texto del error (#REF!, ...) */
   value: string | number | boolean | null;
-  /** String de la formula sin el "=" inicial, si kind === 'formula' */
+  /** String de la fórmula sin el "=" inicial, si kind === 'fórmula' */
   formula?: string;
   /** Texto formateado tal como Excel lo muestra (util para porcentajes) */
   formatted?: string;
-  /** Formato numerico crudo (z) — permite distinguir 0.8 de "80%" */
+  /** Formato numérico crudo (z) — permite distinguir 0.8 de "80%" */
   numFmt?: string;
 }
 
@@ -39,11 +39,11 @@ export interface SheetRow {
 export interface ParsedSheet {
   name: string;
   cells: ParsedCell[];
-  /** Filas con etiqueta detectada, ordenadas por indice de fila */
+  /** Filas con etiqueta detectada, ordenadas por índice de fila */
   rows: SheetRow[];
   /** Columna (0-based) donde se detectaron las etiquetas de esta hoja */
   labelCol: number | null;
-  /** Nombres de otras hojas que referencian esta hoja desde alguna formula */
+  /** Nombres de otras hojas que referencian esta hoja desde alguna fórmula */
   referencedBy: string[];
   /** Nombres de hojas que ESTA hoja referencia */
   references: string[];
@@ -55,7 +55,7 @@ export interface ParsedSheet {
     errors: number;
     nonEmpty: number;
   };
-  /** Fila (0-based) detectada como cabecera temporal (anios o fechas), si existe */
+  /** Fila (0-based) detectada como cabecera temporal (años o fechas), si existe */
   timeHeaderRow: number | null;
   /** Columnas que componen esa serie temporal */
   timeHeaderCols: number[];
@@ -77,18 +77,7 @@ export interface ParsedWorkbook {
 }
 
 export type FindingId =
-  | 'H1'
-  | 'H2'
-  | 'H3'
-  | 'H4'
-  | 'H5'
-  | 'H6'
-  | 'H7'
-  | 'H8'
-  | 'H9'
-  | 'H10'
-  | 'H11'
-  | 'H12';
+  'H1' | 'H2' | 'H3' | 'H4' | 'H5' | 'H6' | 'H7' | 'H8' | 'H9' | 'H10' | 'H11' | 'H12';
 
 export type FindingStatus = 'auto-detected' | 'needs-review' | 'confirmed' | 'dismissed';
 
@@ -101,25 +90,35 @@ export interface QuantifiedImpact {
   delta: number;
   /** Unidad para formateo: 'COP' | 'USD' | 'pct' | 'bp' | 'unidades' */
   unit?: 'COP' | 'USD' | 'pct' | 'bp' | 'unidades';
-  /** Como se calculo — la auditabilidad manda: nada de cajas negras */
+  /** Como se cálculo — la auditabilidad manda: nada de cajas negras */
   basis?: string;
 }
 
 export interface Finding {
-  /** id unico de instancia (H2-Resumen-D14-0) */
+  /** id único de instancia (H2-Resumen-D14-0) */
   key: string;
   id: FindingId;
   sheet: string;
   cellRefs: string[];
   title: string;
   description: string;
-  /** Evidencia cruda: formulas / valores encontrados, para poder rastrear todo */
+  /** Evidencia cruda: fórmulas / valores encontrados, para poder rastrear todo */
   evidence: string[];
   quantifiedImpact?: QuantifiedImpact;
   status: FindingStatus;
   severity: Severity;
   /** Texto en tono "oportunidad de mejora identificada", listo para memo */
   boardLanguage: string;
+  /**
+   * Piezas del texto anterior. Permiten re-armar el párrafo cuando cambia la
+   * escala de las cifras sin volver a correr el checklist.
+   */
+  boardInput?: {
+    observation: string;
+    location: string;
+    suggestion: string;
+    impact?: QuantifiedImpact;
+  };
 }
 
 export interface CarryTier {

@@ -1,4 +1,11 @@
-import type { Finding, FindingId, ParsedCell, ParsedSheet, ParsedWorkbook, Severity } from '../types';
+import type {
+  Finding,
+  FindingId,
+  ParsedCell,
+  ParsedSheet,
+  ParsedWorkbook,
+  Severity,
+} from '../types';
 import { normalizeLabel } from '../parser/labels';
 import { decodeAddr } from '../parser/refs';
 
@@ -7,7 +14,7 @@ export interface AuditConfig {
   cdThresholds: number[];
   /** Tasa de preferred yield esperada (EA) */
   prefRateAnnual: number;
-  /** Maximo de hallazgos por chequeo, para no inundar la UI */
+  /** Máximo de hallazgos por chequeo, para no inundar la UI */
   maxPerCheck: number;
 }
 
@@ -49,7 +56,7 @@ export class AuditContext {
     return this.cellAt(sheetName ?? fromSheet, addr.row, addr.col);
   }
 
-  /** Valor numerico de una celda, o null si no es numerica. */
+  /** Valor numérico de una celda, o null si no es numérica. */
   static numeric(cell: ParsedCell | undefined): number | null {
     if (!cell) return null;
     if (typeof cell.value === 'number' && Number.isFinite(cell.value)) return cell.value;

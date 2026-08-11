@@ -1,26 +1,26 @@
 import type { Finding, ParsedSheet, SheetRow } from '../types';
 import { AuditContext, makeFinding, ref } from './context';
-import { boardParagraph } from './boardLanguage';
+import { boardFields } from './boardLanguage';
 import { cellsCoveredInSheet, extractFunctions } from '../parser/refs';
 import { isTotalLabel } from '../parser/labels';
 
 /**
  * H2 — Fila de "Total" que omite una fila de datos hermana.
  *
- * Asi encontramos que "Ingresos por entidad anual" omitia C1/C2/C3 y
- * subestimaba el ingreso 2024 en 46%. Es una omision silenciosa: el modelo no
+ * Así encontramos que "Ingresos por entidad anual" omitia C1/C2/C3 y
+ * subestimaba el ingreso 2024 en 46%. Es una omisión silenciosa: el modelo no
  * arroja ningun error, simplemente suma de menos.
  *
- * Algoritmo: para cada fila etiquetada Total/Suma, se toma su formula de suma en
- * una columna, se calcula el conjunto de filas que esa formula referencia en esa
+ * Algoritmo: para cada fila etiquetada Total/Suma, se toma su fórmula de suma en
+ * una columna, se calcula el conjunto de filas que esa fórmula referencia en esa
  * columna, y se compara contra el bloque de filas de datos hermanas que la
- * preceden. Lo que este en el bloque y no en la formula es la omision.
+ * preceden. Lo que este en el bloque y no en la fórmula es la omisión.
  */
 
 const SUM_FUNCS = new Set(['SUM', 'SUMA', 'SUMIF', 'SUMIFS', 'SUBTOTAL', 'SUMPRODUCT']);
 /** Cuantas filas sin datos toleramos antes de dar por cerrado el bloque hacia arriba */
 const MAX_GAP = 2;
-/** Minimo de filas referenciadas para considerar que la formula es un total de bloque */
+/** Mínimo de filas referenciadas para considerar que la fórmula es un total de bloque */
 const MIN_REFERENCED = 2;
 
 interface BlockRow {
@@ -41,7 +41,7 @@ function collectBlock(sheet: ParsedSheet, totalRow: number, col: number): BlockR
   let gap = 0;
 
   for (let r = totalRow - 1; r >= 0; r--) {
-    // La cabecera de anios/fechas no es una fila de datos: cierra el bloque.
+    // La cabecera de años/fechas no es una fila de datos: cierra el bloque.
     if (r === sheet.timeHeaderRow) break;
     const row = rowsByIndex.get(r);
     const cell = row?.cells.find((c) => c.col === col);
@@ -50,7 +50,7 @@ function collectBlock(sheet: ParsedSheet, totalRow: number, col: number): BlockR
     if (!cell || value === null) {
       gap++;
       if (gap > MAX_GAP) break;
-      // Una fila con etiqueta pero sin dato numerico suele ser el titulo del
+      // Una fila con etiqueta pero sin dato numérico suele ser el título del
       // bloque: ahi cortamos.
       if (row?.label && block.length > 0) break;
       continue;
@@ -75,6 +75,21 @@ function collectBlock(sheet: ParsedSheet, totalRow: number, col: number): BlockR
   }
 
   return block.reverse();
+}
+
+/**
+ * Nombre del periodo de la columna (el año de la cabecera temporal).
+ *
+ * Sin el, las cinco columnas de una misma serie producen cinco hallazgos con
+ * el titulo identico y solo se distinguen por la celda.
+ */
+function periodLabel(sheet: ParsedSheet, col: number): string | null {
+  if (sheet.timeHeaderRow === null) return null;
+  const header = sheet.rows.find((r) => r.row === sheet.timeHeaderRow);
+  const cell = header?.cells.find((c) => c.col === col);
+  if (!cell) return null;
+  const raw = cell.formatted ?? (cell.value === null ? null : String(cell.value));
+  return raw ? raw.trim() : null;
 }
 
 export function detectH2(ctx: AuditContext): Finding[] {
@@ -109,8 +124,8 @@ export function detectH2(ctx: AuditContext): Finding[] {
         );
         if (missing.length === 0) continue;
 
-        // Si la formula no toca NINGUNA fila del bloque, probablemente suma otra
-        // cosa (otro bloque, otra hoja): no es una omision, es otro total.
+        // Si la fórmula no toca NINGUNA fila del bloque, probablemente suma otra
+        // cosa (otro bloque, otra hoja): no es una omisión, es otro total.
         const hits = block.filter((b) => coveredRows.has(b.row));
         if (hits.length === 0) continue;
 
@@ -120,17 +135,21 @@ export function detectH2(ctx: AuditContext): Finding[] {
         const pctUnderstated = totalShown !== 0 ? Math.abs(missingSum / corrected) : 1;
 
         const location = ref(sheet.name, cell.ref);
+        const period = periodLabel(sheet, cell.col);
+        const totalName = row.label ?? 'Total';
         const missingDesc = missing
           .map((m) => `${m.label ?? '(sin etiqueta)'} [${ref(sheet.name, m.ref)}]`)
           .join(', ');
 
         const impact = {
-          metric: `${row.label ?? 'Total'} — columna ${cell.ref.replace(/\d+/g, '')}`,
+          metric: period
+            ? `${totalName} — ${period}`
+            : `${totalName} — columna ${cell.ref.replace(/\d+/g, '')}`,
           before: totalShown,
           after: corrected,
           delta: missingSum,
           unit: 'COP' as const,
-          basis: `suma de ${missing.length} fila(s) no referenciada(s) por la formula del total`,
+          basis: `suma de ${missing.length} fila(s) no referenciada(s) por la fórmula del total`,
         };
 
         out.push(
@@ -139,8 +158,10 @@ export function detectH2(ctx: AuditContext): Finding[] {
               id: 'H2',
               sheet: sheet.name,
               cellRefs: [cell.ref, ...missing.map((m) => m.ref)],
-              title: `Total omite ${missing.length} fila(s) del bloque — ${row.label ?? 'Total'}`,
-              description: `La formula de total en ${location} referencia ${hits.length} de las ${
+              title: `"${totalName}"${period ? ` de ${period}` : ''} no suma ${
+                missing.length === 1 ? 'una fila' : `${missing.length} filas`
+              } del bloque`,
+              description: `La fórmula de total en ${location} referencia ${hits.length} de las ${
                 block.length
               } filas de datos del bloque. Quedan por fuera: ${missingDesc}. El total mostrado subestima el valor real en ${(
                 pctUnderstated * 100
@@ -155,11 +176,11 @@ export function detectH2(ctx: AuditContext): Finding[] {
               quantifiedImpact: impact,
               status: 'auto-detected',
               severity: 'alta',
-              boardLanguage: boardParagraph({
-                observation: `la fila de total no incorpora todas las lineas del bloque que agrega (quedan por fuera: ${missingDesc}), por lo que la cifra consolidada queda subestimada.`,
+              ...boardFields({
+                observation: `la fila de total no incorpora todas las líneas del bloque que agrega (quedan por fuera: ${missingDesc}), por lo que la cifra consolidada queda subestimada.`,
                 location,
                 suggestion:
-                  'extender el rango de la formula de total para que cubra el bloque completo y, cuando sea posible, anclar el rango a filas con nombre para que agregar un fondo nuevo no vuelva a dejar la suma incompleta.',
+                  'extender el rango de la fórmula de total para que cubra el bloque completo y, cuando sea posible, anclar el rango a filas con nombre para que agregar un fondo nuevo no vuelva a dejar la suma incompleta.',
                 impact,
               }),
             },

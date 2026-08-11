@@ -53,9 +53,9 @@ export function FileDropzone() {
         <>
           <FileSpreadsheet className="h-10 w-10 text-primary" />
           <div>
-            <p className="text-sm font-medium">Arrastra el modelo de Aritmetika aqui</p>
+            <p className="text-sm font-medium">Arrastra el modelo de Aritmetika aquí</p>
             <p className="text-xs text-muted-foreground">
-              Formatos {ACCEPTED.join(', ')} — fondo, nota offshore, buyout de tramo o analisis de
+              Formatos {ACCEPTED.join(', ')} — fondo, nota offshore, buyout de tramo o análisis de
               cobertura
             </p>
           </div>

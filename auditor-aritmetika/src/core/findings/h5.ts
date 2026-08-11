@@ -1,6 +1,6 @@
 import type { Finding } from '../types';
 import { AuditContext, makeFinding, ref } from './context';
-import { boardParagraph } from './boardLanguage';
+import { boardFields } from './boardLanguage';
 import { extractFunctions, extractRanges } from '../parser/refs';
 import { normalizeLabel } from '../parser/labels';
 
@@ -11,8 +11,8 @@ import { normalizeLabel } from '../parser/labels';
  * TIR pagadas 34.06% activa "Higher Catch-Up" (72/28); usar la TIR del
  * portafolio completo (22.63%) llevaria al split "Discounted" (75/25).
  *
- * Queda como candidato de revision: la app senala la formula y las etiquetas de
- * las filas que alimenta el rango, pero la confirmacion de cual base usa es
+ * Queda como candidato de revisión: la app senala la fórmula y las etiquetas de
+ * las filas que alimenta el rango, pero la confirmación de cual base usa es
  * juicio de negocio.
  */
 
@@ -64,11 +64,13 @@ export function detectH5(ctx: AuditContext): Finding[] {
         severity = 'alta';
       } else {
         verdict =
-          'No es posible determinar automaticamente si la base son sentencias pagadas o el portafolio completo.';
+          'No es posible determinar automáticamente si la base son sentencias pagadas o el portafolio completo.';
         severity = 'media';
       }
 
-      const feedsCarry = /(carry|split|catch|cascada|waterfall|tier|participacion)/.test(normalized);
+      const feedsCarry = /(carry|split|catch|cascada|waterfall|tier|participacion)/.test(
+        normalized,
+      );
       const location = ref(sheet.name, cell.ref);
 
       out.push(
@@ -78,11 +80,11 @@ export function detectH5(ctx: AuditContext): Finding[] {
             sheet: sheet.name,
             cellRefs: [cell.ref],
             title: `Base de la TIR a verificar${rowLabel ? ` — ${rowLabel}` : ''}${
-              feedsCarry ? ' (alimenta decision de carry)' : ''
+              feedsCarry ? ' (alimenta decisión de carry)' : ''
             }`,
             description: `${location} calcula una TIR${
-              feedsCarry ? ' que parece alimentar la decision de split de carry' : ''
-            }. ${verdict} La convencion validada exige TIR de sentencias pagadas ("paid rights"), no TIR del portafolio completo: en C4 la diferencia fue 34.06% vs 22.63%, lo que cambia el tier de "Higher Catch-Up" (72/28) a "Discounted" (75/25).`,
+              feedsCarry ? ' que parece alimentar la decisión de split de carry' : ''
+            }. ${verdict} La convención validada exige TIR de sentencias pagadas ("paid rights"), no TIR del portafolio completo: en C4 la diferencia fue 34.06% vs 22.63%, lo que cambia el tier de "Higher Catch-Up" (72/28) a "Discounted" (75/25).`,
             evidence: [
               `${location} = ${cell.formula}`,
               touchedLabels.size > 0
@@ -92,12 +94,12 @@ export function detectH5(ctx: AuditContext): Finding[] {
             ],
             status: 'needs-review',
             severity,
-            boardLanguage: boardParagraph({
+            ...boardFields({
               observation:
-                'la tasa interna de retorno que determina el escalon de carry debe calcularse sobre las sentencias efectivamente pagadas; conviene dejar explicito en el modelo cual es la base de flujos que alimenta ese calculo.',
+                'la tasa interna de retorno que determina el escalon de carry debe calcularse sobre las sentencias efectivamente pagadas; conviene dejar explícito en el modelo cual es la base de flujos que alimenta ese cálculo.',
               location,
               suggestion:
-                'rotular el rango de flujos como "sentencias pagadas" y, si hoy incluye portafolio vigente, separarlo en dos calculos para que el escalon de carry quede trazable.',
+                'rotular el rango de flujos como "sentencias pagadas" y, si hoy incluye portafolio vigente, separarlo en dos cálculos para que el escalon de carry quede trazable.',
             }),
           },
           out.length,

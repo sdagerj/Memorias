@@ -1,11 +1,11 @@
 /**
- * NPV / VPN — convencion validada por Stephanie:
+ * NPV / VPN — convención validada por Stephanie:
  *
  *  - Flujos YA RECIBIDOS (fecha <= corte) se suman SIN descontar.
  *  - Solo los flujos FUTUROS (fecha > corte) se traen a valor presente.
- *  - Nunca mezclar las dos convenciones dentro del mismo calculo.
+ *  - Nunca mezclar las dos convenciones dentro del mismo cálculo.
  *
- * La tasa de descuento es un parametro (default 15% EA), nunca un hardcode.
+ * La tasa de descuento es un parámetro (default 15% EA), nunca un hardcode.
  */
 
 export interface DatedFlow {
@@ -47,8 +47,8 @@ export function yearFraction(fromISO: string, toISO: string): number {
 }
 
 /**
- * NPV con la convencion validada. `discountRateAnnual` es EA (efectivo anual),
- * el factor de descuento es (1+r)^(-t) con t en anios/365.
+ * NPV con la convención validada. `discountRateAnnual` es EA (efectivo anual),
+ * el factor de descuento es (1+r)^(-t) con t en años/365.
  */
 export function npvValidated(
   flows: DatedFlow[],
@@ -103,7 +103,7 @@ export function npvValidated(
 }
 
 /**
- * Convencion INCORRECTA de contraste: descontar TODO desde el corte, incluidos
+ * Convención INCORRECTA de contraste: descontar TODO desde el corte, incluidos
  * los flujos ya recibidos (que quedan capitalizados hacia atras). Se calcula
  * solo para poder mostrar la diferencia como hallazgo cuantificado.
  */

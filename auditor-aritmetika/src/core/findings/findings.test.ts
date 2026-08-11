@@ -121,6 +121,12 @@ describe('H2 — total que omite una fila', () => {
     expect(found.every((f) => f.sheet === 'Ingresos')).toBe(true);
   });
 
+  it('nombra el periodo en el titulo para distinguir las cinco columnas', () => {
+    const titulos = found.map((f) => f.title);
+    expect(new Set(titulos).size).toBe(5);
+    expect(titulos.some((t) => t.includes('2024'))).toBe(true);
+  });
+
   it('identifica cual fila quedo por fuera', () => {
     const y2024 = found.find((f) => f.cellRefs[0] === 'D8')!;
     expect(y2024.description).toContain('C1/C2/C3');
@@ -170,7 +176,7 @@ describe('H5 — base de la TIR para el split de carry', () => {
     expect(found).toHaveLength(1);
     expect(found[0].severity).toBe('alta');
     expect(found[0].status).toBe('needs-review');
-    expect(found[0].title).toContain('alimenta decision de carry');
+    expect(found[0].title).toContain('alimenta decisión de carry');
     expect(found[0].description).toMatch(/34\.06%.*22\.63%/);
   });
 });
@@ -201,20 +207,20 @@ describe('H8 — errores de formula', () => {
 
   it('separa errores de produccion de ruido de hojas huerfanas', () => {
     expect(found).toHaveLength(2);
-    const produccion = found.find((f) => f.title.includes('produccion'))!;
-    const ruido = found.find((f) => f.title.includes('no referenciadas'))!;
+    const produccion = found.find((f) => f.title.includes('producción'))!;
+    const ruido = found.find((f) => f.title.includes('ya nadie usa'))!;
     expect(produccion.severity).toBe('alta');
     expect(ruido.severity).toBe('informativa');
   });
 
   it('cuenta el #DIV/0! de la cascada como error de produccion', () => {
-    const produccion = found.find((f) => f.title.includes('produccion'))!;
+    const produccion = found.find((f) => f.title.includes('producción'))!;
     expect(produccion.sheet).toBe('Cascada');
     expect(produccion.evidence.join(' ')).toContain('#DIV/0!');
   });
 
   it('cuenta el #REF! y el #N/A de la hoja abandonada como ruido', () => {
-    const ruido = found.find((f) => f.title.includes('no referenciadas'))!;
+    const ruido = found.find((f) => f.title.includes('ya nadie usa'))!;
     expect(ruido.evidence.join(' ')).toContain('#REF!');
     expect(ruido.evidence.join(' ')).toContain('#N/A');
   });
@@ -237,7 +243,7 @@ describe('H9 — bloat de versiones', () => {
   });
 });
 
-describe('H10 — terminologia inconsistente', () => {
+describe('H10 — terminología inconsistente', () => {
   it('la distancia con transposicion trata SORF como una sola edicion', () => {
     expect(damerauLevenshtein('SOFR', 'SORF')).toBe(1);
     expect(damerauLevenshtein('CPACA', 'CPCA')).toBe(1);
@@ -251,9 +257,7 @@ describe('H10 — terminologia inconsistente', () => {
 
   it('no marca la grafia correcta como typo', () => {
     const titles = byId(dirtyFindings, 'H10').map((f) => f.title);
-    expect(titles.some((t) => t.startsWith('Posible inconsistencia de terminologia — "SOFR"'))).toBe(
-      false,
-    );
+    expect(titles.some((t) => t.startsWith('"SOFR" y'))).toBe(false);
   });
 });
 
@@ -297,13 +301,13 @@ describe('corrida completa', () => {
   it('todo hallazgo trae ubicacion y texto para memo de junta', () => {
     for (const finding of dirtyFindings) {
       expect(finding.boardLanguage).toMatch(/^Oportunidad de mejora identificada:/);
-      expect(finding.boardLanguage).toContain('Recomendacion:');
+      expect(finding.boardLanguage).toContain('Recomendación:');
       expect(finding.sheet).toBeTruthy();
     }
   });
 
   it('nunca usa lenguaje que senale a una persona', () => {
-    const prohibidas = /\b(error de nicolas|culpa|equivocacion de|negligen|descuido)\b/i;
+    const prohibidas = /\b(error de nicol[aá]s|culpa|equivocaci[oó]n de|negligen|descuido)\b/i;
     for (const finding of dirtyFindings) {
       expect(finding.boardLanguage).not.toMatch(prohibidas);
     }

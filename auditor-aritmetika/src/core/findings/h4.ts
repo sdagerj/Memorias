@@ -1,14 +1,14 @@
 import type { Finding } from '../types';
 import { AuditContext, labelMatches, makeFinding, ref } from './context';
-import { boardParagraph } from './boardLanguage';
+import { boardFields } from './boardLanguage';
 
 /**
  * H4 — Calculation Dates / umbrales de cobertura que no estan en el Side Letter.
  *
- * Los Side Letters definen tipicamente cinco CDs en umbrales de 90%, 95%, 97.5%
- * y 100%. Los modelos a veces usan un 80% generico que no esta soportado. Ojo:
- * los umbrales varian por fondo — esto se marca para verificar contra el Side
- * Letter de ESE fondo, no se "corrige" automaticamente.
+ * Los Side Letters definen típicamente cinco CDs en umbrales de 90%, 95%, 97.5%
+ * y 100%. Los modelos a veces usan un 80% genérico que no esta soportado. Ojo:
+ * los umbrales varían por fondo — esto se marca para verificar contra el Side
+ * Letter de ESE fondo, no se "corrige" automáticamente.
  */
 
 const CD_CONTEXT_RE =
@@ -42,7 +42,9 @@ export function detectH4(ctx: AuditContext): Finding[] {
         if (matches) continue;
 
         const location = ref(sheet.name, cell.ref);
-        const allowedTxt = allowed.map((t) => `${(t * 100).toFixed(t === 0.975 ? 1 : 0)}%`).join(', ');
+        const allowedTxt = allowed
+          .map((t) => `${(t * 100).toFixed(t === 0.975 ? 1 : 0)}%`)
+          .join(', ');
 
         out.push(
           makeFinding(
@@ -53,15 +55,15 @@ export function detectH4(ctx: AuditContext): Finding[] {
               title: `Umbral de cobertura fuera de los CDs documentados — ${(value * 100).toFixed(1)}%`,
               description: `La fila "${row.label}" usa un umbral de ${(value * 100).toFixed(
                 1,
-              )}% en ${location}. Los umbrales de Calculation Date documentados son ${allowedTxt}. Verificar contra el Side Letter de este fondo especifico antes de concluir — los umbrales pueden diferir por fondo.`,
+              )}% en ${location}. Los umbrales de Calculation Date documentados son ${allowedTxt}. Verificar contra el Side Letter de este fondo específico antes de concluir — los umbrales pueden diferir por fondo.`,
               evidence: [
                 `${location} = ${cell.formula ? `${cell.formula} → ${cell.value}` : cell.value}`,
                 `Umbrales configurados en el auditor: ${allowedTxt}`,
               ],
               status: 'auto-detected',
               severity: 'media',
-              boardLanguage: boardParagraph({
-                observation: `el modelo activa una fecha de calculo en un umbral de cobertura de ${(
+              ...boardFields({
+                observation: `el modelo activa una fecha de cálculo en un umbral de cobertura de ${(
                   value * 100
                 ).toFixed(1)}%, que no coincide con los umbrales documentados (${allowedTxt}).`,
                 location,

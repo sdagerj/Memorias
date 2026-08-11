@@ -1,5 +1,13 @@
 import { useMemo, useState } from 'react';
-import { ChevronDown, ChevronRight, FunctionSquare, Hash, Search, Type, TriangleAlert } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronRight,
+  FunctionSquare,
+  Hash,
+  Search,
+  Type,
+  TriangleAlert,
+} from 'lucide-react';
 import {
   Badge,
   Card,
@@ -16,8 +24,8 @@ import { cn, fmtCellValue, fmtNumber } from '@/lib/utils';
 
 /**
  * Fase 1 — inventario navegable: hojas → filas con etiqueta detectada →
- * valor/formula, con buscador. Todo cálculo debe poder rastrearse hasta su
- * celda, asi que la formula cruda siempre esta visible.
+ * valor/fórmula, con buscador. Todo cálculo debe poder rastrearse hasta su
+ * celda, así que la fórmula cruda siempre está visible.
  */
 
 export function StructureExplorer({ workbook }: { workbook: ParsedWorkbook }) {
@@ -48,7 +56,7 @@ export function StructureExplorer({ workbook }: { workbook: ParsedWorkbook }) {
           tone={workbook.totals.errors > 0 ? 'warn' : 'ok'}
         />
         <Stat
-          label="Hojas huerfanas"
+          label="Hojas huérfanas"
           value={fmtNumber(workbook.totals.orphanSheets)}
           tone={workbook.totals.orphanSheets > 0 ? 'warn' : 'ok'}
         />
@@ -59,7 +67,7 @@ export function StructureExplorer({ workbook }: { workbook: ParsedWorkbook }) {
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar etiqueta, referencia (D8), formula o valor…"
+          placeholder="Buscar etiqueta, referencia (D8), fórmula o valor…"
           className="pl-9"
         />
       </div>
@@ -154,7 +162,7 @@ function SheetAccordion({
               {sheet.counts.errors} error(es)
             </Badge>
           )}
-          {sheet.isOrphan && <Badge variant="warn">huerfana</Badge>}
+          {sheet.isOrphan && <Badge variant="warn">huérfana</Badge>}
           <span className="ml-auto text-[11px] text-muted-foreground">
             {sheet.referencedBy.length > 0
               ? `Referenciada por: ${sheet.referencedBy.join(', ')}`

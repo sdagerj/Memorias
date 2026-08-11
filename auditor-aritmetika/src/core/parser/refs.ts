@@ -1,8 +1,8 @@
 /**
- * Utilidades de referencias A1 y de disección de formulas.
+ * Utilidades de referencias A1 y de disección de fórmulas.
  *
- * Todo el motor de hallazgos se apoya aqui: no re-ejecutamos formulas (SheetJS
- * no lo hace), pero si necesitamos entender a QUE apunta cada formula para
+ * Todo el motor de hallazgos se apoya aquí: no re-ejecutamos fórmulas (SheetJS
+ * no lo hace), pero si necesitamos entender a QUE apunta cada fórmula para
  * poder decir "este total omite la fila de C1/C2/C3".
  */
 
@@ -56,7 +56,7 @@ const A1 = String.raw`\$?[A-Za-z]{1,3}\$?\d{1,7}`;
 const RANGE_RE = new RegExp(String.raw`(${REF_TOKEN})?(${A1}):(${A1})`, 'g');
 /** Todas las referencias a celda individual, con o sin hoja. */
 const SINGLE_RE = new RegExp(String.raw`(${REF_TOKEN})?(${A1})(?![:\d(])`, 'g');
-/** Nombres de hoja mencionados en la formula. */
+/** Nombres de hoja mencionados en la fórmula. */
 const SHEET_RE = new RegExp(REF_TOKEN, 'g');
 
 function cleanSheetToken(token: string | undefined): string | null {
@@ -67,14 +67,14 @@ function cleanSheetToken(token: string | undefined): string | null {
 }
 
 /**
- * Quita literales de texto de una formula para no confundir "A1" dentro de un
+ * Quita literales de texto de una fórmula para no confundir "A1" dentro de un
  * string con una referencia real.
  */
 export function stripStringLiterals(formula: string): string {
   return formula.replace(/"(?:[^"]|"")*"/g, '""');
 }
 
-/** Rangos referenciados por la formula. */
+/** Rangos referenciados por la fórmula. */
 export function extractRanges(formula: string): RangeRef[] {
   const f = stripStringLiterals(formula);
   const out: RangeRef[] = [];
@@ -93,7 +93,9 @@ export function extractRanges(formula: string): RangeRef[] {
 }
 
 /** Referencias a celda individual (excluye las que forman parte de un rango). */
-export function extractSingleRefs(formula: string): { sheet: string | null; addr: CellAddr; raw: string }[] {
+export function extractSingleRefs(
+  formula: string,
+): { sheet: string | null; addr: CellAddr; raw: string }[] {
   let f = stripStringLiterals(formula);
   // Neutraliza los rangos para que sus extremos no cuenten como celdas sueltas.
   f = f.replace(RANGE_RE, (match) => '#'.repeat(match.length));
@@ -106,7 +108,7 @@ export function extractSingleRefs(formula: string): { sheet: string | null; addr
   return out;
 }
 
-/** Nombres de hoja que la formula menciona. */
+/** Nombres de hoja que la fórmula menciona. */
 export function extractSheetNames(formula: string): string[] {
   const f = stripStringLiterals(formula);
   const names = new Set<string>();
@@ -126,7 +128,8 @@ export function cellsCoveredInSheet(
 ): Set<string> {
   const maxCells = opts.maxCells ?? 20000;
   const covered = new Set<string>();
-  const sameSheet = (s: string | null) => (s === null ? ownSheet === targetSheet : s === targetSheet);
+  const sameSheet = (s: string | null) =>
+    s === null ? ownSheet === targetSheet : s === targetSheet;
 
   for (const r of extractRanges(formula)) {
     if (!sameSheet(r.sheet)) continue;
@@ -142,7 +145,7 @@ export function cellsCoveredInSheet(
   return covered;
 }
 
-/** Nombres de funcion usados en la formula, en mayusculas. */
+/** Nombres de funcion usados en la fórmula, en mayusculas. */
 export function extractFunctions(formula: string): string[] {
   const f = stripStringLiterals(formula);
   const out = new Set<string>();
@@ -150,10 +153,10 @@ export function extractFunctions(formula: string): string[] {
   return [...out];
 }
 
-/** Numeros literales escritos directamente en la formula. */
+/** Números literales escritos directamente en la fórmula. */
 export function extractLiteralNumbers(formula: string): number[] {
   const f = stripStringLiterals(formula)
-    // no confundir la parte numerica de una referencia (B12) con un literal
+    // no confundir la parte numérica de una referencia (B12) con un literal
     .replace(new RegExp(A1, 'g'), '#');
   const out: number[] = [];
   for (const m of f.matchAll(/(?<![\w.#])(\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)%?/g)) {

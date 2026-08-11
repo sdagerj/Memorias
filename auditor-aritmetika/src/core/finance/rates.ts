@@ -7,17 +7,17 @@
  * (saldo x ((1.15)^(1/12)-1) = saldo x 1.171%).
  */
 
-/** Tasa mensual bajo la convencion validada (simple): r / 12. */
+/** Tasa mensual bajo la convención validada (simple): r / 12. */
 export function monthlyRateSimple(annualRate: number): number {
   return annualRate / 12;
 }
 
-/** Tasa mensual bajo la convencion equivocada (EA compuesta): (1+r)^(1/12) - 1. */
+/** Tasa mensual bajo la convención equivocada (EA compuesta): (1+r)^(1/12) - 1. */
 export function monthlyRateCompounded(annualRate: number): number {
   return Math.pow(1 + annualRate, 1 / 12) - 1;
 }
 
-/** Diferencia de convencion en puntos basicos mensuales (simple - compuesta). */
+/** Diferencia de convención en puntos basicos mensuales (simple - compuesta). */
 export function conventionGapBp(annualRate: number): number {
   return (monthlyRateSimple(annualRate) - monthlyRateCompounded(annualRate)) * 10_000;
 }
@@ -68,7 +68,7 @@ export function accruePreferredYield(
 
 /**
  * Atajo: pref yield simple sobre un saldo constante durante N meses.
- * Util para cuantificar H1 cuando solo tenemos saldo y tasa de una formula.
+ * Util para cuantificar H1 cuando solo tenemos saldo y tasa de una fórmula.
  */
 export function prefYieldFlat(
   lpBalance: number,
@@ -83,7 +83,7 @@ export function prefYieldFlat(
 }
 
 /**
- * Composicion de tasas de referencia (notas offshore: SOFR + Spread).
+ * Composición de tasas de referencia (notas offshore: SOFR + Spread).
  * Debe ser ADITIVA. La multiplicativa sobreestima la tasa.
  */
 export function composeRateAdditive(base: number, spread: number): number {
@@ -94,7 +94,7 @@ export function composeRateMultiplicative(base: number, spread: number): number 
   return (1 + base) * (1 + spread) - 1;
 }
 
-/** Sobreestimacion (en bp) de usar composicion multiplicativa en vez de aditiva. */
+/** Sobreestimacion (en bp) de usar composición multiplicativa en vez de aditiva. */
 export function rateCompositionGapBp(base: number, spread: number): number {
   return (composeRateMultiplicative(base, spread) - composeRateAdditive(base, spread)) * 10_000;
 }
