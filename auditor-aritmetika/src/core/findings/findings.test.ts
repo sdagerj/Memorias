@@ -204,10 +204,16 @@ describe('H5 — reparto de carry escrito a mano', () => {
     expect(evidencia).toContain('75/25');
   });
 
-  it('cuantifica cuanto cambia si aplicara el escalon mas alto', () => {
+  it('compara cada lado contra SU parte en el escalon mas alto', () => {
+    // El literal puede ser la parte del LP o la del GP. Escalar el monto del LP
+    // por la razon del GP daria una cifra sin sentido.
     const gp = found.find((f) => /Carry GP/.test(f.title))!;
-    // 250.000.000 al 25% llevado al 28% = 280.000.000: 30.000.000 de diferencia.
+    // 250.000.000 al 25% llevado al 28% = 280.000.000.
     expect(gp.quantifiedImpact!.delta).toBeCloseTo(30_000_000, -3);
+
+    const lp = found.find((f) => /Carry LP/.test(f.title))!;
+    // 750.000.000 al 75% llevado al 72% = 720.000.000: baja, no sube.
+    expect(lp.quantifiedImpact!.after).toBeCloseTo(720_000_000, -3);
   });
 });
 

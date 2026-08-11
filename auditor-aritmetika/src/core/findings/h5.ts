@@ -204,21 +204,28 @@ function detectHardcodedCarrySplit(ctx: AuditContext): Finding[] {
       const share = literals[0];
       const tier = TIER_SHARES.get(share)!;
       const location = ref(sheet.name, cell.ref);
-      const gpShare = share > 0.5 ? 1 - share : share;
+      // El literal puede ser la parte del LP (0,75) o la del GP (0,25). Cada
+      // fila se compara contra SU propia parte en el escalón más alto (72/28),
+      // no contra la del otro lado: escalar el monto del LP por la razón del GP
+      // daría una cifra sin sentido.
+      const isGpSide = share < 0.5;
+      const target = isGpSide ? 0.28 : 0.72;
       const amount = AuditContext.numeric(cell);
       // TIR del archivo cuyo escalón NO coincide con el que la fórmula aplica.
       const divergentes = irrs.filter((c) => tierFor(c.irr) !== tier);
 
       // Cuánto cambia si en realidad aplicara el escalón más alto (72/28).
       const impact =
-        amount !== null && gpShare > 0 && gpShare < 0.28
+        amount !== null && amount !== 0 && share !== target
           ? {
-              metric: `Carry con reparto ${tier} frente a 72/28`,
+              metric: `"${label}" con reparto ${tier} frente a 72/28`,
               before: Math.abs(amount),
-              after: Math.abs(amount) * (0.28 / gpShare),
-              delta: Math.abs(amount) * (0.28 / gpShare - 1),
+              after: Math.abs(amount) * (target / share),
+              delta: Math.abs(amount) * (target / share - 1),
               unit: 'COP' as const,
-              basis: `monto actual con ${(gpShare * 100).toFixed(0)}% de carry, llevado a 28% (el escalón que aplica con TIR >= 28%)`,
+              basis: `monto actual con ${(share * 100).toFixed(0)}%, llevado a ${(
+                target * 100
+              ).toFixed(0)}% (su parte en el escalón 72/28, el que aplica con TIR >= 28%)`,
             }
           : undefined;
 
