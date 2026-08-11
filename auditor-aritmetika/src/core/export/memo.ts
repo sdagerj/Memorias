@@ -5,6 +5,7 @@ import { formatImpact, renderBoardText } from '../findings/boardLanguage';
 import {
   DEFAULT_MONEY_FORMAT,
   formatAmount,
+  formatImpactValue,
   isMoneyImpact,
   type MoneyFormat,
 } from '../format/money';
@@ -33,6 +34,21 @@ export type MemoBlock =
   | { kind: 'p'; text: string }
   | { kind: 'subheading'; text: string }
   | { kind: 'highlight'; label: string; value: string }
+  /** Un punto de los que se dicen en voz alta en la junta. */
+  | {
+      kind: 'headline';
+      index: number;
+      title: string;
+      /** Qué significa, en castellano llano */
+      meaning: string;
+      /** La cifra, si la hay */
+      figure?: string;
+      location: string;
+      /** Qué habría que hacer o preguntar */
+      ask: string;
+    }
+  /** Una línea del anexo de higiene: no mueve cifras. */
+  | { kind: 'note'; text: string; reference: string }
   | {
       kind: 'finding';
       index: number;
@@ -138,63 +154,94 @@ export function buildMemoDocument(input: MemoInput): MemoDocument {
     ],
   });
 
-  const bySeverity = {
-    alta: active.filter((f) => f.severity === 'alta').length,
-    media: active.filter((f) => f.severity === 'media').length,
-    informativa: active.filter((f) => f.severity === 'informativa').length,
-  };
-  const largest = largestQuantifiedImpact(active);
   const pendientes = active.filter((f) => f.status === 'needs-review').length;
+
+  /**
+   * Los puntos que se dicen en junta: prioridad alta, y entre ellos primero los
+   * que traen una cifra. Tres es el máximo que alguien retiene de una lectura;
+   * el resto vive en el detalle.
+   */
+  const headlines = active
+    .filter((f) => f.severity === 'alta')
+    .sort((a, b) => {
+      const impactA = isMoneyImpact(a.quantifiedImpact) ? Math.abs(a.quantifiedImpact!.delta) : -1;
+      const impactB = isMoneyImpact(b.quantifiedImpact) ? Math.abs(b.quantifiedImpact!.delta) : -1;
+      return impactB - impactA;
+    })
+    .slice(0, 3);
 
   const resumen: MemoBlock[] = [
     {
       kind: 'p',
-      text: `Se identificaron ${active.length} oportunidades de mejora: ${bySeverity.alta} de prioridad alta, ${bySeverity.media} de prioridad media y ${bySeverity.informativa} de higiene del modelo.`,
+      text:
+        headlines.length > 0
+          ? `De las ${active.length} observaciones de la revisión, estas son las que conviene poner sobre la mesa:`
+          : `La revisión no encontró observaciones de prioridad alta. Se identificaron ${active.length} oportunidades de mejora, todas de prioridad media o de higiene del modelo.`,
     },
   ];
-  if (largest) {
+
+  headlines.forEach((finding, i) => {
+    const impact = finding.quantifiedImpact;
     resumen.push({
-      kind: 'highlight',
-      label: `Mayor diferencia identificada — ${largest.title}`,
-      value: formatAmount(Math.abs(largest.quantifiedImpact!.delta), money),
+      kind: 'headline',
+      index: i + 1,
+      title: finding.title,
+      meaning: CHECKS.find((c) => c.id === finding.id)?.plain.risk ?? '',
+      figure: impact
+        ? formatImpactValue(Math.abs(impact.delta), impact.unit ?? 'COP', money)
+        : undefined,
+      // El detector sabe describir su ubicación mejor que una lista de celdas:
+      // un hallazgo que enfrenta dos hojas se lee "Hoja A ↔ Hoja B".
+      location: finding.boardInput?.location ?? reference(finding),
+      ask: finding.boardInput?.suggestion ?? '',
     });
-  }
+  });
+
   if (pendientes > 0) {
     resumen.push({
       kind: 'p',
-      text: `${pendientes} de estas observaciones requieren confirmación contra el Side Letter o contra la intención de diseño del modelo antes de considerarse definitivas.`,
+      text: `${pendientes} de las observaciones requieren confirmación contra el Side Letter o contra la intención de diseño del modelo antes de considerarse definitivas.`,
     });
   }
-  sections.push({ number: '2', heading: 'RESUMEN', blocks: resumen });
 
-  const detalle: MemoBlock[] = [];
-  let index = 1;
-  for (const severity of ['alta', 'media', 'informativa'] as const) {
-    const group = active.filter((f) => f.severity === severity);
-    if (group.length === 0) continue;
-    detalle.push({ kind: 'subheading', text: SEVERITY_TITLE[severity] });
-    for (const finding of group) {
-      detalle.push({
-        kind: 'finding',
-        index,
-        id: finding.id,
-        title: finding.title,
-        meaning: CHECKS.find((c) => c.id === finding.id)?.plain.risk ?? '',
-        paragraph: renderBoardText(finding, money),
-        impact: finding.quantifiedImpact
-          ? formatImpact(finding.quantifiedImpact, money)
-          : undefined,
-        reference: reference(finding),
-        status: statusLabel(finding.status),
-      });
-      index++;
+  sections.push({ number: '2', heading: 'LO QUE HAY QUE PONER SOBRE LA MESA', blocks: resumen });
+
+  // El detalle cubre lo que puede mover una cifra. La higiene va al anexo:
+  // mezclarlas obliga a leer veintitantos párrafos para encontrar los tres que
+  // importan.
+  const relevantes = active.filter((f) => f.severity !== 'informativa');
+  const higiene = active.filter((f) => f.severity === 'informativa');
+
+  if (relevantes.length > 0) {
+    const detalle: MemoBlock[] = [];
+    let index = 1;
+    for (const severity of ['alta', 'media'] as const) {
+      const group = relevantes.filter((f) => f.severity === severity);
+      if (group.length === 0) continue;
+      detalle.push({ kind: 'subheading', text: SEVERITY_TITLE[severity] });
+      for (const finding of group) {
+        detalle.push({
+          kind: 'finding',
+          index,
+          id: finding.id,
+          title: finding.title,
+          meaning: CHECKS.find((c) => c.id === finding.id)?.plain.risk ?? '',
+          paragraph: renderBoardText(finding, money),
+          impact: finding.quantifiedImpact
+            ? formatImpact(finding.quantifiedImpact, money)
+            : undefined,
+          reference: reference(finding),
+          status: statusLabel(finding.status),
+        });
+        index++;
+      }
     }
+    sections.push({
+      number: '3',
+      heading: 'DETALLE DE LAS OPORTUNIDADES',
+      blocks: detalle,
+    });
   }
-  sections.push({
-    number: '3',
-    heading: 'OPORTUNIDADES DE MEJORA IDENTIFICADAS',
-    blocks: detalle,
-  });
 
   if (input.gpEconomics && input.gpEconomics.length > 0) {
     const total = input.gpEconomics.reduce((a, r) => a + r.total, 0);
@@ -217,6 +264,24 @@ export function buildMemoDocument(input: MemoInput): MemoDocument {
     });
   }
 
+  if (higiene.length > 0) {
+    sections.push({
+      number: '',
+      heading: 'ANEXO — HIGIENE DEL MODELO',
+      blocks: [
+        {
+          kind: 'p',
+          text: `${higiene.length} observación(es) de orden y limpieza del archivo. No afectan ninguna cifra; se listan para que puedan resolverse en una sola pasada.`,
+        },
+        ...higiene.map((f): MemoBlock => ({
+          kind: 'note',
+          text: f.title,
+          reference: reference(f),
+        })),
+      ],
+    });
+  }
+
   sections.push({
     number: '',
     heading: 'TRAZABILIDAD',
@@ -232,9 +297,12 @@ export function buildMemoDocument(input: MemoInput): MemoDocument {
     ],
   });
 
-  // La trazabilidad siempre cierra el memo: su numero depende de si la sección
-  // de GP economics entro o no, para que la numeración nunca quede con huecos.
-  sections[sections.length - 1].number = String(sections.length);
+  // La numeración se asigna al final: las secciones opcionales (GP economics,
+  // anexo de higiene) entran o no, y un memo con sección 5 sin sección 4 se lee
+  // como un error.
+  sections.forEach((section, i) => {
+    section.number = String(i + 1);
+  });
 
   return { title: 'MEMORANDO — REVISIÓN DE MODELO FINANCIERO', meta, sections };
 }
@@ -260,6 +328,17 @@ export function buildMemoText(input: MemoInput): string {
         case 'highlight':
           lines.push(`${block.label}: ${block.value}`, '');
           break;
+        case 'headline':
+          lines.push(`${block.index}. ${block.title}`);
+          if (block.figure) lines.push(`   Cifra: ${block.figure}`);
+          if (block.meaning) lines.push(`   Qué significa: ${block.meaning}`);
+          lines.push(`   Dónde: ${block.location}`);
+          if (block.ask) lines.push(`   Qué hacer: ${block.ask}`);
+          lines.push('');
+          break;
+        case 'note':
+          lines.push(`- ${block.text} (${block.reference})`);
+          break;
         case 'finding':
           lines.push(`${block.index}. [${block.id}] ${block.title}`);
           lines.push(`   ${block.paragraph}`);
@@ -269,6 +348,7 @@ export function buildMemoText(input: MemoInput): string {
           lines.push('');
           break;
         case 'table':
+          lines.push('');
           lines.push(block.head.join(' | '));
           for (const row of block.rows) lines.push(row.join(' | '));
           if (block.foot) lines.push(block.foot.join(' | '));
@@ -307,6 +387,21 @@ export function buildMemoHtml(input: MemoInput): string {
         case 'highlight':
           out.push(
             `<p class="hl"><strong>${escapeHtml(block.label)}:</strong> ${escapeHtml(block.value)}</p>`,
+          );
+          break;
+        case 'headline':
+          out.push(
+            `<p class="hl"><strong>${escapeHtml(`${block.index}. ${block.title}`)}</strong>${
+              block.figure ? ` — ${escapeHtml(block.figure)}` : ''
+            }</p>`,
+          );
+          if (block.meaning) out.push(`<p>${escapeHtml(block.meaning)}</p>`);
+          if (block.ask) out.push(`<p><em>Qué hacer:</em> ${escapeHtml(block.ask)}</p>`);
+          out.push(`<p class="ref">${escapeHtml(block.location)}</p>`);
+          break;
+        case 'note':
+          out.push(
+            `<p>• ${escapeHtml(block.text)} <span class="ref">${escapeHtml(block.reference)}</span></p>`,
           );
           break;
         case 'finding':

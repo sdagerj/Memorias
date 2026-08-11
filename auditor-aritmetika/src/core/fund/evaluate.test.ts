@@ -89,10 +89,36 @@ describe('memo de junta', () => {
   it('arma las secciones del memo', () => {
     expect(memo).toContain('MEMORANDO — REVISIÓN DE MODELO FINANCIERO');
     expect(memo).toContain('1. ALCANCE');
-    expect(memo).toContain('3. OPORTUNIDADES DE MEJORA IDENTIFICADAS');
-    // Sin economía del GP el memo tiene cuatro secciones y trazabilidad cierra.
-    expect(memo).toContain('4. TRAZABILIDAD');
+    // El memo abre por lo que se dice en junta, no por la lista completa.
+    expect(memo).toContain('2. LO QUE HAY QUE PONER SOBRE LA MESA');
+    expect(memo).toContain('3. DETALLE DE LAS OPORTUNIDADES');
+    expect(memo).toContain('TRAZABILIDAD');
     expect(memo).toContain(wb.fileName);
+  });
+
+  it('pone adelante hasta tres puntos, con su cifra y qué hacer', () => {
+    const doc = buildMemoDocument({ workbook: wb, audit, findings: audit.findings });
+    const headlines = doc.sections[1].blocks.filter((b) => b.kind === 'headline');
+    expect(headlines.length).toBeGreaterThan(0);
+    expect(headlines.length).toBeLessThanOrEqual(3);
+    for (const h of headlines) {
+      if (h.kind !== 'headline') continue;
+      expect(h.meaning.length).toBeGreaterThan(0);
+      expect(h.ask.length).toBeGreaterThan(0);
+      expect(h.location).toBeTruthy();
+    }
+  });
+
+  it('manda la higiene a un anexo en vez de mezclarla con lo que mueve cifras', () => {
+    const doc = buildMemoDocument({ workbook: wb, audit, findings: audit.findings });
+    const detalle = doc.sections.find((s) => s.heading === 'DETALLE DE LAS OPORTUNIDADES')!;
+    const anexo = doc.sections.find((s) => s.heading.startsWith('ANEXO'));
+    expect(anexo).toBeDefined();
+    // En el detalle no entra nada informativo, y el anexo es una lista de notas.
+    expect(detalle.blocks.some((b) => b.kind === 'subheading' && /higiene/i.test(b.text))).toBe(
+      false,
+    );
+    expect(anexo!.blocks.some((b) => b.kind === 'note')).toBe(true);
   });
 
   it('excluye los hallazgos descartados', () => {
@@ -131,9 +157,10 @@ describe('memo de junta', () => {
     const doc = buildMemoDocument({ workbook: wb, audit, findings: audit.findings });
     expect(doc.sections.map((s) => `${s.number}. ${s.heading}`)).toEqual([
       '1. ALCANCE',
-      '2. RESUMEN',
-      '3. OPORTUNIDADES DE MEJORA IDENTIFICADAS',
-      '4. TRAZABILIDAD',
+      '2. LO QUE HAY QUE PONER SOBRE LA MESA',
+      '3. DETALLE DE LAS OPORTUNIDADES',
+      '4. ANEXO — HIGIENE DEL MODELO',
+      '5. TRAZABILIDAD',
     ]);
     const hallazgos = doc.sections[2].blocks.filter((b) => b.kind === 'finding');
     expect(hallazgos.length).toBeGreaterThan(0);
@@ -141,15 +168,15 @@ describe('memo de junta', () => {
     expect(hallazgos.every((b) => b.kind === 'finding' && b.meaning.length > 0)).toBe(true);
   });
 
-  it('renumera trazabilidad cuando entra la sección de GP economics', () => {
+  it('numera las secciones sin huecos, entren o no las opcionales', () => {
     const doc = buildMemoDocument({
       workbook: wb,
       audit,
       findings: audit.findings,
       gpEconomics: [{ year: 2026, managementFee: 100, carry: 50, total: 150 }],
     });
-    expect(doc.sections.map((s) => s.number)).toEqual(['1', '2', '3', '4', '5']);
-    expect(doc.sections[4].heading).toBe('TRAZABILIDAD');
+    expect(doc.sections.map((s) => s.number)).toEqual(['1', '2', '3', '4', '5', '6']);
+    expect(doc.sections[doc.sections.length - 1].heading).toBe('TRAZABILIDAD');
   });
 
   it('la escala elegida cambia como se leen las cifras del memo', () => {

@@ -180,3 +180,16 @@ solapados sobre el mismo bloque (`TOTAL Fund Profits = GP + Junior`, `Total GP P
 sumas con tope (`=-MIN(caja, SUM(saldo, catch-up))`). Dos guardas: un SUM envuelto en MIN/MAX/IF no
 es un total de bloque, y un total debe cubrir al menos la mitad de su bloque para que las filas
 faltantes cuenten como omisión.
+
+## El memo abre por lo que se dice en junta
+
+Un memo que lista veintitantas observaciones en orden de severidad obliga a leerlas todas para
+encontrar las tres que importan. La sección 2 es ahora **LO QUE HAY QUE PONER SOBRE LA MESA**: hasta
+tres puntos, cada uno con la cifra, qué significa sin jerga, dónde está y qué hacer. Tres es el
+máximo que alguien retiene de una lectura.
+
+Lo informativo se va a un anexo como lista de una línea. No compite con lo que mueve cifras, pero
+tampoco se pierde: se puede resolver en una sola pasada.
+
+Las secciones se numeran al final del armado, porque GP economics y el anexo entran o no según el
+archivo, y un memo con sección 5 sin sección 4 se lee como un error.

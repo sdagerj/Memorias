@@ -93,6 +93,7 @@ export interface FindingSeed {
   status: Finding['status'];
   severity: Severity;
   boardLanguage: string;
+  boardInput?: Finding['boardInput'];
 }
 
 export function makeFinding(seed: FindingSeed, index: number): Finding {
@@ -108,6 +109,9 @@ export function makeFinding(seed: FindingSeed, index: number): Finding {
     status: seed.status,
     severity: seed.severity,
     boardLanguage: seed.boardLanguage,
+    // Sin esto el párrafo de junta queda congelado con la escala por defecto y
+    // cambiar de unidades a millones no se refleja en el texto.
+    boardInput: seed.boardInput,
   };
 }
 

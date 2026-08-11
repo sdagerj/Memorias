@@ -10,7 +10,7 @@
 | 3 — Configurador de fondo + GP economics / NPV | ✅ funcional |
 | 4 — Dashboard consolidado y export | ✅ funcional, con una parte manual |
 
-Verificado: `npm test` → **103 tests en verde**. `npm run build` → build de producción OK.
+Verificado: `npm test` → **107 tests en verde**. `npm run build` → build de producción OK.
 `npm run lint` → limpio. Probado además en navegador de punta a punta (cargar archivo → ver
 estructura → ver hallazgos → mapear fondo → generar memo).
 
@@ -94,6 +94,26 @@ Resultado: **837 → 26 hallazgos**, y el primero de la lista es el que de verda
 14 cifras que no coinciden entre la hoja `Summary Scenarios` (69 valores digitados, cero fórmulas)
 y el motor vivo en `Nota Marco`, con una diferencia de $24.596 millones en "Junior Profits
 before taxes".
+
+### 📄 El memo abre por lo que se dice en junta
+
+Antes listaba las 26 observaciones en orden de severidad y había que leerlas todas para encontrar
+las tres que importan. Ahora:
+
+1. **ALCANCE** — qué se revisó.
+2. **LO QUE HAY QUE PONER SOBRE LA MESA** — hasta tres puntos, cada uno con la cifra, qué significa
+   en castellano llano, dónde está y qué hacer. Se eligen por prioridad alta y, entre esos, por el
+   tamaño de la diferencia.
+3. **DETALLE DE LAS OPORTUNIDADES** — todo lo que puede mover una cifra (alta y media).
+4. **ANEXO — HIGIENE DEL MODELO** — lo informativo, como lista de una línea. No se mezcla con lo
+   anterior.
+5. **ECONOMÍA DEL GP** (si hay datos) y **TRAZABILIDAD**.
+
+Las secciones se numeran al final, así que las opcionales entran o salen sin dejar huecos.
+
+**Bug encontrado al hacerlo:** `makeFinding` descartaba `boardInput`, de modo que el párrafo de
+junta quedaba congelado con la escala por defecto y cambiar de unidades a millones no se reflejaba
+en el texto (sí en las cifras sueltas, no en el párrafo). Corregido, con dos tests de regresión.
 
 ### ⚠️ Pendiente
 

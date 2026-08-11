@@ -48,6 +48,42 @@ export function MemoPreview({ doc }: { doc: MemoDocument }) {
                       {block.label}: <strong className="tabular-nums">{block.value}</strong>
                     </p>
                   );
+                case 'headline':
+                  return (
+                    <div
+                      key={i}
+                      className="flex items-start gap-3 rounded-md border border-warn/40 bg-warn/5 p-3"
+                    >
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+                        {block.index}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold leading-snug">{block.title}</p>
+                        {block.meaning && (
+                          <p className="mt-1 text-sm leading-relaxed">{block.meaning}</p>
+                        )}
+                        {block.ask && (
+                          <p className="mt-1 text-sm leading-relaxed">
+                            <span className="font-medium">Qué hacer:</span> {block.ask}
+                          </p>
+                        )}
+                        <p className="cell-mono mt-1 text-muted-foreground">{block.location}</p>
+                      </div>
+                      {block.figure && (
+                        <p className="shrink-0 text-right text-base font-semibold tabular-nums">
+                          {block.figure}
+                        </p>
+                      )}
+                    </div>
+                  );
+                case 'note':
+                  return (
+                    <p key={i} className="flex flex-wrap items-baseline gap-x-2 text-sm">
+                      <span aria-hidden>•</span>
+                      <span>{block.text}</span>
+                      <span className="cell-mono text-muted-foreground">{block.reference}</span>
+                    </p>
+                  );
                 case 'finding':
                   return (
                     <div key={i} className="border-l-2 pl-3">

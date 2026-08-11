@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { parseWorkbook } from '../parser/parseWorkbook';
 import { runAudit } from './index';
 import { damerauLevenshtein } from './h10';
+import { renderBoardText } from './boardLanguage';
 import type { Finding, FindingId, ParsedWorkbook } from '../types';
 
 /**
@@ -309,6 +310,22 @@ describe('corrida completa', () => {
       expect(finding.boardLanguage).toContain('Recomendación:');
       expect(finding.sheet).toBeTruthy();
     }
+  });
+
+  it('conserva las piezas del texto para poder reescribirlo en otra escala', () => {
+    // Si makeFinding pierde boardInput, cambiar de unidades a millones deja de
+    // reflejarse en el párrafo del memo y nadie se entera.
+    for (const finding of dirtyFindings) {
+      expect(finding.boardInput).toBeDefined();
+      expect(finding.boardInput!.suggestion.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('reescribe el párrafo cuando cambia la escala de las cifras', () => {
+    const conCifra = dirtyFindings.find((f) => f.quantifiedImpact?.unit === 'COP')!;
+    const enUnidades = renderBoardText(conCifra, { scale: 'unidades', currency: 'COP' });
+    const enMillones = renderBoardText(conCifra, { scale: 'millones', currency: 'COP' });
+    expect(enUnidades).not.toBe(enMillones);
   });
 
   it('nunca usa lenguaje que senale a una persona', () => {
