@@ -30,7 +30,9 @@ npm run build        # build de producción a dist/
 npm run preview      # sirve el build
 npm run lint         # ESLint
 npm run format       # Prettier
+npm run build:single # la app entera en un solo .html que abre con doble click
 npm run fixtures     # regenera los .xlsx sintéticos de prueba
+npm run icons        # regenera los iconos PNG
 ```
 
 ## Publicarla como app con URL propia
@@ -53,11 +55,12 @@ Los íconos se generan con `node scripts/generate-icons.mjs` y están versionado
 
 ### Sin servidor
 
-`npm run build && node scripts/build-single-file.mjs` produce
-`dist/auditor-aritmetika.html`: **la app completa en un solo archivo**, que se abre con doble
+`npm run build:single` produce `dist-single/auditor-aritmetika.html`: **la app completa en un solo archivo**, que se abre con doble
 click y funciona sin internet ni instalación. Útil para mandarla por correo o guardarla en
-una carpeta compartida. En esa forma no hay service worker (no aplica sobre `file://`), pero
-tampoco hace falta: todo está dentro del archivo.
+una carpeta compartida. Se compila como script clásico en vez de módulo ES: abierto desde el disco (`file://`) un
+módulo queda sujeto a reglas de origen que algunos navegadores bloquean, y un script clásico
+no. En esa forma no hay service worker (no aplica sobre `file://`), pero tampoco hace falta:
+todo está dentro del archivo.
 
 ## Cómo se usa
 
