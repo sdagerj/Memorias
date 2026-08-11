@@ -165,6 +165,18 @@ function buildDirtyWorkbook() {
     D10: num(SOFR_ENGINE, '0.00%'),
     C12: txt('Chequeo de cuadre'),
     D12: err(0x07, '#DIV/0!'), // H8 en hoja de produccion
+    // H5: reparto de carry escrito a mano, en vez de derivarlo de la TIR.
+    // Patron real del buyout de C4: `Carry PPF = -C50*0.75`.
+    C14: txt('Residual repartible'),
+    D14: num(1_000_000_000),
+    C15: txt('Carry LP'),
+    D15: formula('-D14*0.75', -750_000_000),
+    C16: txt('Carry GP'),
+    D16: formula('-D14*0.25', -250_000_000),
+    // H1: descuento a valor presente con capitalizacion compuesta. Es
+    // valoracion, no devengo: debe salir como candidato, no como alta.
+    C18: txt('Valor presente sentencia'),
+    D18: formula('D14/(1+((1+0.15)^(1/12)-1))^12', 869_565_217),
   });
   XLSX.utils.book_append_sheet(wb, cascada, 'Cascada');
 

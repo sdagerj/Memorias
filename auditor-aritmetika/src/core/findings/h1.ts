@@ -67,6 +67,23 @@ function findBalanceOperand(
   return best;
 }
 
+/**
+ * Distingue descontar de devengar.
+ *
+ * `saldo * ((1+r)^(1/12)-1)` **devenga** intereses: ahí la convención simple vs
+ * compuesta es la del Side Letter y la diferencia se acumula sobre el saldo del
+ * LP. `pago / (1+((1+r)^(1/365)-1))^dias` **descuenta** a valor presente: es
+ * valoración, y capitalizar de forma compuesta es práctica corriente.
+ *
+ * El buyout de C4 trae 642 celdas descontando cada sentencia. Reportarlas como
+ * infracción de convención al mismo nivel que un devengo mal liquidado es
+ * confundir dos cosas distintas.
+ */
+function isDiscounting(formula: string): boolean {
+  // La tasa aparece en un denominador: `/ (1 + ...` o `/(1+...`
+  return /\/\s*\(\s*1\s*\+/.test(formula);
+}
+
 export function detectH1(ctx: AuditContext): Finding[] {
   const out: Finding[] = [];
 
@@ -91,6 +108,7 @@ export function detectH1(ctx: AuditContext): Finding[] {
             periods,
             annualRate: rate.value,
             rateText: rate.text,
+            discounting: isDiscounting(formula),
             index: out.length,
           });
           out.push(finding);
@@ -135,6 +153,8 @@ function buildCompoundFinding(
     periods: number;
     annualRate: number | null;
     rateText: string;
+    /** La tasa descuenta a valor presente en vez de devengar sobre un saldo */
+    discounting: boolean;
     index: number;
   },
 ): Finding {
@@ -170,31 +190,49 @@ function buildCompoundFinding(
         ).toFixed(2)}% EA`,
       };
 
-  const observation = `la fórmula liquida el rendimiento con tasa efectiva anual compuesta ((1+r)^(1/${args.periods})−1) en lugar de la convención de tasa simple pactada en Side Letter (r/${args.periods}).`;
+  const observation = args.discounting
+    ? `la fórmula trae un flujo a valor presente capitalizando de forma compuesta ((1+r)^(1/${args.periods})−1); conviene confirmar si la valoración debe seguir la misma convención simple que el Side Letter fija para el devengo.`
+    : `la fórmula liquida el rendimiento con tasa efectiva anual compuesta ((1+r)^(1/${args.periods})−1) en lugar de la convención de tasa simple pactada en Side Letter (r/${args.periods}).`;
 
   return makeFinding(
     {
       id: 'H1',
       sheet: args.sheetName,
       cellRefs: [args.cellRef],
-      title: `Convención de tasa compuesta donde corresponde tasa simple${
-        args.label ? ` — ${args.label}` : ''
-      }`,
-      description: `La celda ${location} usa capitalización compuesta para llevar la tasa anual a periodo ${periodicity}. Con ${(
-        rate * 100
-      ).toFixed(2)}% EA la convención simple da ${(simple * 100).toFixed(
-        3,
-      )}% y la compuesta ${(compounded * 100).toFixed(3)}%: una diferencia de ${gapBp.toFixed(
-        1,
-      )} bp por periodo que se acumula sobre todo el saldo del LP.`,
+      title: args.discounting
+        ? `Descuento a valor presente con capitalización compuesta${
+            args.label ? ` — ${args.label}` : ''
+          }`
+        : `Convención de tasa compuesta donde corresponde tasa simple${
+            args.label ? ` — ${args.label}` : ''
+          }`,
+      description: args.discounting
+        ? `La celda ${location} descuenta un flujo a valor presente usando capitalización compuesta (${(
+            compounded * 100
+          ).toFixed(3)}% frente a ${(simple * 100).toFixed(
+            3,
+          )}% con la convención simple, ${gapBp.toFixed(
+            1,
+          )} bp de diferencia por periodo). Descontar de forma compuesta es práctica corriente de valoración, así que esto no es necesariamente un error: la pregunta es si el Side Letter fija la convención simple solo para el devengo del preferred yield o también para valorar el portafolio.`
+        : `La celda ${location} usa capitalización compuesta para llevar la tasa anual a periodo ${periodicity}. Con ${(
+            rate * 100
+          ).toFixed(2)}% EA la convención simple da ${(simple * 100).toFixed(
+            3,
+          )}% y la compuesta ${(compounded * 100).toFixed(3)}%: una diferencia de ${gapBp.toFixed(
+            1,
+          )} bp por periodo que se acumula sobre todo el saldo del LP.`,
       evidence: [`${location} = ${args.formula}`],
       quantifiedImpact: impact,
-      status: 'auto-detected',
-      severity: 'alta',
+      // Descontar a valor presente de forma compuesta es defendible; devengar
+      // así contra la convención pactada no lo es. No van al mismo nivel.
+      status: args.discounting ? 'needs-review' : 'auto-detected',
+      severity: args.discounting ? 'media' : 'alta',
       ...boardFields({
         observation,
         location,
-        suggestion: `homologar la fórmula a tasa simple (tasa_anual/${args.periods}) para alinear el devengo con la convención del Side Letter, y dejar la tasa anual como parámetro editable en una sola celda de supuestos.`,
+        suggestion: args.discounting
+          ? 'confirmar contra el Side Letter si la convención de tasa simple aplica también a la valoración del portafolio o solo al devengo del preferred yield, y dejar la respuesta escrita en la hoja de supuestos para que no haya que volver a preguntarlo.'
+          : `homologar la fórmula a tasa simple (tasa_anual/${args.periods}) para alinear el devengo con la convención del Side Letter, y dejar la tasa anual como parámetro editable en una sola celda de supuestos.`,
         impact,
       }),
     },

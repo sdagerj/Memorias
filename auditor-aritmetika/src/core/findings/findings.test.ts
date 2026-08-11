@@ -178,12 +178,54 @@ describe('H4 — umbrales de Calculation Date', () => {
 
 describe('H5 — base de la TIR para el split de carry', () => {
   it('marca la TIR que corre sobre el portafolio total', () => {
-    const found = byId(dirtyFindings, 'H5');
+    const found = byId(dirtyFindings, 'H5').filter((f) => f.title.startsWith('Verificar'));
     expect(found).toHaveLength(1);
     expect(found[0].severity).toBe('alta');
     expect(found[0].status).toBe('needs-review');
     expect(found[0].title).toContain('alimenta decisión de carry');
     expect(found[0].description).toMatch(/34\.06%.*22\.63%/);
+  });
+});
+
+describe('H5 — reparto de carry escrito a mano', () => {
+  const found = byId(dirtyFindings, 'H5').filter((f) => f.title.includes('escrito a mano'));
+
+  it('marca el porcentaje de carry fijado dentro de la formula', () => {
+    // Patron real del buyout de C4: `Carry PPF = -C50*0.75`.
+    expect(found).toHaveLength(2);
+    expect(found.every((f) => f.severity === 'alta')).toBe(true);
+    expect(found.every((f) => f.status === 'needs-review')).toBe(true);
+  });
+
+  it('deja escritos los tres escalones del Side Letter en la evidencia', () => {
+    const evidencia = found[0].evidence.join(' ');
+    expect(evidencia).toContain('72/28');
+    expect(evidencia).toContain('73/27');
+    expect(evidencia).toContain('75/25');
+  });
+
+  it('cuantifica cuanto cambia si aplicara el escalon mas alto', () => {
+    const gp = found.find((f) => /Carry GP/.test(f.title))!;
+    // 250.000.000 al 25% llevado al 28% = 280.000.000: 30.000.000 de diferencia.
+    expect(gp.quantifiedImpact!.delta).toBeCloseTo(30_000_000, -3);
+  });
+});
+
+describe('H1 — descontar no es devengar', () => {
+  it('baja a candidato el descuento a valor presente compuesto', () => {
+    // Capitalizar compuesto para traer un flujo a valor presente es practica
+    // corriente de valoracion; devengar asi contra la convencion pactada no.
+    const descuento = byId(dirtyFindings, 'H1').find((f) => f.title.startsWith('Descuento'))!;
+    expect(descuento).toBeDefined();
+    expect(descuento.severity).toBe('media');
+    expect(descuento.status).toBe('needs-review');
+    expect(descuento.description).toMatch(/no es necesariamente un error/);
+  });
+
+  it('mantiene en alta el devengo con la convencion equivocada', () => {
+    const devengo = byId(dirtyFindings, 'H1').find((f) => f.sheet === 'Pref Yield')!;
+    expect(devengo.severity).toBe('alta');
+    expect(devengo.status).toBe('auto-detected');
   });
 });
 

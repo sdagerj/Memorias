@@ -12,7 +12,7 @@ import {
 import { npvDiscountAll, npvValidated, yearFraction } from './npv';
 import { irr, paidRightsIrr, totalPortfolioIrr, xirr, type Judgment } from './irr';
 import { gpEconomics, runWaterfall, selectCarryTier } from './waterfall';
-import { DEFAULT_CARRY_TIERS } from '../types';
+import { DEFAULT_CARRY_TIERS, DEFAULT_FUND_CONFIG } from '../types';
 
 describe('convencion de preferred yield', () => {
   it('la tasa simple mensual de 15% EA es 1.25%', () => {
@@ -219,5 +219,41 @@ describe('cascada y tiers de carry', () => {
     expect(rows).toHaveLength(2);
     expect(rows[0]).toEqual({ year: 2024, managementFee: 50, carry: 0, total: 50 });
     expect(rows[1]).toEqual({ year: 2025, managementFee: 100, carry: 300, total: 400 });
+  });
+});
+
+describe('escalones de carry de C4 (confirmados contra el Side Letter)', () => {
+  // Regla que dio Stephanie: >=28% -> 72/28; 26%-28% -> 73/27; <26% -> 75/25.
+  // No hay escalon 80/20. Si esto cambia, tiene que cambiar con el contrato en
+  // la mano, no por un ajuste de codigo.
+  const tier = (irr: number) => selectCarryTier(irr, DEFAULT_CARRY_TIERS)!;
+
+  it('reparte 75/25 por debajo de 26%', () => {
+    expect(tier(0).gpShare).toBe(0.25);
+    expect(tier(0.2263).gpShare).toBe(0.25); // el caso real de C4
+    expect(tier(0.2599).gpShare).toBe(0.25);
+  });
+
+  it('reparte 73/27 entre 26% y 28%', () => {
+    expect(tier(0.26).gpShare).toBe(0.27);
+    expect(tier(0.27).gpShare).toBe(0.27);
+    expect(tier(0.2799).gpShare).toBe(0.27);
+  });
+
+  it('reparte 72/28 desde 28%', () => {
+    expect(tier(0.28).gpShare).toBe(0.28);
+    expect(tier(0.3406).gpShare).toBe(0.28); // el caso real de C4
+  });
+
+  it('los dos casos reales de C4 caen en escalones distintos', () => {
+    // 34.06% (sentencias pagadas) vs 22.63% (portafolio completo): usar la base
+    // equivocada cuesta 3 puntos de carry.
+    expect(tier(0.3406).label).toBe('Higher Catch-Up');
+    expect(tier(0.2263).label).toBe('Discounted');
+    expect(tier(0.3406).gpShare - tier(0.2263).gpShare).toBeCloseTo(0.03, 10);
+  });
+
+  it('los cuatro momentos de cálculo son 90%, 95%, 97,5% y 100%', () => {
+    expect(DEFAULT_FUND_CONFIG.calculationDateThresholds).toEqual([0.9, 0.95, 0.975, 1.0]);
   });
 });

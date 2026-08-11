@@ -164,10 +164,19 @@ export interface FundCellMap {
   cachedNpv?: string;
 }
 
+/**
+ * Escalones de carry de C4, confirmados por Stephanie contra el Side Letter.
+ *
+ * La TIR que decide el escalón es la de las **sentencias pagadas a C4**, medida
+ * en uno de los cuatro momentos de cálculo (90%, 95%, 97,5% y 100% de las
+ * sentencias pagadas), nunca la del portafolio completo.
+ *
+ * No hay escalón 80/20: por debajo de 26% el reparto ya es 75/25.
+ */
 export const DEFAULT_CARRY_TIERS: CarryTier[] = [
-  { minIrr: 0, label: 'Base', lpShare: 0.8, gpShare: 0.2 },
-  { minIrr: 0.2, label: 'Discounted', lpShare: 0.75, gpShare: 0.25 },
-  { minIrr: 0.3, label: 'Higher Catch-Up', lpShare: 0.72, gpShare: 0.28 },
+  { minIrr: 0, label: 'Discounted', lpShare: 0.75, gpShare: 0.25 },
+  { minIrr: 0.26, label: 'Intermedio', lpShare: 0.73, gpShare: 0.27 },
+  { minIrr: 0.28, label: 'Higher Catch-Up', lpShare: 0.72, gpShare: 0.28 },
 ];
 
 export const DEFAULT_FUND_CONFIG: FundConfig = {

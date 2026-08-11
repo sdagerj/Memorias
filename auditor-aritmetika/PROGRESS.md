@@ -10,7 +10,7 @@
 | 3 — Configurador de fondo + GP economics / NPV | ✅ funcional |
 | 4 — Dashboard consolidado y export | ✅ funcional, con una parte manual |
 
-Verificado: `npm test` → **107 tests en verde**. `npm run build` → build de producción OK.
+Verificado: `npm test` → **118 tests en verde**. `npm run build` → build de producción OK.
 `npm run lint` → limpio. Probado además en navegador de punta a punta (cargar archivo → ver
 estructura → ver hallazgos → mapear fondo → generar memo).
 
@@ -114,6 +114,49 @@ Las secciones se numeran al final, así que las opcionales entran o salen sin de
 **Bug encontrado al hacerlo:** `makeFinding` descartaba `boardInput`, de modo que el párrafo de
 junta quedaba congelado con la escala por defecto y cambiar de unidades a millones no se reflejaba
 en el texto (sí en las cifras sueltas, no en el párrafo). Corregido, con dos tests de regresión.
+
+### ✅ Escalones de carry confirmados (agosto 2026)
+
+Stephanie confirmó la regla de C4 contra el Side Letter. **Los defaults que yo había asumido estaban
+mal en los tres frentes**: el umbral no era 30% sino 28%, no existe el escalón 80/20 que había
+inventado, y faltaba un escalón intermedio que no conocía.
+
+| TIR de sentencias pagadas | Reparto LP / GP |
+|---|---|
+| ≥ 28% | 72 / 28 |
+| 26% – 28% | 73 / 27 |
+| < 26% | 75 / 25 |
+
+La TIR se mide en uno de los cuatro momentos de cálculo: 90%, 95%, 97,5% y 100% de sentencias
+pagadas a C4. Hay cinco tests que fijan estos umbrales; si cambian, tiene que ser con el contrato
+en la mano.
+
+### 🔬 Segunda corrida contra un modelo real: el buyout de C4
+
+`Buyout_Semper_C4_Model.xlsm` — 7 hojas, 85.602 fórmulas. Estructuralmente distinto del Marco, y
+rompió cosas nuevas: **675 hallazgos sin agrupar**.
+
+| Problema | Causa | Corrección |
+|---|---|---|
+| 35 hallazgos idénticos en `FJ Calculation!O5:O39` | El agrupador solo cubría repetición **a lo ancho** de una fila; este modelo copia la fórmula **hacia abajo** por una columna, una fila por sentencia | La clave de agrupación ya no incluye la celda; el mensaje dice si la repetición corre por fila o por columna |
+| 642 celdas marcadas "alta" por capitalización compuesta | Son **descuentos a valor presente**, no devengos. Descontar de forma compuesta es práctica corriente de valoración | H1 distingue descontar de devengar: si la tasa está en un denominador, baja a "media / por confirmar" y el texto dice que no es necesariamente un error |
+
+Resultado: **675 → 27 hallazgos**.
+
+**Hallazgo nuevo que salió de este archivo:** el buyout calcula `Carry PPF = -C50*0.75` y
+`Carry ARTK = -C50*0.25` — el reparto 75/25 escrito como número dentro de la fórmula, cuando el
+Side Letter lo hace depender de la TIR. Se agregó la detección a H5, y el hallazgo lista todas las
+TIR del archivo con el escalón que implicaría cada una:
+
+```
+IRR FJ              = 27,00%  -> escalón 73/27
+IRR FJ - Expenses   = 26,06%  -> escalón 73/27
+IRR FJ - Mgmt. Fee  = 25,30%  -> escalón 75/25
+IRR Total Before Tax= 24,37%  -> escalón 75/25
+```
+
+Cuatro TIR, dos escalones distintos, y el modelo fija 75/25 por adelantado. Cuál de ellas manda es
+la decisión que define el reparto.
 
 ### ⚠️ Pendiente
 

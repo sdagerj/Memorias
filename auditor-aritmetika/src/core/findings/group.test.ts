@@ -38,10 +38,21 @@ describe('agrupación por patrón de fila', () => {
     expect(grouped[0].description).toMatch(/5 celdas de la fila 144/);
   });
 
-  it('no mezcla filas distintas aunque el chequeo sea el mismo', () => {
+  it('colapsa también la fórmula copiada hacia abajo por una columna', () => {
+    // El buyout de C4 replica el descuento de cada sentencia en 35 filas de la
+    // columna O: misma decisión de modelo, distinta dirección de copiado.
+    const grouped = groupFindings(
+      ['O5', 'O6', 'O7', 'O8'].map((r) => finding({ cellRefs: [r], title: 'Tasa compuesta' })),
+    );
+    expect(grouped).toHaveLength(1);
+    expect(grouped[0].occurrences).toBe(4);
+    expect(grouped[0].description).toMatch(/4 celdas de la columna O/);
+  });
+
+  it('separa patrones distintos aunque compartan hoja y chequeo', () => {
     const grouped = groupFindings([
       finding({ cellRefs: ['L144'], title: 'Composición multiplicativa' }),
-      finding({ cellRefs: ['L145'], title: 'Composición multiplicativa' }),
+      finding({ cellRefs: ['L145'], title: 'Capitalización compuesta' }),
     ]);
     expect(grouped).toHaveLength(2);
   });

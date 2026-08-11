@@ -193,3 +193,24 @@ tampoco se pierde: se puede resolver en una sola pasada.
 
 Las secciones se numeran al final del armado, porque GP economics y el anexo entran o no según el
 archivo, y un memo con sección 5 sin sección 4 se lee como un error.
+
+## Descontar no es devengar
+
+`saldo * ((1+r)^(1/12)−1)` **devenga**: ahí la convención simple vs compuesta es la del Side Letter
+y la diferencia se acumula sobre el saldo del LP. `pago / (1+((1+r)^(1/365)−1))^dias` **descuenta** a
+valor presente: es valoración, y capitalizar de forma compuesta es práctica corriente.
+
+El buyout de C4 trae 642 celdas descontando cada sentencia. Reportarlas como infracción de
+convención al mismo nivel que un devengo mal liquidado es confundir dos cosas distintas. H1 detecta
+la tasa en un denominador y baja el hallazgo a "media / por confirmar", con un texto que dice
+explícitamente que puede no ser un error.
+
+## El reparto de carry no se escribe a mano
+
+Los escalones de C4 dependen de la TIR (≥28% → 72/28; 26–28% → 73/27; <26% → 75/25). Un modelo que
+escribe `-C50*0.75` fija el escalón más bajo por adelantado y el reparto deja de responder al
+escenario.
+
+El hallazgo no se queda en señalarlo: lista todas las TIR del archivo con el escalón que implicaría
+cada una. En el buyout hay cuatro TIR que se reparten entre dos escalones distintos, así que la
+pregunta "¿cuál TIR manda?" deja de ser abstracta y pasa a tener consecuencia en pesos.
