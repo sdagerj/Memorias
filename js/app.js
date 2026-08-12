@@ -885,11 +885,19 @@ async function showAppVersion() {
   const el = $('#appVersion');
   if (!el) return;
   try {
+    // Hay que esperar a que el service worker termine de instalarse: si se
+    // consulta antes, el caché aún no existe y parecería que algo falla.
+    if ('serviceWorker' in navigator && navigator.serviceWorker.ready) {
+      await Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise((r) => setTimeout(r, 3000)),
+      ]);
+    }
     const keys = await caches.keys();
     const mine = keys.filter((k) => k.startsWith('memorias-v')).sort();
-    el.textContent = mine.length ? mine[mine.length - 1].replace('memorias-', '') : 'sin caché';
+    el.textContent = mine.length ? mine[mine.length - 1].replace('memorias-', '') : 'instalando…';
   } catch {
-    el.textContent = 'sin caché';
+    el.textContent = 'no disponible';
   }
 }
 
@@ -903,6 +911,24 @@ async function refreshStorageStatus() {
 
   const note = $('#stPersist');
   const btn = $('#persistBtn');
+  const alerta = $('#stBlocked');
+
+  // La única señal fiable de que algo va mal es que la escritura falle. La
+  // ausencia de caché NO sirve como alarma: en la primera visita el service
+  // worker todavía no ha terminado de instalarse y aún no hay caché.
+  const t = await db.storageSelfTest();
+  if (!t.canWrite) {
+    alerta.hidden = false;
+    alerta.innerHTML =
+      '<strong>⛔ Este navegador NO está guardando nada.</strong>' +
+      '<p>Lo que escribas se perderá al cerrar. Casi siempre es una de estas dos:</p>' +
+      '<ol><li><b>Navegación privada.</b> Sal del modo privado y abre la app normal.</li>' +
+      '<li><b>Ajustes del iPhone → Safari → «Bloquear todas las cookies»</b>. Desactívalo.</li></ol>' +
+      '<p>Arregla eso primero y vuelve a restaurar tu copia.</p>';
+  } else {
+    alerta.hidden = true;
+  }
+
   if (!r.ok) {
     note.textContent = 'No se pudo leer el almacenamiento de este dispositivo.';
     btn.hidden = true;
@@ -1072,10 +1098,12 @@ async function init() {
   }
   // Lo de abajo no debe impedir que la app funcione si falla.
   try { await initRssSources(); } catch (err) { console.error('[Memorias] RSS:', err); }
-  try { await refreshStorageStatus(); } catch { /* informativo */ }
+  // El service worker se registra ANTES de mirar el caché, si no la versión
+  // saldría siempre vacía en la primera visita.
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
+  try { await refreshStorageStatus(); } catch { /* informativo */ }
   showAppVersion();
 }
 init();

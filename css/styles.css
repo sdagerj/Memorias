@@ -812,3 +812,16 @@ h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; }
 .storage-counts span { font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
 .storage-status .small { margin: 10px 0 0; line-height: 1.45; }
 .storage-status .btn { width: 100%; margin-top: 10px; }
+.storage-blocked {
+  background: #fff;
+  border: 1px solid #e6c4be;
+  border-left: 4px solid var(--danger);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  font-size: 0.88rem;
+}
+.storage-blocked strong { color: var(--danger); display: block; margin-bottom: 6px; }
+.storage-blocked p { margin: 6px 0 0; color: var(--ink); }
+.storage-blocked ol { margin: 8px 0 0; padding-left: 20px; color: var(--ink); }
+.storage-blocked li { margin-bottom: 6px; }

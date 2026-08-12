@@ -64,6 +64,30 @@ export async function storageReport() {
   return out;
 }
 
+// Prueba real de escritura: guarda una marca, la relee y la borra. Si esto
+// falla, el navegador está bloqueando el almacenamiento (modo privado o
+// "bloquear todas las cookies") y nada de lo que guarde la persona va a durar.
+export async function storageSelfTest() {
+  const out = { canWrite: false, hasCache: false, hasServiceWorker: false, error: null };
+  try {
+    const marca = 'prueba-' + Date.now();
+    await setSetting('__prueba__', marca);
+    const leido = await getSetting('__prueba__', null);
+    out.canWrite = leido === marca;
+    await setSetting('__prueba__', null);
+  } catch (err) {
+    out.error = err && err.message ? err.message : String(err);
+  }
+  try {
+    out.hasCache = 'caches' in window && (await caches.keys()).some((k) => k.startsWith('memorias-v'));
+  } catch { /* bloqueado */ }
+  try {
+    out.hasServiceWorker = 'serviceWorker' in navigator &&
+      !!(await navigator.serviceWorker.getRegistration());
+  } catch { /* bloqueado */ }
+  return out;
+}
+
 // Pide al navegador que no borre los datos por falta de espacio o desuso.
 export async function requestPersistence() {
   if (!navigator.storage || !navigator.storage.persist) return null;
