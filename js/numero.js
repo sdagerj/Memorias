@@ -518,7 +518,20 @@ function showNumPrintOverlay(contentHtml) {
         }
       }
     } else {
-      await copyToClipboard(prompt, `Copiado ✨ — ${headlines.length} titulares incluidos. Pégalo en claude.ai`);
+      // Sin API key el texto se copia al portapapeles, pero en Safari ese
+      // copiado falla porque la espera de los titulares rompe el permiso del
+      // toque. Antes no se escribía nada en la caja y la pantalla quedaba
+      // vacía: ahora el texto siempre queda a la vista para copiarlo a mano.
+      $('#numIdeaPaste').value = prompt;
+      $('#numIdeaPaste').readOnly = false;
+      $('#numIdeaHint').hidden = false;
+      try {
+        await navigator.clipboard.writeText(prompt);
+        showToast(`Copiado ✨ — ${headlines.length} titulares incluidos`);
+      } catch {
+        showToast('Copia el texto de la caja y pégalo en claude.ai');
+      }
+      $('#numIdeaPaste').scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
     btn.disabled = false;
     btn.textContent = '💡 Idear número';
