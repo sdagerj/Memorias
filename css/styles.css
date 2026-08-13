@@ -771,3 +771,28 @@ h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; }
 }
 .backup-nudge p { margin: 0; font-size: 0.9rem; }
 .backup-nudge .btn { padding: 8px 14px; font-size: 0.85rem; }
+
+/* =================== Cambios propuestos (corrección) =================== */
+.cambios { margin-top: 12px; }
+.cambios-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 10px; margin-bottom: 8px;
+}
+.cambios-head strong { color: var(--num-navy); font-size: 0.92rem; }
+.cambios-head .link-btn { font-size: 0.82rem; padding: 0 4px; }
+.cambio {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 12px; background: var(--paper);
+  border: 1px solid var(--line); border-radius: 10px; margin-bottom: 6px;
+}
+.cambio input { margin-top: 4px; flex-shrink: 0; width: 18px; height: 18px; }
+.cambio-texto { min-width: 0; font-size: 0.88rem; line-height: 1.5; }
+.cambio-antes { color: var(--danger); text-decoration: line-through; }
+.cambio-despues { color: #1a6b3a; font-weight: 600; }
+.cambio-motivo {
+  display: block; margin-top: 3px;
+  font-size: 0.74rem; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.cambio.perdido { opacity: 0.55; }
+.cambio.perdido .cambio-motivo { color: var(--danger); }

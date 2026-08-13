@@ -255,9 +255,24 @@
               <textarea id="numCorreccionPaste" rows="6" placeholder="Pega la corrección de Claude…"></textarea>
             </label>
             <p id="numCorreccionHint" class="muted small paste-hint" hidden>Sin API key: <strong>copia todo este texto</strong> y pégalo en <strong>claude.ai</strong>. Después borra la caja, pega ahí la respuesta de Claude y toca «Aplicar corrección».</p>
+            <!-- Cambios propuestos, uno a uno, para aprobar antes de aplicar -->
+            <div id="numCambios" class="cambios" hidden>
+              <div class="cambios-head">
+                <strong id="numCambiosTitulo"></strong>
+                <span>
+                  <button type="button" id="numCambiosTodos" class="link-btn">Todos</button>
+                  <button type="button" id="numCambiosNinguno" class="link-btn">Ninguno</button>
+                </span>
+              </div>
+              <div id="numCambiosLista"></div>
+              <div class="settings-row">
+                <button type="button" id="numAplicarSeleccion" class="btn num-btn-primary">Aplicar los marcados</button>
+                <button type="button" id="numUndoCorreccion" class="btn" hidden>↩︎ Deshacer</button>
+              </div>
+            </div>
+
             <div class="settings-row">
-              <button type="button" id="numAplicarCorreccion" class="btn num-btn-primary">Aplicar corrección</button>
-              <button type="button" id="numUndoCorreccion" class="btn" hidden>↩︎ Deshacer</button>
+              <button type="button" id="numAplicarCorreccion" class="btn">Aplicar todo el texto de golpe</button>
               <button type="button" id="numLimpiarCorreccion" class="btn ghost">Limpiar</button>
             </div>
           </div>

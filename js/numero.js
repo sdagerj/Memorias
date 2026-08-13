@@ -218,7 +218,48 @@ REGLAS
 - LinkedIn no es lo mismo que el carrusel: otro registro (insight en primera persona, no historia ilustrada).
 - Cuando corrijas, sugiere y mejora; no reescribas todo salvo que te lo pidan.`;
 
-function buildIdeaPrompt(headlines) {
+// Las ideas salían repetitivas porque el prompt pedía siempre las mismas cinco
+// canteras. Con una lista más ancha y una rotación por semana, cada tanda parte
+// de terrenos distintos.
+const CANTERAS = [
+  'mercados y economía',
+  'arte, museos y mercado del arte',
+  'mujeres y liderazgo',
+  'vida cotidiana y observación propia',
+  'efemérides y aniversarios',
+  'ciencia, salud y longevidad',
+  'tecnología y su efecto en el trabajo',
+  'demografía: natalidad, migración, envejecimiento',
+  'consumo, precios y canasta familiar',
+  'deporte y alto rendimiento',
+  'música, cine y cultura popular',
+  'ciudad, vivienda y movilidad',
+  'educación y brecha de habilidades',
+  'medio ambiente y transición energética',
+  'historia con eco en el presente',
+  'gastronomía y agroindustria',
+  'moda y negocio de la imagen',
+  'psicología, tiempo y atención',
+];
+
+// Rotación estable dentro de la misma semana (para que no cambie a cada toque)
+// pero distinta cada semana, con algo de azar para que no sea previsible.
+function canterasDeLaSemana(cuantas = 6) {
+  const semana = Math.floor(Date.now() / (7 * 86400000));
+  const pool = [...CANTERAS];
+  const elegidas = [];
+  let semilla = semana * 2654435761 % 4294967296;
+  while (elegidas.length < cuantas && pool.length) {
+    semilla = (semilla * 1103515245 + 12345) % 2147483648;
+    elegidas.push(pool.splice(semilla % pool.length, 1)[0]);
+  }
+  // Una al azar de verdad, para que dos tandas seguidas no sean idénticas.
+  const resto = CANTERAS.filter((c) => !elegidas.includes(c));
+  if (resto.length) elegidas.push(resto[Math.floor(Math.random() * resto.length)]);
+  return elegidas;
+}
+
+function buildIdeaPrompt(headlines, publicados = []) {
   const today = new Date().toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const lines = [SYSTEM_PROMPT, ''];
   lines.push('---');
@@ -246,7 +287,29 @@ function buildIdeaPrompt(headlines) {
   }
   lines.push('---');
   lines.push('');
-  lines.push(`Propón 3 números candidatos para esta semana (${today}), sacados de estas cinco canteras: (1) mercados y economía, (2) arte y cultura, (3) mujeres y liderazgo, (4) vida y observación, (5) efemérides.
+  // Lo ya publicado, para que no vuelva sobre lo mismo.
+  if (publicados.length) {
+    lines.push('YA PUBLICADO — no repitas estos números ni vuelvas sobre su mismo ángulo:');
+    lines.push('');
+    for (const n of publicados) {
+      lines.push(`- #${n.numero || '?'} — ${n.gancho || '(sin título)'}`);
+    }
+    lines.push('');
+    lines.push('---');
+    lines.push('');
+  }
+
+  const canteras = canterasDeLaSemana();
+  lines.push(`Propón 4 números candidatos para esta semana (${today}). Cada uno debe venir de una cantera DISTINTA de esta lista, y no puedes usar dos veces la misma:
+
+${canteras.map((c, i) => `(${i + 1}) ${c}`).join('\n')}
+
+REGLAS DE VARIEDAD — importan tanto como el resto:
+- Los cuatro candidatos deben ser de canteras distintas entre sí.
+- Al menos uno tiene que venir de un terreno que NO sea economía ni mercados.
+- Al menos uno debe salir de un sitio inesperado: una cifra pequeña, doméstica o rara, no un titular de portada.
+- Nada de cifras redondas manidas (el 80/20, el 10.000, el 1 %) salvo que traigas un giro nuevo de verdad.
+- Si un candidato se parece a algo ya publicado arriba, descártalo y busca otro.
 
 IMPORTANTE: Los ganchos deben ser de esta semana o los últimos días — no uses noticias viejas o genéricas. Si los titulares de arriba no son suficientes, complementa con tu conocimiento actualizado.
 
@@ -263,6 +326,10 @@ Un número se gana la semana con mínimo 3 de 5. En empate, gana el del ángulo 
   return lines.join('\n');
 }
 
+// Corrección conservadora: el prompt anterior pedía cuidar "el arco", "claridad
+// y ritmo" y "que no sea genérico", que es una invitación a reescribir. Este
+// solo permite tocar lo que está mal escrito, y devuelve cada cambio por
+// separado para poder aprobarlos uno a uno.
 function buildCorrectionPrompt(data) {
   return `${SYSTEM_PROMPT}
 
@@ -270,13 +337,30 @@ function buildCorrectionPrompt(data) {
 
 PROMPT: CORRECCIÓN DEL TEXTO
 
-Te doy el borrador del editorial de esta semana. Corrígelo cuidando:
-- La voz: cercana, honesta, con criterio; directa, sin relleno.
-- El arco: del mundo → a mí → a ellas.
-- Claridad y ritmo.
-- Que no sea genérico ni caiga en cliché.
+Corrígeme solo ortografía, puntuación, concordancia y errores de dedo.
 
-Sugiere cambios concretos; no reescribas todo salvo que te lo pida. Devuelve el texto corregido y, al final, una nota corta (3–4 líneas) de qué mejoraste y por qué.
+REGLAS ESTRICTAS:
+- No reescribas frases que ya son correctas, aunque se te ocurra una versión mejor.
+- Conserva mi largo de frase, mi orden de ideas y mis expresiones propias.
+- No agregues conectores ni rayas largas.
+- No cambies el sentido de nada, ni un matiz.
+- Si dudas entre corregir o dejarlo, déjalo.
+- No toques el estilo: repeticiones, frases cortas o giros raros pueden ser intencionados.
+
+FORMATO DE RESPUESTA — devuelve SOLO los cambios, uno por bloque, exactamente así:
+
+===CAMBIO===
+ANTES: (el fragmento exacto tal y como está en mi texto, copiado literal)
+DESPUÉS: (el mismo fragmento ya corregido)
+MOTIVO: (ortografía | puntuación | concordancia | error de dedo — en dos o tres palabras)
+
+Copia en ANTES el fragmento literal, con las mismas palabras y mayúsculas, para
+que se pueda localizar en el texto. Usa el fragmento más corto que contenga el
+error, no el párrafo entero.
+
+Si no hay nada que corregir, responde exactamente: SIN CAMBIOS
+
+No añadas introducción, resumen ni comentarios finales.
 
 ---
 
@@ -285,6 +369,30 @@ TÍTULO: ${data.gancho || ''}
 
 EDITORIAL:
 ${data.editorial || '(vacío)'}`;
+}
+
+// Extrae los bloques ===CAMBIO=== y comprueba si cada uno se puede localizar en
+// el texto. Devuelve null si la respuesta no viene en ese formato, para que la
+// app pueda caer al modo antiguo de sustituir el texto entero.
+export function parseCorrectionChanges(respuesta, editorial) {
+  if (!respuesta) return null;
+  if (/^\s*SIN CAMBIOS\s*$/im.test(respuesta) && !respuesta.includes('===CAMBIO===')) return [];
+  const bloques = respuesta.split(/===\s*CAMBIO\s*===/i).slice(1);
+  if (!bloques.length) return null;
+
+  const cambios = [];
+  for (const b of bloques) {
+    const antes = (b.match(/ANTES:\s*([\s\S]*?)(?=\n\s*DESPU[EÉ]S:)/i) || [])[1];
+    const despues = (b.match(/DESPU[EÉ]S:\s*([\s\S]*?)(?=\n\s*MOTIVO:|$)/i) || [])[1];
+    const motivo = (b.match(/MOTIVO:\s*(.*)/i) || [])[1];
+    if (antes == null || despues == null) continue;
+    const a = antes.trim();
+    const d = despues.trim();
+    if (!a || a === d) continue;
+    cambios.push({ antes: a, despues: d, motivo: (motivo || '').trim() || 'corrección',
+                   encontrado: editorial.includes(a) });
+  }
+  return cambios.length ? cambios : null;
 }
 
 function buildMontajePrompt(data) {
@@ -337,6 +445,10 @@ TEMA: ${data.editorial ? data.editorial.slice(0, 300) + '…' : '(sin editorial 
 // ── panel Claude helpers ──────────────────────────────────────────────────────
 
 function clearClaudePanels() {
+  const panel = $('#numCambios');
+  if (panel) panel.hidden = true;
+  const undo = $('#numUndoCorreccion');
+  if (undo) undo.hidden = true;
   ['numIdeaPaste', 'numCorreccionPaste', 'numMontajePaste', 'numPodcastPaste'].forEach((id) => {
     const el = $(`#${id}`);
     if (el) el.value = '';
@@ -573,7 +685,9 @@ function showNumPrintOverlay(contentHtml) {
       const sources = saved || DEFAULT_SOURCES;
       headlines = await fetchHeadlines(sources);
     } catch { /* silencioso */ }
-    const prompt = buildIdeaPrompt(headlines);
+    let publicados = [];
+    try { publicados = (await db.getAllNumbers()).slice(0, 15); } catch { /* sin archivo */ }
+    const prompt = buildIdeaPrompt(headlines, publicados);
     const key = await getApiKey();
     if (hasApiKey(key)) {
       btn.textContent = 'Consultando a Claude…';
@@ -625,10 +739,102 @@ function showNumPrintOverlay(contentHtml) {
     await runWithClaude(
       $('#numCorreccionBtn'), '✏️ Corregir',
       buildCorrectionPrompt(data),
-      (result) => { $('#numCorreccionPaste').value = result; showToast('Corrección lista ✨'); },
+      (result) => {
+        $('#numCorreccionPaste').value = result;
+        mostrarCambios(result);
+        showToast('Corrección lista ✨');
+      },
       'Copiado ✨ Pégalo en claude.ai',
       'numCorreccionPaste', 'numCorreccionHint'
     );
+  });
+
+  // ── Cambios uno a uno ────────────────────────────────────────────────────
+  // Sustituir el editorial entero siempre es un acto de fe. Aquí cada cambio se
+  // ve antes de entrar, para que no se cuele ninguno que altere el sentido.
+  let cambiosActuales = [];
+
+  function mostrarCambios(respuesta) {
+    const editorial = $('#numEditorial').value;
+    const cambios = parseCorrectionChanges(respuesta, editorial);
+    const panel = $('#numCambios');
+    if (!cambios) { panel.hidden = true; return false; }   // formato libre: modo antiguo
+
+    cambiosActuales = cambios;
+    if (!cambios.length) {
+      panel.hidden = false;
+      $('#numCambiosTitulo').textContent = 'Sin cambios que proponer — tu texto está limpio.';
+      $('#numCambiosLista').innerHTML = '';
+      return true;
+    }
+
+    const perdidos = cambios.filter((c) => !c.encontrado).length;
+    $('#numCambiosTitulo').textContent =
+      `${cambios.length} cambio${cambios.length !== 1 ? 's' : ''} propuesto${cambios.length !== 1 ? 's' : ''}` +
+      (perdidos ? ` · ${perdidos} sin localizar` : '');
+
+    const lista = $('#numCambiosLista');
+    lista.innerHTML = '';
+    cambios.forEach((c, i) => {
+      const row = document.createElement('label');
+      row.className = 'cambio' + (c.encontrado ? '' : ' perdido');
+      row.innerHTML = `
+        <input type="checkbox" data-i="${i}" ${c.encontrado ? 'checked' : 'disabled'} />
+        <span class="cambio-texto">
+          <span class="cambio-antes">${escHtml(c.antes)}</span>
+          →
+          <span class="cambio-despues">${escHtml(c.despues)}</span>
+          <span class="cambio-motivo">${c.encontrado ? escHtml(c.motivo) : 'no se encontró ese fragmento en tu texto'}</span>
+        </span>`;
+      lista.appendChild(row);
+    });
+    panel.hidden = false;
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    return true;
+  }
+
+  $('#numCambiosTodos').addEventListener('click', () => {
+    $$('#numCambiosLista input:not(:disabled)').forEach((cb) => (cb.checked = true));
+  });
+  $('#numCambiosNinguno').addEventListener('click', () => {
+    $$('#numCambiosLista input').forEach((cb) => (cb.checked = false));
+  });
+
+  $('#numAplicarSeleccion').addEventListener('click', () => {
+    const marcados = $$('#numCambiosLista input:checked').map((cb) => cambiosActuales[+cb.dataset.i]);
+    if (!marcados.length) { showToast('No hay ningún cambio marcado'); return; }
+
+    const anterior = $('#numEditorial').value;
+    let texto = anterior;
+    let aplicados = 0;
+    for (const c of marcados) {
+      if (!texto.includes(c.antes)) continue;   // pudo cambiar al aplicar otro
+      texto = texto.replace(c.antes, c.despues);
+      aplicados++;
+    }
+    if (!aplicados) { showErrorPanel('No se pudo aplicar ninguno: los fragmentos ya no coinciden con tu texto.'); return; }
+
+    $('#numEditorial').value = texto;
+    if (currentNumero) currentNumero.editorial = texto;
+    saveDraftNow();
+
+    const undo = $('#numUndoCorreccion');
+    undo.hidden = false;
+    undo.onclick = () => {
+      $('#numEditorial').value = anterior;
+      if (currentNumero) currentNumero.editorial = anterior;
+      saveDraftNow();
+      undo.hidden = true;
+      showToast('Editorial restaurado a como estaba');
+    };
+    showToast(`${aplicados} cambio${aplicados !== 1 ? 's' : ''} aplicado${aplicados !== 1 ? 's' : ''} ✨ — puedes deshacer`);
+  });
+
+  // Si pega la respuesta a mano, también se intentan los cambios uno a uno.
+  $('#numCorreccionPaste').addEventListener('input', () => {
+    const v = $('#numCorreccionPaste').value;
+    if (v.includes('===CAMBIO===')) mostrarCambios(v);
+    else $('#numCambios').hidden = true;
   });
 
   $('#numAplicarCorreccion').addEventListener('click', () => {
