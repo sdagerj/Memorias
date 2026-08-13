@@ -831,15 +831,24 @@ $('#clearCorrectionBtn').addEventListener('click', () => {
 async function loadSettings() {
   $('#authorName').value = await db.getSetting('authorName', '');
   $('#bookTitle').value = await db.getSetting('bookTitle', '');
-  const key = await db.getSetting('claudeApiKey', '');
-  if (key) {
+  const guardada = await db.getSetting('claudeApiKey', '');
+  if (guardada) {
+    // Se comprueba de verdad, no solo que exista: una clave con un guion
+    // cambiado por el teclado se veía como "✓ guardada" y luego fallaba.
+    const key = normalizeApiKey(guardada);
+    const problema = describeApiKeyProblem(key);
     $('#claudeApiKeyInput').value = key;
-    $('#apiKeyStatus').textContent = '✓ Key guardada.';
+    $('#apiKeyStatus').textContent = problema ? '⚠️ ' + problema : '✓ Key guardada y válida.';
+    if (!problema && key !== guardada) await db.setSetting('claudeApiKey', key);
+  } else {
+    $('#apiKeyStatus').textContent = 'Sin key: los botones de Claude te darán el texto para pegarlo en claude.ai.';
   }
   const proxy = await db.getSetting('claudeProxyUrl', '');
   if (proxy) {
     $('#claudeProxyInput').value = proxy;
     $('#proxyStatus').textContent = '✓ Proxy configurado — ' + proxy;
+  } else {
+    $('#proxyStatus').textContent = 'Sin proxy: la app no podrá llamar a Claude aunque tengas key.';
   }
 }
 
