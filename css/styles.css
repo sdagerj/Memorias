@@ -846,3 +846,11 @@ h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; }
 }
 .draft-banner .settings-row { margin-top: 12px; }
 .draft-saved { margin: 6px 0 0; font-size: 0.78rem; color: var(--num-teal); }
+.paste-hint {
+  background: #fff9ec;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  padding: 8px 12px;
+  margin: 8px 0 0;
+  line-height: 1.45;
+}
