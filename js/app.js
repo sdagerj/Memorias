@@ -5,6 +5,7 @@ import { renderBook, formatLongDate } from './book.js';
 import { VoiceDictation, isVoiceSupported } from './voice.js';
 import { initEssence } from './essence.js';
 import { initNumero, initRssSources } from './numero.js';
+import { normalizeApiKey, describeApiKeyProblem } from './claude-api.js';
 
 // --- Estado del editor en curso ---
 let draftPhotos = [];      // [{ name, blob }]
@@ -843,13 +844,21 @@ async function loadSettings() {
 }
 
 $('#saveApiKeyBtn').addEventListener('click', async () => {
-  const val = $('#claudeApiKeyInput').value.trim();
-  if (!val.startsWith('sk-ant-')) {
-    $('#apiKeyStatus').textContent = 'La key no parece válida. Debe empezar con sk-ant-…';
+  const original = $('#claudeApiKeyInput').value;
+  // Deshace la "corrección" del teclado (guiones largos, comillas curvas,
+  // espacios invisibles) antes de validar: si no, fetch falla más tarde con un
+  // error sobre ISO-8859-1 que no le dice nada a nadie.
+  const val = normalizeApiKey(original);
+  const problema = describeApiKeyProblem(val);
+  if (problema) {
+    $('#apiKeyStatus').textContent = problema;
     return;
   }
   await db.setSetting('claudeApiKey', val);
-  $('#apiKeyStatus').textContent = '✓ Key guardada ✨';
+  $('#claudeApiKeyInput').value = val;
+  $('#apiKeyStatus').textContent = val !== original.trim()
+    ? '✓ Key guardada ✨ (se corrigieron caracteres que había cambiado el teclado)'
+    : '✓ Key guardada ✨';
   toast('API key guardada ✨');
 });
 
