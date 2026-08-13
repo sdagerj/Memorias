@@ -613,18 +613,66 @@ function showNumPrintOverlay(contentHtml) {
     const v = $('#numCorreccionPaste').value.trim();
     if (!v) { showToast('Primero obtén la corrección de Claude'); return; }
     // Quitar todo desde "Nota editorial", "---", "Ajustes", "Cambios" en adelante
-    const cutPatterns = /^(nota editorial|ajustes|cambios realizados|comentarios|---|\*\*nota|\*\*ajustes|\*\*cambios)/i;
+    const notaPattern = /^(nota editorial|nota|ajustes|cambios realizados|cambios|comentarios|\*\*nota|\*\*ajustes|\*\*cambios)/i;
+    const sepPattern = /^(-{3,}|\*{3,}|_{3,})$/;
+    const cutPatterns = (l) => notaPattern.test(l) || sepPattern.test(l);
     const lines = v.split('\n');
-    const cutIndex = lines.findIndex(l => cutPatterns.test(l.trim()));
+
+    // Si la respuesta ARRANCA con la nota, no trae texto corregido: aplicarla
+    // sustituiría el editorial por los comentarios de Claude.
+    if (notaPattern.test(lines[0].trim())) {
+      showErrorPanel('La respuesta de Claude son solo comentarios, no el texto corregido.\n\n' +
+        'Tu editorial NO se ha tocado. Pídele que te devuelva el texto completo.');
+      return;
+    }
+
+    let cutIndex = lines.findIndex((l) => cutPatterns(l.trim()));
+    // Si el corte cae en la primera línea se llevaría el texto entero: la
+    // respuesta empieza por "---" y lo corregido viene después. Cortar ahí
+    // dejaba el editorial vacío y borraba el trabajo.
+    if (cutIndex === 0) cutIndex = lines.slice(1).findIndex((l) => cutPatterns(l.trim())) + 1 || -1;
     const cleanLines = cutIndex === -1 ? lines : lines.slice(0, cutIndex);
-    // Quitar líneas que sean solo placeholders
-    const placeholderPattern = /^(aquí va|aqui va|\[texto|texto corregido)/i;
-    const editorial = cleanLines.filter(l => !placeholderPattern.test(l.trim())).join('\n').trim();
+    // Quitar las líneas que sean SOLO un rótulo. Antes bastaba con que la línea
+    // empezara por "texto corregido" para borrarla entera, así que se comía
+    // párrafos de verdad que empezaran con esas palabras.
+    const placeholderPattern = /^(aquí va|aqui va|\[texto[^\]]*\]|texto corregido|\*\*texto corregido\*\*)\s*:?\s*$/i;
+    const limpiar = (ls) => ls
+      .filter((l) => !placeholderPattern.test(l.trim()))
+      .join('\n')
+      .replace(/^(\s*(-{3,}|\*{3,}|_{3,})\s*\n?)+/, '')  // separadores sueltos al principio
+      .replace(/(\n?\s*(-{3,}|\*{3,}|_{3,})\s*)+$/, '')  // y al final
+      .trim();
+    // Si el recorte deja el texto vacío, se usa la respuesta entera antes que
+    // sustituir el editorial por nada.
+    const editorial = limpiar(cleanLines) || limpiar(lines);
+
+    const anterior = $('#numEditorial').value;
+    if (!editorial) {
+      showErrorPanel('No se pudo entender la corrección: no se encontró texto que aplicar.\n\n' +
+        'Tu editorial NO se ha tocado. Revisa lo que pegaste de Claude.');
+      return;
+    }
+    if (editorial === anterior) { showToast('La corrección es igual a lo que ya tenías'); return; }
+
     $('#numEditorial').value = editorial;
     if (currentNumero) currentNumero.editorial = editorial;
+    saveDraftNow();
     $('#numEditorial').scrollIntoView({ behavior: 'smooth', block: 'center' });
-    $('#numEditorial').focus();
-    showToast('Editorial actualizado ✨');
+
+    // Poder volver atrás: sustituir el editorial es destructivo y hasta ahora
+    // no había forma de recuperar la versión anterior.
+    const undo = $('#numUndoCorreccion');
+    if (undo) {
+      undo.hidden = false;
+      undo.onclick = () => {
+        $('#numEditorial').value = anterior;
+        if (currentNumero) currentNumero.editorial = anterior;
+        saveDraftNow();
+        undo.hidden = true;
+        showToast('Editorial restaurado a como estaba');
+      };
+    }
+    showToast('Editorial actualizado ✨ — puedes deshacer');
   });
 
   $('#numLimpiarCorreccion').addEventListener('click', () => { $('#numCorreccionPaste').value = ''; });
