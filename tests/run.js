@@ -173,6 +173,72 @@ prueba('Aplicar corrección nunca vacía el editorial', async (b) => {
   }
 });
 
+prueba('La corrección propone cambios uno a uno y respeta lo no marcado', async (b) => {
+  const ORIG = 'Ayer fuí al mercado y compre tres cosas. La vendedora, me dijo que subió.';
+  const RESP = ['===CAMBIO===', 'ANTES: fuí', 'DESPUÉS: fui', 'MOTIVO: ortografía', '',
+                '===CAMBIO===', 'ANTES: compre tres cosas', 'DESPUÉS: compré tres cosas', 'MOTIVO: error de dedo', '',
+                '===CAMBIO===', 'ANTES: no existe en el texto', 'DESPUÉS: da igual', 'MOTIVO: ortografía'].join('\n');
+  const p = await nuevaPagina(b);
+  await p.click('.tab[data-view="numero"]'); await p.waitForTimeout(500);
+  await p.click('#newNumeroBtn'); await p.waitForTimeout(300);
+  await p.fill('#numNumero', '18'); await p.fill('#numEditorial', ORIG);
+  await p.evaluate(() => { document.querySelector('#numCorreccionPanel').hidden = false; });
+  await p.fill('#numCorreccionPaste', RESP); await p.waitForTimeout(600);
+
+  comprobar('lista los cambios', await p.locator('.cambio').count() === 3);
+  comprobar('marca el que no se encuentra', await p.locator('.cambio.perdido').count() === 1);
+  comprobar('no permite aplicar el no encontrado', await p.locator('.cambio input:checked').count() === 2);
+
+  await p.locator('.cambio input:not(:disabled)').nth(1).uncheck();
+  await p.click('#numAplicarSeleccion'); await p.waitForTimeout(600);
+  const d = await p.inputValue('#numEditorial');
+  comprobar('aplica el marcado', d.includes('Ayer fui'));
+  comprobar('NO toca el desmarcado', d.includes('compre tres'));
+  comprobar('conserva el resto del texto', d.includes('La vendedora, me dijo que subió.'));
+  await p.click('#numUndoCorreccion'); await p.waitForTimeout(400);
+  comprobar('deshacer devuelve el original', (await p.inputValue('#numEditorial')) === ORIG);
+});
+
+prueba('El prompt de corrección no invita a reescribir', async (b) => {
+  const p = await nuevaPagina(b);
+  await p.addInitScript(() => Object.defineProperty(navigator, 'clipboard', {
+    get() { return { writeText: () => Promise.reject(new DOMException('x')) }; },
+  }));
+  await p.reload(); await p.waitForTimeout(900);
+  await p.click('.tab[data-view="numero"]'); await p.waitForTimeout(500);
+  await p.click('#newNumeroBtn'); await p.waitForTimeout(300);
+  await p.fill('#numNumero', '18'); await p.fill('#numEditorial', 'Texto base.');
+  await p.click('#numCorreccionBtn'); await p.waitForTimeout(1500);
+  const prompt = await p.inputValue('#numCorreccionPaste');
+  comprobar('pide solo ortografía y puntuación', /solo ortograf[íi]a, puntuaci[óo]n/i.test(prompt));
+  comprobar('prohíbe reescribir frases correctas', /No reescribas frases que ya son correctas/i.test(prompt));
+  comprobar('prohíbe conectores y rayas largas', /No agregues conectores ni rayas largas/i.test(prompt));
+  comprobar('pide el formato de cambios', prompt.includes('===CAMBIO==='));
+  comprobar('ya no pide cuidar el arco ni el ritmo', !/claridad y ritmo|El arco:/i.test(prompt));
+});
+
+prueba('Las ideas rotan de cantera y evitan lo ya publicado', async (b) => {
+  const p = await nuevaPagina(b);
+  await p.evaluate(async () => {
+    const db = await import('/js/db.js');
+    await db.saveNumber({ id: 'n1', numero: '600', gancho: 'Lo del arte', editorial: 'x', createdAt: '2026-08-01' });
+  });
+  await p.addInitScript(() => Object.defineProperty(navigator, 'clipboard', {
+    get() { return { writeText: () => Promise.reject(new DOMException('x')) }; },
+  }));
+  await p.reload(); await p.waitForTimeout(900);
+  await p.click('.tab[data-view="numero"]'); await p.waitForTimeout(500);
+  await p.click('#newNumeroBtn'); await p.waitForTimeout(300);
+  await p.click('#numIdeaBtn'); await p.waitForTimeout(9000);
+  const prompt = await p.inputValue('#numIdeaPaste');
+  comprobar('incluye lo ya publicado', prompt.includes('YA PUBLICADO') && prompt.includes('Lo del arte'));
+  comprobar('exige canteras distintas', /canteras distintas entre s[íi]/i.test(prompt));
+  comprobar('exige algo fuera de economía', /NO sea econom[íi]a ni mercados/i.test(prompt));
+  comprobar('pide 4 candidatos, no 3', /Prop[óo]n 4 n[úu]meros/i.test(prompt));
+  const canteras = (prompt.match(/^\(\d+\) .+$/gm) || []).length;
+  comprobar('ofrece más de cinco canteras', canteras >= 6, `${canteras} canteras`);
+});
+
 prueba('Los botones de Claude siempre dan texto para copiar', async (b) => {
   const p = await nuevaPagina(b);
   // Safari: el portapapeles falla fuera del gesto del usuario.
