@@ -3,11 +3,12 @@
 // Todo vive en el dispositivo del usuario: no hay servidor.
 
 const DB_NAME = 'memorias-db';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 const STORE_ENTRIES = 'entries';
 const STORE_SETTINGS = 'settings';
 const STORE_BOOKS = 'books';
 const STORE_NUMBERS = 'numbers';
+const STORE_SNAPSHOTS = 'snapshots';
 
 let _dbPromise = null;
 
@@ -29,6 +30,9 @@ function openDB() {
       }
       if (!db.objectStoreNames.contains(STORE_NUMBERS)) {
         db.createObjectStore(STORE_NUMBERS, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(STORE_SNAPSHOTS)) {
+        db.createObjectStore(STORE_SNAPSHOTS, { keyPath: 'id' });
       }
     };
     // Si otra pestaña o la app instalada tiene la base abierta, `open` puede
@@ -348,4 +352,85 @@ export async function mergeBackup(data) {
     }
   }
   return { added, merged, bookAdded, bookUpdated, numAdded, numUpdated };
+}
+
+// --- Copias automáticas (snapshots) ---
+// Se guardan dentro del propio dispositivo, en su almacén aparte. No sustituyen
+// a exportar el archivo (eso protege de perder el aparato), pero sí cubren lo
+// más frecuente: borrar algo sin querer o que una operación estropee un texto.
+
+const MAX_SNAPSHOTS = 10;
+
+// Un snapshot NO incluye las fotos: pesan mucho y multiplicarlas por diez
+// llenaría el almacenamiento. Guarda los textos, que es lo que cuesta rehacer.
+export async function createSnapshot(motivo = 'automática') {
+  const entries = (await getAllEntries()).map((e) => ({
+    id: e.id, title: e.title, text: e.text, date: e.date, mood: e.mood,
+    location: e.location, createdAt: e.createdAt, updatedAt: e.updatedAt,
+    photoNames: (e.photos || []).map((p) => p.name),
+  }));
+  const snap = {
+    id: 'snap-' + Date.now(),
+    at: Date.now(),
+    motivo,
+    entries,
+    books: await getAllBooks(),
+    numbers: await getAllNumbers(),
+  };
+  const store = await tx(STORE_SNAPSHOTS, 'readwrite');
+  await reqToPromise(store.put(snap));
+  await pruneSnapshots();
+  return snap;
+}
+
+// Deja solo los MAX_SNAPSHOTS más recientes.
+async function pruneSnapshots() {
+  const store = await tx(STORE_SNAPSHOTS, 'readonly');
+  const todos = await reqToPromise(store.getAll());
+  const sobran = todos.sort((a, b) => b.at - a.at).slice(MAX_SNAPSHOTS);
+  for (const s of sobran) {
+    const w = await tx(STORE_SNAPSHOTS, 'readwrite');
+    await reqToPromise(w.delete(s.id));
+  }
+}
+
+export async function listSnapshots() {
+  const store = await tx(STORE_SNAPSHOTS, 'readonly');
+  const todos = await reqToPromise(store.getAll());
+  return todos
+    .sort((a, b) => b.at - a.at)
+    .map((s) => ({
+      id: s.id, at: s.at, motivo: s.motivo,
+      entries: (s.entries || []).length,
+      books: (s.books || []).length,
+      numbers: (s.numbers || []).length,
+    }));
+}
+
+// Restaura los textos de un snapshot. Las fotos actuales NO se tocan: el
+// snapshot no las guarda, así que se conservan las que ya están en cada
+// recuerdo. Nada se borra; solo se reponen o actualizan.
+export async function restoreSnapshot(id) {
+  const store = await tx(STORE_SNAPSHOTS, 'readonly');
+  const snap = await reqToPromise(store.get(id));
+  if (!snap) throw new Error('No se encontró esa copia');
+
+  // Antes de tocar nada, se guarda el estado actual para poder volver.
+  await createSnapshot('antes de restaurar');
+
+  let entries = 0, books = 0, numbers = 0;
+  for (const e of snap.entries || []) {
+    const actual = await getEntry(e.id);
+    const { photoNames, ...campos } = e;
+    await saveEntry({ ...campos, photos: actual ? actual.photos : [] });
+    entries++;
+  }
+  for (const b of snap.books || []) { await saveBook(b); books++; }
+  for (const n of snap.numbers || []) { await saveNumber(n); numbers++; }
+  return { entries, books, numbers };
+}
+
+export async function deleteSnapshot(id) {
+  const store = await tx(STORE_SNAPSHOTS, 'readwrite');
+  return reqToPromise(store.delete(id));
 }

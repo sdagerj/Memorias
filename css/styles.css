@@ -2,9 +2,9 @@
   --bg: #f5efe6;
   --paper: #fffdf8;
   --ink: #2e2a26;
-  --muted: #8a7f73;
+  --muted: #6f6459;   /* subido para cumplir el contraste mínimo (WCAG AA) */
   --brand: #7c4d3a;
-  --brand-soft: #b07a5f;
+  --brand-soft: #8d5a41;  /* idem: se leía flojo sobre el papel */
   --accent: #c98a3a;
   --line: #e7ddcf;
   --danger: #b0473a;
@@ -117,25 +117,6 @@ h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; }
 .empty { text-align: center; padding: 50px 20px; color: var(--muted); }
 .empty-emoji { font-size: 3rem; margin: 0; }
 .empty h3 { color: var(--ink); margin: 12px 0 6px; }
-
-/* Places */
-.places { display: flex; flex-direction: column; gap: 12px; }
-.place-card {
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 14px 16px;
-  box-shadow: var(--shadow);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  text-decoration: none;
-  color: inherit;
-}
-.place-card .place-name { font-weight: 600; }
-.place-card .place-sub { font-size: 0.82rem; color: var(--muted); }
-.place-card .place-count { background: var(--accent); color: #fff; border-radius: 999px; padding: 2px 10px; font-size: 0.8rem; white-space: nowrap; }
 
 /* Cards / settings */
 .card {
@@ -469,7 +450,7 @@ h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; }
 /* =================== El Número =================== */
 :root {
   --num-navy: #0d1b2a;
-  --num-teal: #1a6b72;
+  --num-teal: #5fc9d4;  /* sobre el navy de la portada; el anterior daba 2,8:1 */
   --num-gold: #c9963a;
   --num-paper: #f8f5ef;
   --num-slide-h: min(72vw, 420px);
@@ -586,84 +567,6 @@ h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; }
   text-transform: uppercase;
 }
 
-/* Beat */
-.num-slide-inner.beat { background: var(--num-paper); }
-.num-beat-num {
-  font-size: 3rem;
-  font-weight: 600;
-  color: var(--num-gold);
-  opacity: 0.25;
-  line-height: 1;
-  margin-bottom: 8px;
-}
-.num-beat-text {
-  font-size: clamp(1rem, 3.5vw, 1.35rem);
-  color: var(--num-navy);
-  line-height: 1.5;
-}
-
-/* Lección */
-.num-slide-inner.leccion { background: var(--num-teal); }
-.num-quote-mark {
-  font-size: 5rem;
-  color: var(--num-gold);
-  line-height: 0.6;
-  margin-bottom: 16px;
-  opacity: 0.7;
-}
-.num-leccion-text {
-  font-size: clamp(1rem, 3.5vw, 1.35rem);
-  color: #fff;
-  font-style: italic;
-  line-height: 1.5;
-}
-
-/* CTA */
-.num-slide-inner.cta { background: var(--num-navy); }
-.num-cta-hashtag {
-  font-size: 1.1rem;
-  color: var(--num-gold);
-  letter-spacing: 0.06em;
-  margin-bottom: 12px;
-}
-.num-cta-text {
-  font-size: clamp(1rem, 3.2vw, 1.25rem);
-  color: #e8f0fa;
-  line-height: 1.5;
-  font-style: italic;
-}
-
-/* Controles del carrusel */
-.num-carousel-nav {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-.num-nav-btn {
-  background: #ffffff22;
-  border: none;
-  color: #fff;
-  font-size: 1.5rem;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.num-slide-label { font-size: 0.82rem; color: #8ba7c4; }
-.num-dots { display: flex; gap: 6px; }
-.num-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  border: none;
-  background: #ffffff44;
-  cursor: pointer;
-  padding: 0;
-}
-.num-dot.active { background: var(--num-gold); }
-
 /* =================== Mi esencia =================== */
 .essence-intro { display: flex; flex-direction: column; gap: 10px; }
 .essence-count { font-size: 0.85rem; margin: 0; }
@@ -768,21 +671,6 @@ h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; }
   .book-page p { line-height: 1.6; }
 }
 
-/* Print: El Número editorial */
-@media print {
-  body.printing-numero * { display: none !important; }
-  body.printing-numero #printNumero { display: block !important; }
-  body.printing-numero #printNumero * { display: revert !important; }
-}
-.print-header { display: flex; align-items: center; gap: 12px; margin-bottom: 2rem; border-bottom: 2px solid #1e3a5f; padding-bottom: 1rem; }
-.print-logo { width: 48px; height: 48px; }
-.print-brand { display: flex; flex-direction: column; }
-.print-label { font-size: .75rem; text-transform: uppercase; letter-spacing: .1em; color: #666; }
-.print-numero { font-size: 2rem; font-weight: 700; color: #1e3a5f; line-height: 1; }
-.print-titulo { font-size: 1.5rem; font-weight: 600; color: #1e3a5f; margin-bottom: 1.5rem; }
-.print-editorial { font-size: 1rem; line-height: 1.7; white-space: pre-wrap; color: #222; }
-.print-destaque blockquote { border-left: 4px solid #1e3a5f; padding-left: 1rem; font-style: italic; color: #444; margin: 2rem 0; }
-
 /* =================== Estado de los datos (Ajustes) =================== */
 .storage-status {
   margin: 12px 0 4px;
@@ -854,3 +742,32 @@ h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; }
   margin: 8px 0 0;
   line-height: 1.45;
 }
+
+/* =================== Copias automáticas =================== */
+.last-backup { margin: 10px 0 0; }
+.last-backup.stale {
+  background: #fff3e6;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  padding: 8px 12px;
+  color: var(--ink);
+}
+.snapshot-list { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+.snap-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 10px 12px; background: var(--bg);
+  border: 1px solid var(--line); border-radius: 10px;
+}
+.snap-info { display: flex; flex-direction: column; min-width: 0; }
+.snap-when { font-weight: 600; font-size: 0.88rem; }
+.snap-what { font-size: 0.76rem; color: var(--muted); }
+.snap-row .btn { padding: 6px 12px; font-size: 0.82rem; flex-shrink: 0; }
+/* Aviso de copia pendiente en la línea de tiempo */
+.backup-nudge {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+  background: #fff3e6; border: 1px solid var(--accent);
+  border-radius: 12px; padding: 12px 14px; margin-bottom: 16px;
+}
+.backup-nudge p { margin: 0; font-size: 0.9rem; }
+.backup-nudge .btn { padding: 8px 14px; font-size: 0.85rem; }

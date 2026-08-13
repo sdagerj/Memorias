@@ -25,10 +25,16 @@ function showView(name) {
   $$('.tab').forEach((t) => t.classList.toggle('active', t.dataset.view === name));
   // El FAB solo tiene sentido en la línea de tiempo; en El Número tiene su propio botón.
   $('#fab').hidden = !['timeline'].includes(name);
-  if (name === 'map') renderPlaces();
   if (name === 'book') showBooksScreen();
   if (name === 'essence') essenceReady.then((init) => init());
   if (name === 'numero') numeroReady.then((init) => init());
+  // Ajustes muestra datos que cambian solos (copias, conteos): hay que
+  // refrescarlos al entrar, no solo al arrancar la app.
+  if (name === 'settings') {
+    renderSnapshots().catch(() => {});
+    refreshStorageStatus().catch(() => {});
+    refreshBackupNudge().catch(() => {});
+  }
   window.scrollTo(0, 0);
 }
 
@@ -42,6 +48,10 @@ async function loadEntries() {
   renderTimeline();
 }
 
+// Las URLs de las fotos de la lista. Sin liberarlas, cada búsqueda dejaba una
+// copia más de cada foto retenida en memoria hasta recargar la app.
+let timelineURLs = [];
+
 function renderTimeline() {
   const term = ($('#searchInput').value || '').toLowerCase().trim();
   const list = term
@@ -52,9 +62,19 @@ function renderTimeline() {
     : allEntries;
 
   const container = $('#timeline');
+  timelineURLs.forEach((u) => URL.revokeObjectURL(u));
+  timelineURLs = [];
   container.innerHTML = '';
-  $('#memCount').textContent = allEntries.length;
+  $('#memCount').textContent = term ? `${list.length}/${allEntries.length}` : allEntries.length;
   $('#emptyState').style.display = allEntries.length ? 'none' : 'block';
+
+  // Buscar sin resultados dejaba la pantalla en blanco, sin explicación.
+  const sinResultados = $('#noResults');
+  if (sinResultados) {
+    sinResultados.hidden = !(term && list.length === 0 && allEntries.length > 0);
+    const q = $('#noResultsTerm');
+    if (q) q.textContent = term;
+  }
 
   for (const e of list) {
     const card = document.createElement('article');
@@ -66,6 +86,7 @@ function renderTimeline() {
       html += '<div class="photos-strip">';
       for (const p of e.photos.slice(0, 6)) {
         const url = URL.createObjectURL(p.blob);
+        timelineURLs.push(url);
         html += `<img src="${url}" alt="" loading="lazy" />`;
       }
       html += '</div>';
@@ -131,6 +152,7 @@ async function openEditor(id = null) {
     $('#exportEntryPdfBtn').hidden = true;
   }
   $('#editor').hidden = false;
+  editorSnapshot = estadoEditor();
 }
 
 function closeEditor() {
@@ -138,8 +160,41 @@ function closeEditor() {
   $('#editor').hidden = true;
 }
 
+// Lo que había al abrir, para saber si de verdad hay cambios que perder.
+let editorSnapshot = '';
+function estadoEditor() {
+  return JSON.stringify([
+    $('#entryTitle').value, $('#entryText').value, $('#entryDate').value,
+    draftMood, draftPhotos.length, draftLocation ? draftLocation.place : null,
+  ]);
+}
+function hayCambiosSinGuardar() {
+  return !$('#editor').hidden && estadoEditor() !== editorSnapshot;
+}
+
+// Cerrar descartaba el texto al instante y sin preguntar: el camino más corto
+// a perder un recuerdo recién escrito.
+function intentarCerrarEditor() {
+  if (hayCambiosSinGuardar() &&
+      !confirm('Tienes cambios sin guardar en este recuerdo.\n\n¿Seguro que quieres descartarlos?')) return;
+  closeEditor();
+}
+
 $('#fab').addEventListener('click', () => openEditor());
-$('#cancelEntry').addEventListener('click', closeEditor);
+$('#cancelEntry').addEventListener('click', intentarCerrarEditor);
+
+// Escape y tocar fuera son los gestos que todo el mundo intenta primero.
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !$('#editor').hidden) intentarCerrarEditor();
+});
+$('#editor').addEventListener('click', (e) => {
+  if (e.target === $('#editor')) intentarCerrarEditor();
+});
+
+// Aviso del navegador al recargar o cerrar la pestaña con el editor abierto.
+window.addEventListener('beforeunload', (e) => {
+  if (hayCambiosSinGuardar()) { e.preventDefault(); e.returnValue = ''; }
+});
 
 $('#saveEntry').addEventListener('click', async () => {
   const title = $('#entryTitle').value.trim();
@@ -164,8 +219,10 @@ $('#saveEntry').addEventListener('click', async () => {
       updatedAt: Date.now(),
     };
     await db.saveEntry(entry);
+    editorSnapshot = estadoEditor();
     closeEditor();
     await loadEntries();
+    snapshotEnSegundoPlano('recuerdo guardado');
     toast(wasEditing ? 'Recuerdo actualizado' : 'Recuerdo guardado ✨');
   } catch (err) {
     console.error('No se pudo guardar el recuerdo:', err);
@@ -178,6 +235,8 @@ $('#saveEntry').addEventListener('click', async () => {
 $('#deleteEntry').addEventListener('click', async () => {
   if (!editingId) return;
   if (!confirm('¿Eliminar este recuerdo? No se puede deshacer.')) return;
+  // La copia se hace ANTES de borrar, que es justo lo que hay que poder deshacer.
+  try { await db.createSnapshot('antes de borrar un recuerdo'); } catch { /* no bloquea */ }
   await db.deleteEntry(editingId);
   closeEditor();
   await loadEntries();
@@ -332,38 +391,6 @@ function appendText(base, chunk) {
   if (!b) return c;
   if (!c) return b;
   return b + (/[.!?…]$/.test(b) ? ' ' : ' ') + c;
-}
-
-// =================== Lugares ===================
-function renderPlaces() {
-  const container = $('#placesList');
-  container.innerHTML = '';
-  const withLoc = allEntries.filter((e) => e.location);
-  if (!withLoc.length) {
-    container.innerHTML = '<p class="muted">Todavía no hay recuerdos con ubicación. Cuando guardes un recuerdo, usa el botón “📍 Usar mi ubicación”.</p>';
-    return;
-  }
-  // Agrupa por nombre de lugar.
-  const groups = new Map();
-  for (const e of withLoc) {
-    const key = e.location.place || formatCoords(e.location.lat, e.location.lng);
-    if (!groups.has(key)) groups.set(key, { key, items: [], sample: e.location });
-    groups.get(key).items.push(e);
-  }
-  for (const g of groups.values()) {
-    const a = document.createElement('a');
-    a.className = 'place-card';
-    a.href = mapLink(g.sample.lat, g.sample.lng);
-    a.target = '_blank';
-    a.rel = 'noopener';
-    a.innerHTML = `
-      <div>
-        <div class="place-name">📍 ${escapeHTML(g.key)}</div>
-        <div class="place-sub">${formatCoords(g.sample.lat, g.sample.lng)} · ver en el mapa</div>
-      </div>
-      <span class="place-count">${g.items.length}</span>`;
-    container.appendChild(a);
-  }
 }
 
 // =================== Libros ===================
@@ -971,6 +998,105 @@ $('#persistBtn').addEventListener('click', async () => {
   await refreshStorageStatus();
 });
 
+// --- Copias automáticas ---
+// Se lanza sin esperar y como mucho una vez cada 5 minutos: guardar un recuerdo
+// no debe hacerse más lento por esto.
+let ultimoSnapshot = 0;
+function snapshotEnSegundoPlano(motivo) {
+  if (Date.now() - ultimoSnapshot < 5 * 60000) return;
+  ultimoSnapshot = Date.now();
+  db.createSnapshot(motivo).catch((err) => console.error('[copia automática]', err));
+}
+
+function cuandoTexto(ts) {
+  const min = Math.round((Date.now() - ts) / 60000);
+  if (min < 1) return 'hace un momento';
+  if (min < 60) return `hace ${min} min`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `hace ${h} h`;
+  const d = Math.round(h / 24);
+  return d === 1 ? 'ayer' : `hace ${d} días`;
+}
+
+async function renderSnapshots() {
+  const cont = $('#snapshotList');
+  if (!cont) return;
+  const snaps = await db.listSnapshots();
+  cont.innerHTML = '';
+  if (!snaps.length) {
+    cont.innerHTML = '<p class="muted small">Aún no hay copias automáticas. Se crearán solas al guardar recuerdos.</p>';
+    return;
+  }
+  for (const s of snaps) {
+    const fecha = new Date(s.at).toLocaleString('es', {
+      day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+    });
+    const row = document.createElement('div');
+    row.className = 'snap-row';
+    row.innerHTML = `
+      <span class="snap-info">
+        <span class="snap-when">${escapeHTML(fecha)} · ${escapeHTML(cuandoTexto(s.at))}</span>
+        <span class="snap-what">${s.entries} recuerdos · ${s.books} libros · ${s.numbers} entregas — ${escapeHTML(s.motivo)}</span>
+      </span>
+      <button type="button" class="btn">Restaurar</button>`;
+    row.querySelector('button').addEventListener('click', async () => {
+      if (!confirm(`¿Volver a la copia de ${fecha}?\n\nSe repondrán los textos de esa copia. Tus fotos no se tocan, y se guarda antes una copia del estado actual por si quieres deshacer.`)) return;
+      try {
+        const r = await db.restoreSnapshot(s.id);
+        await loadEntries();
+        await renderSnapshots();
+        await refreshStorageStatus();
+        toast(`Restaurado: ${r.entries} recuerdos, ${r.books} libros, ${r.numbers} entregas ✨`);
+      } catch (err) {
+        console.error('[restaurar copia]', err);
+        toast('No se pudo restaurar esa copia');
+      }
+    });
+    cont.appendChild(row);
+  }
+}
+
+$('#snapshotNowBtn').addEventListener('click', async () => {
+  try {
+    await db.createSnapshot('a mano');
+    await renderSnapshots();
+    toast('Copia guardada ✨');
+  } catch (err) {
+    console.error('[copia]', err);
+    toast('No se pudo guardar la copia');
+  }
+});
+
+// --- Aviso de copia de seguridad pendiente ---
+const DIAS_AVISO = 7;
+
+async function refreshBackupNudge() {
+  const ultima = await db.getSetting('lastBackupAt', null);
+  const el = $('#lastBackup');
+  if (el) {
+    el.textContent = ultima
+      ? `Última copia exportada: ${new Date(ultima).toLocaleDateString('es', { day: 'numeric', month: 'long', year: 'numeric' })} (${cuandoTexto(ultima)})`
+      : 'Todavía no has exportado ninguna copia a un archivo.';
+    const vieja = !ultima || (Date.now() - ultima) > DIAS_AVISO * 86400000;
+    el.classList.toggle('stale', vieja);
+  }
+
+  // Aviso en la línea de tiempo, donde se ve todos los días.
+  const nudge = $('#backupNudge');
+  if (!nudge) return;
+  const hayAlgo = allEntries.length > 0;
+  const vieja = !ultima || (Date.now() - ultima) > DIAS_AVISO * 86400000;
+  nudge.hidden = !(hayAlgo && vieja);
+  const txt = $('#backupNudgeText');
+  if (txt) {
+    txt.textContent = ultima
+      ? `Tu última copia de seguridad es de ${cuandoTexto(ultima)}. Guarda una nueva por si acaso.`
+      : 'Nunca has guardado una copia de seguridad. Si pierdes el teléfono, pierdes tus recuerdos.';
+  }
+}
+
+$('#backupNudgeBtn')?.addEventListener('click', () => $('#exportDataBtn').click());
+
 $('#exportDataBtn').addEventListener('click', async () => {
   toast('Preparando copia…');
   const data = await db.exportBackup();
@@ -981,6 +1107,9 @@ $('#exportDataBtn').addEventListener('click', async () => {
   a.download = `memorias-backup-${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
   URL.revokeObjectURL(url);
+  await db.setSetting('lastBackupAt', Date.now());
+  await refreshBackupNudge();
+  toast('Copia guardada en tus descargas ✨');
 });
 
 $('#importDataInput').addEventListener('change', async (e) => {
@@ -1046,6 +1175,8 @@ function cryptoId() {
 let toastTimer = null;
 function toast(msg) {
   const t = $('#toast');
+  t.setAttribute('role', 'status');
+  t.setAttribute('aria-live', 'polite');
   t.textContent = msg;
   t.hidden = false;
   clearTimeout(toastTimer);
@@ -1122,6 +1253,8 @@ async function init() {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
   try { await refreshStorageStatus(); } catch { /* informativo */ }
+  try { await refreshBackupNudge(); } catch { /* informativo */ }
+  try { await renderSnapshots(); } catch { /* informativo */ }
   showAppVersion();
 }
 init();
