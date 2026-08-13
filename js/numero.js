@@ -512,8 +512,23 @@ function showNumPrintOverlay(contentHtml) {
 
   // ── Botones Claude ──
 
-  async function runWithClaude(btn, originalLabel, prompt, onResult, fallbackMsg) {
+  // Sin API key el prompt hay que poder copiarlo a mano. Escribirlo siempre en
+  // la caja es lo único fiable: en Safari el portapapeles falla cuando la
+  // llamada llega después de un await, y antes la caja se quedaba vacía — no
+  // había nada que copiar ni nada que aplicar después.
+  function mostrarPromptParaCopiar(pasteId, hintId, prompt) {
+    const caja = $(`#${pasteId}`);
+    if (caja) { caja.value = prompt; caja.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    const hint = $(`#${hintId}`);
+    if (hint) hint.hidden = false;
+  }
+
+  async function runWithClaude(btn, originalLabel, prompt, onResult, fallbackMsg, pasteId, hintId) {
     const key = await getApiKey();
+    if (key && !hasApiKey(key)) {
+      showErrorPanel('No se pudo usar tu API key.\n' + describeApiKeyProblem(key) +
+        '\n\nMientras tanto, abajo tienes el texto para pegarlo en claude.ai.');
+    }
     if (hasApiKey(key)) {
       btn.disabled = true;
       btn.textContent = 'Consultando a Claude…';
@@ -536,7 +551,13 @@ function showNumPrintOverlay(contentHtml) {
         btn.textContent = originalLabel;
       }
     } else {
-      await copyToClipboard(prompt, fallbackMsg);
+      mostrarPromptParaCopiar(pasteId, hintId, prompt);
+      try {
+        await navigator.clipboard.writeText(prompt);
+        showToast(fallbackMsg);
+      } catch {
+        showToast('Copia el texto de la caja y pégalo en claude.ai');
+      }
     }
   }
 
@@ -605,7 +626,8 @@ function showNumPrintOverlay(contentHtml) {
       $('#numCorreccionBtn'), '✏️ Corregir',
       buildCorrectionPrompt(data),
       (result) => { $('#numCorreccionPaste').value = result; showToast('Corrección lista ✨'); },
-      'Copiado ✨ Pégalo en claude.ai'
+      'Copiado ✨ Pégalo en claude.ai',
+      'numCorreccionPaste', 'numCorreccionHint'
     );
   });
 
@@ -686,7 +708,8 @@ function showNumPrintOverlay(contentHtml) {
       $('#numMontajeBtn'), '📲 Montar',
       buildMontajePrompt(data),
       (result) => { $('#numMontajePaste').value = result; showToast('Formatos listos ✨'); },
-      'Copiado ✨ Pégalo en claude.ai'
+      'Copiado ✨ Pégalo en claude.ai',
+      'numMontajePaste', 'numMontajeHint'
     );
   });
 
@@ -700,7 +723,8 @@ function showNumPrintOverlay(contentHtml) {
       $('#numPodcastBtn'), '🎙️ Podcast',
       buildPodcastPrompt(data),
       (result) => { $('#numPodcastPaste').value = result; showToast('Candidatas listas ✨'); },
-      'Copiado ✨ Pégalo en claude.ai'
+      'Copiado ✨ Pégalo en claude.ai',
+      'numPodcastPaste', 'numPodcastHint'
     );
   });
 
