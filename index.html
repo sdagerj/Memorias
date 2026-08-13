@@ -36,6 +36,11 @@
         <h2>Mis recuerdos</h2>
         <span id="memCount" class="count">0</span>
       </div>
+      <div id="backupNudge" class="backup-nudge" hidden>
+        <p id="backupNudgeText"></p>
+        <button type="button" id="backupNudgeBtn" class="btn primary">Guardar copia</button>
+      </div>
+
       <input type="search" id="searchInput" class="search" placeholder="Buscar en tus recuerdos…" />
       <div id="timeline" class="timeline"></div>
 
@@ -64,15 +69,18 @@
         <p id="correctionStatus" class="muted small" style="margin-top:8px"></p>
       </details>
 
+      <div id="noResults" class="empty" hidden>
+        <p class="empty-emoji">🔍</p>
+        <h3>Sin resultados</h3>
+        <p>Ningún recuerdo coincide con «<strong id="noResultsTerm"></strong>». Prueba con otra palabra.</p>
+      </div>
+
       <div id="emptyState" class="empty">
         <p class="empty-emoji">📖</p>
         <h3>Aún no hay recuerdos</h3>
         <p>Toca el botón <strong>+</strong> para guardar tu primer recuerdo. Puedes escribir, agregar fotos y dejar tu ubicación.</p>
       </div>
     </section>
-
-    <!-- Vista: Mapa / Ubicaciones (oculta) -->
-    <section id="view-map" class="view" hidden></section>
 
     <!-- Vista: Libros -->
     <section id="view-book" class="view">
@@ -212,7 +220,7 @@
           <h3>Destaque <span class="muted" style="font-weight:400;font-size:0.85rem">— opcional</span></h3>
           <p class="muted">Una frase clave que quieras resaltar.</p>
           <label class="field">
-            <textarea id="numDestaque" rows="3" placeholder=""La frase que más te movió…""></textarea>
+            <textarea id="numDestaque" rows="3" placeholder="La frase que más te movió…"></textarea>
           </label>
         </div>
 
@@ -342,6 +350,8 @@
           <button type="button" id="persistBtn" class="btn" hidden>🔒 Proteger mis datos en este dispositivo</button>
         </div>
 
+        <p id="lastBackup" class="muted small last-backup"></p>
+
         <div class="settings-row">
           <button id="exportDataBtn" class="btn">Exportar copia de seguridad</button>
           <label class="btn file-btn">Restaurar copia
@@ -407,6 +417,17 @@
         </div>
       </div>
 
+      <!-- Copias automáticas dentro del dispositivo -->
+      <div class="card">
+        <h3>🕘 Copias automáticas</h3>
+        <p class="muted">La app guarda sola una copia de tus textos cada vez que cambias algo importante. Se quedan en este dispositivo y puedes volver a cualquiera de ellas.</p>
+        <p class="muted small">No incluyen las fotos (ocuparían demasiado); tus fotos actuales no se tocan al restaurar.</p>
+        <div id="snapshotList" class="snapshot-list"></div>
+        <div class="settings-row">
+          <button type="button" id="snapshotNowBtn" class="btn">Guardar una copia ahora</button>
+        </div>
+      </div>
+
       <div class="card danger">
         <h3>Borrar todo</h3>
         <p class="muted">Esto eliminará todos tus recuerdos de este dispositivo. No se puede deshacer.</p>
@@ -429,7 +450,7 @@
   </nav>
 
   <!-- Modal: editor de recuerdo -->
-  <div id="editor" class="modal" hidden>
+  <div id="editor" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="editorTitle">
     <div class="modal-card">
       <div class="modal-head">
         <button id="cancelEntry" class="link-btn">Cancelar</button>
@@ -494,20 +515,5 @@
   <div id="toast" class="toast" hidden></div>
 
   <script type="module" src="js/app.js"></script>
-  <!-- Contenido para imprimir / exportar PDF -->
-  <div id="printNumero" style="display:none">
-    <div class="print-header">
-      <img src="icons/icon.svg" alt="El Número" class="print-logo" />
-      <div class="print-brand">
-        <span class="print-label">El Número</span>
-        <span id="printNumeroVal" class="print-numero"></span>
-      </div>
-    </div>
-    <h1 id="printTitulo" class="print-titulo"></h1>
-    <div id="printEditorial" class="print-editorial"></div>
-    <div id="printDestaque" class="print-destaque" style="display:none">
-      <blockquote id="printDestaqueText"></blockquote>
-    </div>
-  </div>
 </body>
 </html>
