@@ -7,15 +7,44 @@ const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const MODEL = 'claude-sonnet-4-6';
 
 export async function getApiKey() {
-  return getSetting('claudeApiKey', '');
+  // Se normaliza tambien al leer: puede haber una clave ya guardada con los
+  // guiones cambiados por el teclado, de antes de que existiera esta limpieza.
+  return normalizeApiKey(await getSetting('claudeApiKey', ''));
 }
 
 export async function getProxyUrl() {
   return getSetting('claudeProxyUrl', '');
 }
 
+// Los teclados de móvil "corrigen" los guiones y las comillas por versiones
+// tipográficas (— – " ') y a veces cuelan espacios invisibles al pegar. Una
+// clave con cualquiera de esos caracteres hace que fetch falle antes de salir
+// a la red, con un error incomprensible sobre ISO-8859-1. Aquí se deshace esa
+// corrección: son sustituciones seguras porque una clave de Anthropic solo
+// contiene ASCII.
+export function normalizeApiKey(raw) {
+  return String(raw || '')
+    .replace(/[\u2010-\u2015\u2212]/g, '-')      // guiones tipograficos y signo menos
+    .replace(/[\u2018\u2019\u201B]/g, "'")      // comillas simples curvas
+    .replace(/[\u201C\u201D\u201F]/g, '"')      // comillas dobles curvas
+    .replace(/[\s\u200B-\u200D\uFEFF]/g, '');  // espacios y caracteres invisibles
+}
+
+// Devuelve null si la clave es utilizable, o una explicación de qué le pasa.
+export function describeApiKeyProblem(key) {
+  if (!key) return 'Escribe tu clave de Anthropic.';
+  if (!key.startsWith('sk-ant-')) return 'La clave debe empezar por sk-ant-…';
+  const malo = [...key].find((c) => c.charCodeAt(0) < 33 || c.charCodeAt(0) > 126);
+  if (malo) {
+    const pos = [...key].indexOf(malo) + 1;
+    return `La clave tiene un carácter no válido en la posición ${pos} (${JSON.stringify(malo)}). ` +
+           'Suele pasar al copiarla: bórrala y pégala de nuevo sin espacios.';
+  }
+  return null;
+}
+
 export function hasApiKey(key) {
-  return typeof key === 'string' && key.startsWith('sk-ant-');
+  return typeof key === 'string' && key.startsWith('sk-ant-') && !describeApiKeyProblem(key);
 }
 
 export function hasProxyUrl(url) {
