@@ -825,3 +825,24 @@ h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; }
 .storage-blocked p { margin: 6px 0 0; color: var(--ink); }
 .storage-blocked ol { margin: 8px 0 0; padding-left: 20px; color: var(--ink); }
 .storage-blocked li { margin-bottom: 6px; }
+
+/* =================== Borrador automático de El Número =================== */
+.draft-banner {
+  background: #fff9ec;
+  border: 1px solid var(--accent);
+  border-left: 4px solid var(--accent);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin: 12px 0 4px;
+}
+.draft-banner strong { color: var(--brand); display: block; margin-bottom: 6px; }
+.draft-banner .draft-when { margin: 0; font-size: 0.82rem; color: var(--muted); }
+.draft-banner .draft-preview {
+  margin: 8px 0 0;
+  font-style: italic;
+  color: var(--ink);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+.draft-banner .settings-row { margin-top: 12px; }
+.draft-saved { margin: 6px 0 0; font-size: 0.78rem; color: var(--num-teal); }

@@ -155,6 +155,16 @@
           <h2 class="num-title-head"># El Número</h2>
         </div>
         <p class="muted">Tu archivo semanal. Cada entrega parte de un número que abre una historia.</p>
+
+        <div id="numDraftBanner" class="draft-banner" hidden>
+          <strong>📝 Tienes un editorial sin guardar</strong>
+          <p class="draft-when">Guardado automáticamente el <span id="numDraftWhen"></span></p>
+          <p class="draft-preview" id="numDraftPreview"></p>
+          <div class="settings-row">
+            <button type="button" id="numDraftRestore" class="btn num-btn-primary">Recuperarlo</button>
+            <button type="button" id="numDraftDiscard" class="btn ghost">Descartar</button>
+          </div>
+        </div>
         <button id="newNumeroBtn" class="btn num-btn-primary full">＋ Nueva entrega</button>
         <div id="numerosGrid" class="numeros-grid"></div>
         <div id="numerosEmpty" class="empty" hidden>
@@ -210,6 +220,7 @@
           <button id="saveNumeroBtn" class="btn num-btn-primary">Guardar entrega</button>
           <button id="exportNumeroPdfBtn" class="btn ghost">📄 Exportar PDF</button>
         </div>
+        <p id="numDraftSaved" class="muted small draft-saved" hidden></p>
 
         <!-- Asistente Claude -->
         <div class="card num-editor-card">

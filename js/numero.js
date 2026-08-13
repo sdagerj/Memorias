@@ -142,6 +142,54 @@ function liveUpdate() {
   renderCover(currentNumero);
 }
 
+// ── borrador automático ───────────────────────────────────────────────────────
+// El editorial solo existía en la pantalla hasta pulsar "Guardar entrega": si la
+// app se recargaba o se cerraba antes, el texto se perdía sin remedio. Ahora se
+// guarda solo mientras escribes y se ofrece recuperarlo al volver.
+
+let draftTimer = null;
+
+function scheduleDraftSave() {
+  clearTimeout(draftTimer);
+  draftTimer = setTimeout(saveDraftNow, 1200);
+}
+
+async function saveDraftNow() {
+  if (!currentNumero) return;
+  const d = readEditor();
+  if (!d.numero && !d.gancho && !d.editorial && !d.destaque) return; // nada que guardar
+  try {
+    await db.setSetting('numeroDraft', { ...d, savedAt: Date.now() });
+    const av = $('#numDraftSaved');
+    if (av) {
+      av.textContent = 'Borrador guardado ' + new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+      av.hidden = false;
+    }
+  } catch (err) {
+    console.error('[borrador]', err);
+  }
+}
+
+async function clearDraft() {
+  try { await db.setSetting('numeroDraft', null); } catch { /* nada */ }
+  const av = $('#numDraftSaved');
+  if (av) av.hidden = true;
+}
+
+// ¿Hay un borrador que no llegó a guardarse como entrega?
+async function pendingDraft() {
+  const d = await db.getSetting('numeroDraft', null);
+  if (!d || (!d.editorial && !d.gancho && !d.numero)) return null;
+  const guardada = d.id ? await db.getNumber(d.id) : null;
+  // Si coincide con lo ya guardado, no hay nada pendiente que recuperar.
+  if (guardada &&
+      (guardada.editorial || '') === (d.editorial || '') &&
+      (guardada.gancho || '') === (d.gancho || '') &&
+      (guardada.numero || '') === (d.numero || '') &&
+      (guardada.destaque || '') === (d.destaque || '')) return null;
+  return d;
+}
+
 // ── prompts del asistente ─────────────────────────────────────────────────────
 
 const SYSTEM_PROMPT = `Eres el compañero editorial de "El Número", un proyecto de contenido semanal de Stefy (@Yomevoyconel30). Tu trabajo es ayudarla a encontrar el número de la semana, escribir y pulir el texto, convertirlo en publicaciones, y encontrar invitados para el podcast.
@@ -438,6 +486,7 @@ function showNumPrintOverlay(contentHtml) {
     if (!data.numero) { showToast('Escribe el número primero'); return; }
     currentNumero = { ...currentNumero, ...data };
     await db.saveNumber(currentNumero);
+    await clearDraft();
     showNumeroScreen();
     await renderNumerosList();
     showToast('Número guardado ✨');
@@ -454,6 +503,12 @@ function showNumPrintOverlay(contentHtml) {
   if (nav) nav.hidden = true;
 
   ['numNumero', 'numGancho'].forEach((id) => $(`#${id}`)?.addEventListener('input', liveUpdate));
+  // Todos los campos disparan el borrador automático, no solo los de la portada.
+  ['numNumero', 'numGancho', 'numEditorial', 'numDestaque'].forEach((id) =>
+    $(`#${id}`)?.addEventListener('input', scheduleDraftSave));
+  // Y se guarda también al salir de la app o cambiar de pestaña del navegador.
+  window.addEventListener('pagehide', saveDraftNow);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) saveDraftNow(); });
 
   // ── Botones Claude ──
 
@@ -604,4 +659,36 @@ function showNumPrintOverlay(contentHtml) {
   $('#numLimpiarPodcast').addEventListener('click', () => { $('#numPodcastPaste').value = ''; });
 
   await renderNumerosList();
+  await offerDraftRecovery();
+}
+
+// Aviso al entrar: hay texto sin guardar de una sesión anterior.
+async function offerDraftRecovery() {
+  const d = await pendingDraft();
+  const banner = $('#numDraftBanner');
+  if (!banner) return;
+  if (!d) { banner.hidden = true; return; }
+  const cuando = new Date(d.savedAt || Date.now()).toLocaleString('es', {
+    day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit',
+  });
+  const resumen = (d.editorial || d.gancho || '').slice(0, 90);
+  $('#numDraftWhen').textContent = cuando;
+  $('#numDraftPreview').textContent = resumen ? resumen + '…' : '(sin texto)';
+  banner.hidden = false;
+
+  $('#numDraftRestore').onclick = async () => {
+    currentNumero = { ...d };
+    delete currentNumero.savedAt;
+    populateEditor(currentNumero);
+    showEditorScreen();
+    renderCover(currentNumero);
+    clearClaudePanels();
+    banner.hidden = true;
+    showToast('Borrador recuperado — revísalo y guarda la entrega');
+  };
+  $('#numDraftDiscard').onclick = async () => {
+    if (!confirm('¿Descartar el borrador? Esto sí no se puede deshacer.')) return;
+    await clearDraft();
+    banner.hidden = true;
+  };
 }
