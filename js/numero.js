@@ -1,7 +1,7 @@
 // Módulo "El Número": editor, archivo y asistente editorial con Claude.
 import * as db from './db.js';
 import { fetchHeadlines, DEFAULT_SOURCES } from './rss.js';
-import { callClaude, getApiKey, hasApiKey } from './claude-api.js';
+import { callClaude, getApiKey, hasApiKey, describeApiKeyProblem } from './claude-api.js';
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
@@ -518,6 +518,10 @@ function showNumPrintOverlay(contentHtml) {
         }
       }
     } else {
+      // Si hay una clave guardada pero no sirve, hay que decirlo: pasar al modo
+      // "cópialo a mano" sin avisar parece que el botón hace algo raro.
+      if (key) showErrorPanel('No se pudo usar tu API key.\n' + describeApiKeyProblem(key) +
+        '\n\nMientras tanto, abajo tienes el texto para pegarlo en claude.ai.');
       // Sin API key el texto se copia al portapapeles, pero en Safari ese
       // copiado falla porque la espera de los titulares rompe el permiso del
       // toque. Antes no se escribía nada en la caja y la pantalla quedaba
