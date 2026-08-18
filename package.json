@@ -1,0 +1,11 @@
+{
+  "name": "memorias",
+  "private": true,
+  "description": "Memorias — la app no necesita dependencias: esto es solo para las pruebas.",
+  "scripts": {
+    "test": "node tests/run.js"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.62.1"
+  }
+}

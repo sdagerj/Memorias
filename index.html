@@ -224,6 +224,56 @@
           </label>
         </div>
 
+        <div class="card num-editor-card">
+          <h3>Para la web <span class="muted" style="font-weight:400;font-size:0.85rem">— elnumero.netlify.app</span></h3>
+          <p class="muted">Esto es lo que la web necesita y el cuaderno no pide. Sin llenarlo, la entrega se guarda igual aquí — solo no se puede publicar.</p>
+          <label class="field">
+            <span>Resumen <span class="muted">— lo que se ve en WhatsApp y en Google</span></span>
+            <textarea id="numResumen" rows="2" placeholder="Una o dos frases…" maxlength="200"></textarea>
+          </label>
+          <p id="numResumenCuenta" class="muted small" style="margin:-4px 0 10px">0 / 200</p>
+          <label class="field">
+            <span>Cantera</span>
+            <select id="numCantera">
+              <option value="">Elige una…</option>
+              <option value="mercados">Mercados</option>
+              <option value="arte">Arte</option>
+              <option value="mujeres">Mujeres</option>
+              <option value="vida">Vida</option>
+              <option value="efemerides">Efemérides</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Fecha de publicación</span>
+            <input type="date" id="numFecha" />
+          </label>
+
+          <h4 style="margin:16px 0 4px">Las fuentes</h4>
+          <p class="muted small">Escríbelas siempre reales: van con tu nombre encima. Si todavía no las tienes, déjalo vacío.</p>
+          <div id="numFuentesLista"></div>
+          <button type="button" id="numAddFuente" class="btn ghost" style="margin-top:6px">＋ Añadir fuente</button>
+
+          <h4 style="margin:16px 0 4px">¿Salió antes en un periódico? <span class="muted" style="font-weight:400;font-size:0.85rem">— opcional</span></h4>
+          <label class="field">
+            <span>Nombre del medio</span>
+            <input type="text" id="numMedioNombre" placeholder="Ej: El Heraldo" />
+          </label>
+          <label class="field">
+            <span>Enlace al artículo</span>
+            <input type="url" id="numMedioUrl" placeholder="https://…" inputmode="url" autocapitalize="off" spellcheck="false" />
+          </label>
+
+          <label class="field checkbox-field" style="margin-top:12px">
+            <input type="checkbox" id="numBorrador" />
+            <span>Subirlo como borrador — queda escrito en la web pero no se ve</span>
+          </label>
+
+          <div class="settings-row" style="margin-top:12px">
+            <button type="button" id="numPublicarBtn" class="btn num-btn-primary">🌐 Publicar en la web</button>
+          </div>
+          <p id="numPublicarEstado" class="muted small" style="margin-top:6px"></p>
+        </div>
+
         <div class="settings-row" style="padding-bottom:8px">
           <button id="saveNumeroBtn" class="btn num-btn-primary">Guardar entrega</button>
           <button id="exportNumeroPdfBtn" class="btn ghost">📄 Exportar PDF</button>
@@ -237,6 +287,7 @@
           <div class="num-claude-btns">
             <button type="button" id="numIdeaBtn" class="btn num-claude-btn">💡 Idear número</button>
             <button type="button" id="numCorreccionBtn" class="btn num-claude-btn">✏️ Corregir</button>
+            <button type="button" id="numRevisionBtn" class="btn num-claude-btn">🔎 Revisar a fondo</button>
             <button type="button" id="numMontajeBtn" class="btn num-claude-btn">📲 Montar</button>
             <button type="button" id="numPodcastBtn" class="btn num-claude-btn">🎙️ Podcast</button>
           </div>
@@ -278,6 +329,19 @@
           </div>
 
           <!-- Panel: Montaje -->
+          <div id="numRevisionPanel" class="num-claude-panel" hidden>
+            <p class="muted">Verifica cada cifra contra fuente primaria y comenta el texto: el párrafo más flojo, si el arco está completo, si el cierre se te volvió conclusión, en cuántas palabras vas.</p>
+            <p class="muted small"><strong>Aquí no se aplica nada solo.</strong> Lo lees, decides, y corriges tú. Un dato que no se pudo verificar no se arregla con un botón: se quita.</p>
+            <label class="field">
+              <textarea id="numRevisionPaste" rows="14" placeholder="El informe aparecerá aquí…"></textarea>
+            </label>
+            <p id="numRevisionHint" class="muted small paste-hint" hidden>Sin API key: <strong>copia todo este texto</strong> y pégalo en <strong>claude.ai</strong>. Después pega aquí lo que te devuelva.</p>
+            <div id="numRevisionAvisos" class="revision-avisos" hidden></div>
+            <div class="settings-row">
+              <button type="button" id="numLimpiarRevision" class="btn ghost">Limpiar</button>
+            </div>
+          </div>
+
           <div id="numMontajePanel" class="num-claude-panel" hidden>
             <p class="muted small">Claude te devuelve los 4 formatos: carrusel IG, columna editorial, LinkedIn y guion de reel.</p>
             <label class="field">
@@ -414,6 +478,22 @@
         </div>
         <p id="proxyStatus" class="muted small" style="margin-top:6px"></p>
         <p class="muted small">Necesario para que la app pueda llamar a Claude. Despliega tu propio worker gratuito en <strong>cloudflare.com/workers</strong></p>
+      </div>
+
+      <!-- Llave de GitHub para publicar en la web -->
+      <div class="card">
+        <h3>🌐 Publicar en la web</h3>
+        <p class="muted">Con esta llave, el botón «Publicar» de El Número sube el editorial directo a <strong>elnumero.netlify.app</strong>. Sin ella, el botón te da el archivo para que lo subas a mano.</p>
+        <label class="field">
+          <span>Llave de GitHub</span>
+          <input type="password" id="githubTokenInput" placeholder="github_pat_…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+        </label>
+        <div class="settings-row" style="margin-top:8px">
+          <button id="saveGithubTokenBtn" class="btn primary">Guardar llave</button>
+          <button id="clearGithubTokenBtn" class="btn ghost">Borrar llave</button>
+        </div>
+        <p id="githubTokenStatus" class="muted small" style="margin-top:6px"></p>
+        <p class="muted small">La llave se guarda solo en este dispositivo y solo se manda a GitHub. Se saca en <strong>github.com → Settings → Developer settings → Fine-grained tokens</strong>, dándole acceso únicamente al repositorio <strong>el-numero</strong> con permiso de <strong>Contents: Read and write</strong>.</p>
       </div>
 
       <!-- Fuentes RSS de El Número -->

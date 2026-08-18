@@ -2,6 +2,10 @@
 import * as db from './db.js';
 import { fetchHeadlines, DEFAULT_SOURCES } from './rss.js';
 import { callClaude, getApiKey, hasApiKey, describeApiKeyProblem } from './claude-api.js';
+import {
+  publicarEnLaWeb, construirMarkdown, problemasParaPublicar,
+  nombreArchivo, getGithubToken,
+} from './publicar.js';
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
@@ -110,6 +114,13 @@ async function openNumero(id) {
       gancho: '',
       editorial: '',
       destaque: '',
+      resumen: '',
+      cantera: '',
+      fecha: hoyISO(),
+      fuentes: [],
+      medioNombre: '',
+      medioUrl: '',
+      borrador: false,
       createdAt: new Date().toISOString(),
     };
   }
@@ -124,6 +135,15 @@ function populateEditor(n) {
   $('#numGancho').value = n.gancho || '';
   $('#numEditorial').value = n.editorial || '';
   $('#numDestaque').value = n.destaque || '';
+  $('#numResumen').value = n.resumen || '';
+  $('#numCantera').value = n.cantera || '';
+  $('#numFecha').value = n.fecha || hoyISO();
+  $('#numMedioNombre').value = n.medioNombre || '';
+  $('#numMedioUrl').value = n.medioUrl || '';
+  $('#numBorrador').checked = Boolean(n.borrador);
+  renderFuentes(n.fuentes || []);
+  actualizarCuentaResumen();
+  mostrarEstadoPublicacion(n);
 }
 
 function readEditor() {
@@ -133,7 +153,109 @@ function readEditor() {
     gancho: $('#numGancho').value.trim(),
     editorial: $('#numEditorial').value.trim(),
     destaque: $('#numDestaque')?.value.trim() || '',
+    resumen: $('#numResumen')?.value.trim() || '',
+    cantera: $('#numCantera')?.value || '',
+    fecha: $('#numFecha')?.value || hoyISO(),
+    fuentes: leerFuentes(),
+    medioNombre: $('#numMedioNombre')?.value.trim() || '',
+    medioUrl: $('#numMedioUrl')?.value.trim() || '',
+    borrador: Boolean($('#numBorrador')?.checked),
   };
+}
+
+function hoyISO() {
+  // La fecha local, no la UTC: a partir de las 7 de la tarde en Colombia
+  // toISOString() ya devuelve el dia siguiente.
+  const d = new Date();
+  const off = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - off).toISOString().slice(0, 10);
+}
+
+// ── Las fuentes del editorial ────────────────────────────────────────────────
+
+function filaFuente(f = {}, i = 0) {
+  const div = document.createElement('div');
+  div.className = 'fuente-item';
+  div.innerHTML = `
+    <div class="fuente-cabeza">
+      <span>Fuente ${i + 1}</span>
+      <button type="button" class="link-btn danger quitar-fuente">Quitar</button>
+    </div>
+    <label class="field">
+      <span>Institución</span>
+      <input type="text" class="f-nombre" placeholder="Ej: Banco de la República" />
+    </label>
+    <label class="field">
+      <span>Documento</span>
+      <input type="text" class="f-documento" placeholder="Ej: Informe de política monetaria" />
+    </label>
+    <div class="fuente-fila">
+      <label class="field">
+        <span>Año</span>
+        <input type="number" class="f-anio" placeholder="2026" inputmode="numeric" min="1000" max="2999" />
+      </label>
+      <label class="field">
+        <span>Enlace</span>
+        <input type="url" class="f-url" placeholder="https://…" inputmode="url" autocapitalize="off" spellcheck="false" />
+      </label>
+    </div>`;
+  div.querySelector('.f-nombre').value = f.nombre || '';
+  div.querySelector('.f-documento').value = f.documento || '';
+  div.querySelector('.f-anio').value = f.anio || '';
+  div.querySelector('.f-url').value = f.url || '';
+  div.querySelector('.quitar-fuente').addEventListener('click', () => {
+    div.remove();
+    renumerarFuentes();
+    scheduleDraftSave();
+  });
+  div.addEventListener('input', scheduleDraftSave);
+  return div;
+}
+
+function renumerarFuentes() {
+  $$('#numFuentesLista .fuente-item').forEach((el, i) => {
+    el.querySelector('.fuente-cabeza span').textContent = `Fuente ${i + 1}`;
+  });
+}
+
+function renderFuentes(fuentes) {
+  const cont = $('#numFuentesLista');
+  if (!cont) return;
+  cont.innerHTML = '';
+  fuentes.forEach((f, i) => cont.appendChild(filaFuente(f, i)));
+}
+
+function leerFuentes() {
+  return $$('#numFuentesLista .fuente-item')
+    .map((el) => ({
+      nombre: el.querySelector('.f-nombre').value.trim(),
+      documento: el.querySelector('.f-documento').value.trim(),
+      anio: el.querySelector('.f-anio').value.trim(),
+      url: el.querySelector('.f-url').value.trim(),
+    }))
+    // Una fuente enteramente vacia es una fila que se abrio y no se lleno:
+    // no tiene por que impedir publicar ni acabar en el archivo.
+    .filter((f) => f.nombre || f.documento || f.anio || f.url);
+}
+
+function actualizarCuentaResumen() {
+  const caja = $('#numResumen');
+  const cuenta = $('#numResumenCuenta');
+  if (!caja || !cuenta) return;
+  const n = caja.value.trim().length;
+  cuenta.textContent = `${n} / 200`;
+  cuenta.style.color = n > 200 ? 'var(--danger, #c0392b)' : '';
+}
+
+function mostrarEstadoPublicacion(n) {
+  const p = $('#numPublicarEstado');
+  if (!p) return;
+  if (!n?.webArchivo) { p.textContent = ''; return; }
+  const cuando = n.webPublicadoEn
+    ? ` el ${new Date(n.webPublicadoEn).toLocaleDateString('es', { day: 'numeric', month: 'long' })}`
+    : '';
+  const url = `https://elnumero.netlify.app/n/${n.webArchivo.replace(/\.md$/, '')}/`;
+  p.innerHTML = `Publicado${cuando}. <a href="${url}" target="_blank" rel="noopener">Verlo en la web ↗</a><br>Si vuelves a publicar, se actualiza — no se duplica.`;
 }
 
 function liveUpdate() {
@@ -371,6 +493,145 @@ EDITORIAL:
 ${data.editorial || '(vacío)'}`;
 }
 
+// Revision a fondo: es una conversacion, no una lista de reemplazos. Verifica
+// cifras contra fuente primaria y comenta el texto. Nada de lo que devuelve se
+// aplica solo — un dato que no se pudo verificar no se arregla con un boton,
+// se quita a mano.
+function buildRevisionPrompt(data) {
+  const palabras = String(data.editorial || '').trim().split(/\s+/).filter(Boolean).length;
+  return `${SYSTEM_PROMPT}
+
+---
+
+PROMPT: REVISIÓN A FONDO ANTES DE PUBLICAR
+
+Vas a ayudarme a pulir un editorial de El Número antes de publicarlo.
+Escribo en primera persona para mujeres que están construyendo algo:
+una carrera, un patrimonio, un negocio, un próximo capítulo.
+
+REGLA INNEGOCIABLE SOBRE MI VOZ
+No reescribas mi texto. Corrige solo ortografía, puntuación, concordancia
+y frases que se enredan. Nunca cambies mis ideas, mi orden de argumentos,
+ni mi manera de decir las cosas. Si algo suena raro pero es mío, es mío.
+Cuando propongas una reformulación, muéstrame el "antes" y el "después"
+para que yo decida.
+
+VERIFICACIÓN DE DATOS — es lo más importante
+Toma cada cifra del texto y verifícala contra fuente primaria:
+DANE, ONU/World Population Prospects, Banco de la República, Banco Mundial,
+DIAN, Superfinanciera, registros legislativos. No aceptes medios,
+consultoras ni "elaboración propia" de terceros.
+
+Para cada cifra dime:
+1. Si es correcta, la fuente exacta, el documento y el año.
+2. Si está mal, cuál es el número correcto y de dónde sale.
+3. Si no la puedes verificar en fuente primaria, dímelo explícitamente.
+   Ese dato NO se publica.
+
+Revisa además la COMPARABILIDAD: que dos números que pongo en la misma
+frase tengan el mismo denominador, el mismo umbral de edad, la misma
+unidad, el mismo año y la misma fuente. Si estoy comparando una tasa
+específica contra una tasa global, o un indicador con umbral de 60 años
+contra uno de 65, párame en seco y explícame por qué no se puede.
+
+Si un número mío sale de una serie distinta a la de su comparación
+(por ejemplo DANE contra ONU), adviértemelo aunque ambos sean correctos
+por separado.
+
+QUÉ MÁS QUIERO QUE ME DIGAS
+- Cuál es el párrafo más flojo del texto y por qué.
+- Si el arco mundo → yo → ellas está completo, o si me falta la capa personal.
+- Si algún párrafo promete algo que después no entrego.
+- Si el cierre es una pregunta abierta de verdad o se me volvió conclusión.
+- Uno o dos datos adicionales de fuente primaria que fortalezcan el
+  argumento que YA tengo (no un argumento nuevo).
+- Si hay algo que afirmo sin respaldo y que la evidencia contradice.
+
+FORMATO
+Meta: entre 550 y 650 palabras. Voy en ${palabras}. Confírmame la cuenta.
+Al final, cuando yo te lo pida, devuélveme la versión limpia completa
+y una lista corta de exactamente qué cambiaste.
+
+No me des menús de opciones largos. Dame tu recomendación directa
+con la razón detrás. Si algo está mal, dímelo sin rodeos.
+
+---
+
+NÚMERO: #${data.numero || '?'}
+TÍTULO: ${data.gancho || ''}
+
+EDITORIAL:
+${data.editorial || '(vacío)'}`;
+}
+
+// Localiza un fragmento dentro del editorial tolerando las diferencias que
+// introduce Claude al citarlo: espacios de mas, saltos de linea donde habia un
+// espacio, comillas curvas por rectas, guiones largos por cortos. Antes se
+// buscaba con includes() a secas, y bastaba una coma distinta para que el
+// cambio saliera gris e inaplicable — el usuario pulsaba "Corregir" y no se
+// corregia nada.
+//
+// Devuelve { inicio, fin } sobre el texto ORIGINAL, o null.
+export function localizarFragmento(texto, fragmento) {
+  if (!texto || !fragmento) return null;
+
+  const exacto = texto.indexOf(fragmento);
+  if (exacto >= 0) return { inicio: exacto, fin: exacto + fragmento.length };
+
+  // Normaliza y guarda de que posicion del original sale cada caracter, para
+  // poder devolver un tramo del original y no del texto normalizado.
+  const normalizar = (str, sinTildes) => {
+    const chars = [];
+    const mapa = [];
+    let espacioPendiente = false;
+    for (let i = 0; i < str.length; i++) {
+      let c = str[i];
+      if (/\s/.test(c)) { espacioPendiente = chars.length > 0; continue; }
+      if (espacioPendiente) { chars.push(' '); mapa.push(i); espacioPendiente = false; }
+      if ('\u2018\u2019\u201B'.includes(c)) c = "'";
+      else if ('\u201C\u201D\u201F'.includes(c)) c = '"';
+      else if ('\u2010\u2011\u2012\u2013\u2014\u2015\u2212'.includes(c)) c = '-';
+      else if (c === '\u2026') c = '.';
+      if (sinTildes) {
+        const base = c.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        if (base) c = base[0];
+      }
+      chars.push(c.toLowerCase());
+      mapa.push(i);
+    }
+    return { texto: chars.join(''), mapa };
+  };
+
+  for (const sinTildes of [false, true]) {
+    const t = normalizar(texto, sinTildes);
+    const f = normalizar(fragmento, sinTildes);
+    if (!f.texto) continue;
+    const i = t.texto.indexOf(f.texto);
+    if (i < 0) continue;
+    // Si aparece mas de una vez no se toca: no hay forma de saber cual queria.
+    if (t.texto.indexOf(f.texto, i + 1) >= 0) return null;
+    const inicio = t.mapa[i];
+    const fin = t.mapa[i + f.texto.length - 1] + 1;
+    return { inicio, fin };
+  }
+  return null;
+}
+
+// Aplica una lista de cambios sobre el texto. Va de atras hacia delante para
+// que las posiciones ya calculadas no se muevan al ir sustituyendo.
+export function aplicarCambios(texto, cambios) {
+  const conSitio = cambios
+    .map((c) => ({ c, sitio: localizarFragmento(texto, c.antes) }))
+    .filter((x) => x.sitio)
+    .sort((a, b) => b.sitio.inicio - a.sitio.inicio);
+
+  let out = texto;
+  for (const { c, sitio } of conSitio) {
+    out = out.slice(0, sitio.inicio) + c.despues + out.slice(sitio.fin);
+  }
+  return { texto: out, aplicados: conSitio.length };
+}
+
 // Extrae los bloques ===CAMBIO=== y comprueba si cada uno se puede localizar en
 // el texto. Devuelve null si la respuesta no viene en ese formato, para que la
 // app pueda caer al modo antiguo de sustituir el texto entero.
@@ -390,7 +651,7 @@ export function parseCorrectionChanges(respuesta, editorial) {
     const d = despues.trim();
     if (!a || a === d) continue;
     cambios.push({ antes: a, despues: d, motivo: (motivo || '').trim() || 'corrección',
-                   encontrado: editorial.includes(a) });
+                   encontrado: Boolean(localizarFragmento(editorial, a)) });
   }
   return cambios.length ? cambios : null;
 }
@@ -445,22 +706,24 @@ TEMA: ${data.editorial ? data.editorial.slice(0, 300) + '…' : '(sin editorial 
 // ── panel Claude helpers ──────────────────────────────────────────────────────
 
 function clearClaudePanels() {
+  const avisos = $('#numRevisionAvisos');
+  if (avisos) avisos.hidden = true;
   const panel = $('#numCambios');
   if (panel) panel.hidden = true;
   const undo = $('#numUndoCorreccion');
   if (undo) undo.hidden = true;
-  ['numIdeaPaste', 'numCorreccionPaste', 'numMontajePaste', 'numPodcastPaste'].forEach((id) => {
+  ['numIdeaPaste', 'numCorreccionPaste', 'numRevisionPaste', 'numMontajePaste', 'numPodcastPaste'].forEach((id) => {
     const el = $(`#${id}`);
     if (el) el.value = '';
   });
-  ['numIdeaPanel', 'numCorreccionPanel', 'numMontajePanel', 'numPodcastPanel'].forEach((id) => {
+  ['numIdeaPanel', 'numCorreccionPanel', 'numRevisionPanel', 'numMontajePanel', 'numPodcastPanel'].forEach((id) => {
     const el = $(`#${id}`);
     if (el) el.hidden = true;
   });
 }
 
 function openPanel(panelId) {
-  ['numIdeaPanel', 'numCorreccionPanel', 'numMontajePanel', 'numPodcastPanel'].forEach((id) => {
+  ['numIdeaPanel', 'numCorreccionPanel', 'numRevisionPanel', 'numMontajePanel', 'numPodcastPanel'].forEach((id) => {
     const el = $(`#${id}`);
     if (el) el.hidden = id !== panelId;
   });
@@ -604,6 +867,142 @@ function showNumPrintOverlay(contentHtml) {
     showToast('Número guardado ✨');
   });
 
+  // ── Publicar en la web ──
+  //
+  // Nunca sube nada sin ensenar antes exactamente que se va a subir: es una
+  // accion publica y no se puede deshacer con un boton.
+
+  $('#numAddFuente')?.addEventListener('click', () => {
+    const cont = $('#numFuentesLista');
+    cont.appendChild(filaFuente({}, cont.children.length));
+    cont.lastElementChild.querySelector('.f-nombre').focus();
+  });
+
+  $('#numResumen')?.addEventListener('input', actualizarCuentaResumen);
+
+  function cerrarVistaPrevia() {
+    document.getElementById('numPubOverlay')?.remove();
+  }
+
+  function pedirConfirmacion(entrega, markdown, archivo, yaEstaba) {
+    return new Promise((resolve) => {
+      cerrarVistaPrevia();
+      const ov = document.createElement('div');
+      ov.id = 'numPubOverlay';
+      ov.className = 'overlay';
+      ov.innerHTML = `
+        <div class="overlay-card">
+          <h3>${yaEstaba ? 'Actualizar en la web' : 'Publicar en la web'}</h3>
+          <p class="muted">Esto queda ${entrega.borrador ? 'escrito en la web sin verse (borrador)' : 'a la vista de cualquiera'}. Revisa antes de confirmar.</p>
+          <dl class="pub-resumen">
+            <dt>Número</dt><dd>${escHtml(entrega.numero)}</dd>
+            <dt>Título</dt><dd>${escHtml(entrega.gancho)}</dd>
+            <dt>Fecha</dt><dd>${escHtml(entrega.fecha)}</dd>
+            <dt>Cantera</dt><dd>${escHtml(entrega.cantera)}</dd>
+            <dt>Fuentes</dt><dd>${(entrega.fuentes || []).length || 'ninguna'}</dd>
+            <dt>Dirección</dt><dd class="pub-url">/n/${escHtml(archivo.replace(/\.md$/, ''))}/</dd>
+          </dl>
+          <details class="pub-detalle">
+            <summary>Ver el archivo completo</summary>
+            <pre class="pub-md">${escHtml(markdown)}</pre>
+          </details>
+          <div class="settings-row" style="margin-top:14px">
+            <button type="button" id="numPubOk" class="btn num-btn-primary">${yaEstaba ? 'Actualizar' : 'Publicar'}</button>
+            <button type="button" id="numPubCancel" class="btn ghost">Cancelar</button>
+          </div>
+        </div>`;
+      document.body.appendChild(ov);
+      const cerrar = (v) => { cerrarVistaPrevia(); resolve(v); };
+      ov.querySelector('#numPubOk').addEventListener('click', () => cerrar(true));
+      ov.querySelector('#numPubCancel').addEventListener('click', () => cerrar(false));
+      ov.addEventListener('click', (e) => { if (e.target === ov) cerrar(false); });
+    });
+  }
+
+  // Sin llave de GitHub el boton no se queda mudo: entrega el archivo hecho
+  // para subirlo a mano, que es lo unico que puede fallar por su cuenta.
+  function ofrecerArchivoAMano(markdown, archivo) {
+    cerrarVistaPrevia();
+    const ov = document.createElement('div');
+    ov.id = 'numPubOverlay';
+    ov.className = 'overlay';
+    ov.innerHTML = `
+      <div class="overlay-card">
+        <h3>Falta la llave de GitHub</h3>
+        <p class="muted">Para publicar con un botón, pon tu llave en <strong>Ajustes → Publicar en la web</strong>. Mientras tanto, aquí tienes el archivo listo:</p>
+        <ol class="muted small" style="padding-left:18px;line-height:1.6">
+          <li>Copia todo el texto de abajo.</li>
+          <li>Entra a <strong>github.com/sdagerj/el-numero</strong> → carpeta <strong>src</strong> → <strong>content</strong> → <strong>editoriales</strong>.</li>
+          <li><strong>Add file → Create new file</strong>, ponle de nombre <strong>${escHtml(archivo)}</strong> y pega el texto.</li>
+          <li>Abajo, botón verde <strong>Commit changes</strong>.</li>
+        </ol>
+        <textarea id="numPubMd" rows="12" readonly style="width:100%;font-size:.85rem;margin-top:8px"></textarea>
+        <div class="settings-row" style="margin-top:12px">
+          <button type="button" id="numPubCopiar" class="btn num-btn-primary">Copiar el archivo</button>
+          <button type="button" id="numPubCancel" class="btn ghost">Cerrar</button>
+        </div>
+      </div>`;
+    document.body.appendChild(ov);
+    ov.querySelector('#numPubMd').value = markdown;
+    ov.querySelector('#numPubCopiar').addEventListener('click', () => {
+      const caja = ov.querySelector('#numPubMd');
+      caja.select();
+      navigator.clipboard?.writeText(markdown).catch(() => {});
+      showToast('Copiado ✨');
+    });
+    ov.querySelector('#numPubCancel').addEventListener('click', cerrarVistaPrevia);
+    ov.addEventListener('click', (e) => { if (e.target === ov) cerrarVistaPrevia(); });
+  }
+
+  $('#numPublicarBtn')?.addEventListener('click', async () => {
+    const btn = $('#numPublicarBtn');
+    const entrega = { ...currentNumero, ...readEditor() };
+
+    const faltan = problemasParaPublicar(entrega);
+    if (faltan.length) {
+      alert('Antes de publicar falta esto:\n\n• ' + faltan.join('\n• '));
+      return;
+    }
+
+    if (entrega.datosSinVerificar && !confirm(
+      'La revisión encontró al menos una cifra que no se pudo verificar en fuente primaria.\n\n' +
+      'Publicar un dato sin comprobar va con tu nombre encima.\n\n¿Ya la quitaste o la comprobaste tú?'
+    )) return;
+
+    // Se guarda primero: si algo sale mal despues, el texto ya esta a salvo.
+    currentNumero = entrega;
+    await db.saveNumber(currentNumero);
+    await clearDraft();
+
+    const archivo = entrega.webArchivo || nombreArchivo(entrega.fecha, entrega.gancho);
+    const markdown = construirMarkdown(entrega);
+    const token = await getGithubToken();
+
+    if (!token) { ofrecerArchivoAMano(markdown, archivo); return; }
+    if (!(await pedirConfirmacion(entrega, markdown, archivo, Boolean(entrega.webArchivo)))) return;
+
+    btn.disabled = true;
+    const etiqueta = btn.textContent;
+    btn.textContent = 'Publicando…';
+    try {
+      const r = await publicarEnLaWeb(entrega, token);
+      currentNumero = { ...currentNumero, webArchivo: r.archivo, webPublicadoEn: new Date().toISOString() };
+      await db.saveNumber(currentNumero);
+      mostrarEstadoPublicacion(currentNumero);
+      await renderNumerosList();
+      showToast(r.actualizado ? 'Actualizado en la web ✨' : 'Publicado ✨');
+      alert(
+        (r.actualizado ? 'Actualizado.' : '¡Publicado!') +
+        '\n\nLa web tarda un par de minutos en reconstruirse. Después estará en:\n' + r.url
+      );
+    } catch (e) {
+      alert('No se pudo publicar.\n\n' + e.message + '\n\nTu editorial está guardado: no se perdió nada.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = etiqueta;
+    }
+  });
+
   $('#deleteNumeroBtn').addEventListener('click', async () => {
     if (!confirm('¿Eliminar este número?')) return;
     await db.deleteNumber(currentNumero.id);
@@ -616,8 +1015,9 @@ function showNumPrintOverlay(contentHtml) {
 
   ['numNumero', 'numGancho'].forEach((id) => $(`#${id}`)?.addEventListener('input', liveUpdate));
   // Todos los campos disparan el borrador automático, no solo los de la portada.
-  ['numNumero', 'numGancho', 'numEditorial', 'numDestaque'].forEach((id) =>
-    $(`#${id}`)?.addEventListener('input', scheduleDraftSave));
+  ['numNumero', 'numGancho', 'numEditorial', 'numDestaque', 'numResumen',
+   'numCantera', 'numFecha', 'numMedioNombre', 'numMedioUrl', 'numBorrador']
+    .forEach((id) => $(`#${id}`)?.addEventListener('input', scheduleDraftSave));
   // Y se guarda también al salir de la app o cambiar de pestaña del navegador.
   window.addEventListener('pagehide', saveDraftNow);
   document.addEventListener('visibilitychange', () => { if (document.hidden) saveDraftNow(); });
@@ -749,6 +1149,46 @@ function showNumPrintOverlay(contentHtml) {
     );
   });
 
+  $('#numRevisionBtn')?.addEventListener('click', async () => {
+    const data = readEditor();
+    if (!data.editorial) { showToast('Escribe el editorial primero'); return; }
+    openPanel('numRevisionPanel');
+    await runWithClaude(
+      $('#numRevisionBtn'), '🔎 Revisar a fondo',
+      buildRevisionPrompt(data),
+      (result) => {
+        $('#numRevisionPaste').value = result;
+        marcarDatosSinVerificar(result);
+        showToast('Revisión lista ✨');
+      },
+      'Copiado ✨ Pégalo en claude.ai',
+      'numRevisionPaste', 'numRevisionHint'
+    );
+  });
+
+  $('#numLimpiarRevision')?.addEventListener('click', () => {
+    $('#numRevisionPaste').value = '';
+    $('#numRevisionAvisos').hidden = true;
+    if (currentNumero) { currentNumero.datosSinVerificar = false; saveDraftNow(); }
+  });
+
+  // Si la revision dice que una cifra no se pudo verificar, la entrega queda
+  // marcada y publicar exige confirmarlo a mano. Es la regla que se rompio una
+  // vez publicando un dato inventado con una fuente real encima.
+  function marcarDatosSinVerificar(respuesta) {
+    const avisos = $('#numRevisionAvisos');
+    const sospecha = /no (la |lo )?(puedo|pude|he podido) verificar|no se (pudo|puede) verificar|sin fuente primaria|no verificable|NO se publica/i
+      .test(respuesta || '');
+    if (currentNumero) currentNumero.datosSinVerificar = sospecha;
+    if (!avisos) return;
+    avisos.hidden = !sospecha;
+    if (sospecha) {
+      avisos.innerHTML = '<strong>⚠️ Hay al menos una cifra que Claude no pudo verificar.</strong><br>' +
+        'Búscala en el informe de arriba y quítala del editorial. Si intentas publicar, te lo voy a volver a preguntar.';
+    }
+    saveDraftNow();
+  }
+
   // ── Cambios uno a uno ────────────────────────────────────────────────────
   // Sustituir el editorial entero siempre es un acto de fe. Aquí cada cambio se
   // ve antes de entrar, para que no se cuele ninguno que altere el sentido.
@@ -805,14 +1245,11 @@ function showNumPrintOverlay(contentHtml) {
     if (!marcados.length) { showToast('No hay ningún cambio marcado'); return; }
 
     const anterior = $('#numEditorial').value;
-    let texto = anterior;
-    let aplicados = 0;
-    for (const c of marcados) {
-      if (!texto.includes(c.antes)) continue;   // pudo cambiar al aplicar otro
-      texto = texto.replace(c.antes, c.despues);
-      aplicados++;
-    }
+    const { texto, aplicados } = aplicarCambios(anterior, marcados);
     if (!aplicados) { showErrorPanel('No se pudo aplicar ninguno: los fragmentos ya no coinciden con tu texto.'); return; }
+    if (aplicados < marcados.length) {
+      showToast(`Se aplicaron ${aplicados} de ${marcados.length} — el resto ya no coincidía`);
+    }
 
     $('#numEditorial').value = texto;
     if (currentNumero) currentNumero.editorial = texto;
