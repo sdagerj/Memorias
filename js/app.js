@@ -6,6 +6,7 @@ import { VoiceDictation, isVoiceSupported } from './voice.js';
 import { initEssence } from './essence.js';
 import { initNumero, initRssSources } from './numero.js';
 import { normalizeApiKey, describeApiKeyProblem } from './claude-api.js';
+import { normalizeToken, describeTokenProblem, setGithubToken } from './publicar.js';
 
 // --- Estado del editor en curso ---
 let draftPhotos = [];      // [{ name, blob }]
@@ -870,6 +871,16 @@ async function loadSettings() {
   } else {
     $('#apiKeyStatus').textContent = 'Sin key: los botones de Claude te darán el texto para pegarlo en claude.ai.';
   }
+  const token = await db.getSetting('githubToken', '');
+  if (token) {
+    const t = normalizeToken(token);
+    const problema = describeTokenProblem(t);
+    $('#githubTokenInput').value = t;
+    $('#githubTokenStatus').textContent = problema ? '⚠️ ' + problema : '✓ Llave guardada. Puedes publicar desde El Número.';
+    if (!problema && t !== token) await db.setSetting('githubToken', t);
+  } else {
+    $('#githubTokenStatus').textContent = 'Sin llave: el botón «Publicar» te dará el archivo para subirlo a mano.';
+  }
   const proxy = await db.getSetting('claudeProxyUrl', '');
   if (proxy) {
     $('#claudeProxyInput').value = proxy;
@@ -878,6 +889,23 @@ async function loadSettings() {
     $('#proxyStatus').textContent = 'Sin proxy: la app no podrá llamar a Claude aunque tengas key.';
   }
 }
+
+$('#saveGithubTokenBtn')?.addEventListener('click', async () => {
+  const original = $('#githubTokenInput').value;
+  const val = normalizeToken(original);
+  const problema = describeTokenProblem(val);
+  if (problema) { $('#githubTokenStatus').textContent = problema; return; }
+  await setGithubToken(val);
+  $('#githubTokenInput').value = val;
+  $('#githubTokenStatus').textContent = '✓ Llave guardada ✨ Ya puedes publicar desde El Número.';
+  toast('Llave de GitHub guardada ✨');
+});
+
+$('#clearGithubTokenBtn')?.addEventListener('click', async () => {
+  await db.setSetting('githubToken', '');
+  $('#githubTokenInput').value = '';
+  $('#githubTokenStatus').textContent = 'Llave borrada. El botón «Publicar» te dará el archivo para subirlo a mano.';
+});
 
 $('#saveApiKeyBtn').addEventListener('click', async () => {
   const original = $('#claudeApiKeyInput').value;

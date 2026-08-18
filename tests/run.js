@@ -199,6 +199,101 @@ prueba('La corrección propone cambios uno a uno y respeta lo no marcado', async
   comprobar('deshacer devuelve el original', (await p.inputValue('#numEditorial')) === ORIG);
 });
 
+prueba('La corrección localiza el fragmento aunque Claude lo cite distinto', async (b) => {
+  // El fallo real: Claude citaba el "ANTES" con comillas curvas, guion largo o
+  // una tilde de menos, includes() no lo encontraba, el cambio salia gris, y
+  // pulsar "Corregir" no corregia nada.
+  const ORIG = 'Ella dijo “hola” — y se fué a casa.\n\nPero volvió mañana temprano.';
+  const RESP = ['===CAMBIO===', 'ANTES: y se fué a casa', 'DESPUÉS: y se fue a casa', 'MOTIVO: ortografía', '',
+                '===CAMBIO===', 'ANTES: Pero  volvio\nmanana', 'DESPUÉS: Pero volvió al día siguiente', 'MOTIVO: claridad'].join('\n');
+  const p = await nuevaPagina(b);
+  await p.click('.tab[data-view="numero"]'); await p.waitForTimeout(500);
+  await p.click('#newNumeroBtn'); await p.waitForTimeout(300);
+  await p.fill('#numNumero', '9'); await p.fill('#numEditorial', ORIG);
+  await p.evaluate(() => { document.querySelector('#numCorreccionPanel').hidden = false; });
+  await p.fill('#numCorreccionPaste', RESP); await p.waitForTimeout(600);
+
+  comprobar('ninguno queda sin localizar', await p.locator('.cambio.perdido').count() === 0);
+  await p.click('#numAplicarSeleccion'); await p.waitForTimeout(600);
+  const d = await p.inputValue('#numEditorial');
+  comprobar('aplica el de la tilde', d.includes('y se fue a casa'));
+  comprobar('aplica el citado con espacios y sin tildes', d.includes('Pero volvió al día siguiente'));
+  comprobar('respeta las comillas curvas del original', d.includes('“hola” —'));
+});
+
+prueba('Publicar valida antes de subir y arma el archivo de la web', async (b) => {
+  const p = await nuevaPagina(b);
+  await p.click('.tab[data-view="numero"]'); await p.waitForTimeout(500);
+  await p.click('#newNumeroBtn'); await p.waitForTimeout(300);
+
+  const faltantes = await p.evaluate(async () => {
+    const m = await import('./js/publicar.js');
+    return m.problemasParaPublicar({ numero: '52%', gancho: 'Un título' });
+  });
+  comprobar('avisa de lo que falta', faltantes.length >= 3, faltantes.join(' | '));
+  comprobar('pide el resumen', faltantes.some((f) => f.includes('resumen')));
+
+  const md = await p.evaluate(async () => {
+    const m = await import('./js/publicar.js');
+    const e = { numero: '52%', gancho: 'La cifra: "clave"', fecha: '2026-08-24',
+                resumen: 'Un resumen.', cantera: 'mercados',
+                editorial: 'Primero.\n\nSegundo.', destaque: 'Frase suelta.',
+                fuentes: [{ nombre: 'DANE', documento: 'GEIH', anio: '2026', url: 'https://dane.gov.co' }] };
+    return { texto: m.construirMarkdown(e), archivo: m.nombreArchivo(e.fecha, e.gancho),
+             problemas: m.problemasParaPublicar(e) };
+  });
+  comprobar('sin problemas cuando está completo', md.problemas.length === 0, md.problemas.join(' | '));
+  comprobar('entrecomilla el número', md.texto.includes('numero: "52%"'));
+  comprobar('escapa las comillas del título', md.texto.includes('titulo: "La cifra: \\"clave\\""'));
+  comprobar('mete la fuente', md.texto.includes('nombre: "DANE"') && md.texto.includes('anio: 2026'));
+  comprobar('destaca la frase como cita', md.texto.includes('> Frase suelta.'));
+  comprobar('el nombre del archivo sale de la fecha y el título',
+    md.archivo === '2026-08-24-la-cifra-clave.md', md.archivo);
+
+  // Sin llave de GitHub el boton no puede quedarse mudo: tiene que dar el
+  // archivo para subirlo a mano.
+  await p.fill('#numNumero', '52'); await p.fill('#numGancho', 'Prueba');
+  await p.fill('#numEditorial', 'Un texto.'); await p.fill('#numResumen', 'Resumen corto.');
+  await p.selectOption('#numCantera', 'mercados');
+  await p.click('#numPublicarBtn'); await p.waitForTimeout(800);
+  comprobar('ofrece el archivo a mano sin llave', await p.locator('#numPubMd').count() === 1);
+  const contenido = await p.inputValue('#numPubMd');
+  comprobar('el archivo ofrecido lleva el editorial', contenido.includes('Un texto.'));
+});
+
+prueba('Una fuente con enlace inválido no llega a la web', async (b) => {
+  const p = await nuevaPagina(b);
+  const problemas = await p.evaluate(async () => {
+    const m = await import('./js/publicar.js');
+    const base = { numero: '1', gancho: 'T', fecha: '2026-01-01', resumen: 'R', cantera: 'vida', editorial: 'X' };
+    return {
+      urlMala: m.problemasParaPublicar({ ...base, fuentes: [{ nombre: 'DANE', url: 'dane.gov.co' }] }),
+      sinNombre: m.problemasParaPublicar({ ...base, fuentes: [{ documento: 'Informe' }] }),
+      vacia: m.problemasParaPublicar({ ...base, fuentes: [] }),
+    };
+  });
+  comprobar('rechaza un enlace sin http', problemas.urlMala.length === 1);
+  comprobar('rechaza una fuente sin institución', problemas.sinNombre.length === 1);
+  comprobar('permite publicar sin fuentes', problemas.vacia.length === 0);
+});
+
+prueba('La llave de GitHub se limpia de lo que cambia el teclado', async (b) => {
+  const p = await nuevaPagina(b);
+  const r = await p.evaluate(async () => {
+    const m = await import('./js/publicar.js');
+    return {
+      limpia: m.normalizeToken(' github_pat_11ABC\u2010DEF '),
+      buena: m.describeTokenProblem('github_pat_11ABCDEF'),
+      mala: m.describeTokenProblem('sk-ant-api03-xxx'),
+      vacia: m.describeTokenProblem(''),
+    };
+  });
+  comprobar('endereza el guion tipográfico', r.limpia === 'github_pat_11ABC-DEF', r.limpia);
+  comprobar('acepta una llave con forma correcta', r.buena === null);
+  comprobar('rechaza una key de Claude por error', typeof r.mala === 'string');
+  comprobar('avisa si no hay llave', typeof r.vacia === 'string');
+});
+
 prueba('El prompt de corrección no invita a reescribir', async (b) => {
   const p = await nuevaPagina(b);
   await p.addInitScript(() => Object.defineProperty(navigator, 'clipboard', {
@@ -357,7 +452,7 @@ prueba('El PDF de un recuerdo abre y cierra sin atascar la app', async (b) => {
 });
 
 prueba('El código no tiene comillas tipográficas en atributos HTML', async () => {
-  const archivos = ['js/app.js', 'js/numero.js', 'js/db.js', 'js/claude-api.js', 'index.html'];
+  const archivos = ['js/app.js', 'js/numero.js', 'js/db.js', 'js/claude-api.js', 'js/publicar.js', 'index.html'];
   for (const f of archivos) {
     const txt = fs.readFileSync(path.join(RAIZ, f), 'utf8');
     const malas = txt.match(/=\s*[“”]/g);

@@ -132,7 +132,7 @@ h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; }
 .settings-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
 .field { display: block; margin-bottom: 14px; }
 .field > span { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 6px; }
-.field input, .field textarea {
+.field input, .field textarea, .field select {
   width: 100%;
   padding: 12px 14px;
   border: 1px solid var(--line);
@@ -142,6 +142,28 @@ h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; }
   font-family: inherit;
 }
 .field textarea { resize: vertical; }
+.field select { appearance: none; background-image: none; }
+
+/* Casilla de verificacion: la etiqueta va al lado, no encima. */
+.field.checkbox-field { display: flex; align-items: flex-start; gap: 10px; }
+.field.checkbox-field input[type='checkbox'] { width: auto; flex: 0 0 auto; margin-top: 2px; }
+.field.checkbox-field > span {
+  margin: 0; font-size: 0.95rem; color: var(--text);
+}
+
+/* Las fuentes del editorial: una tarjeta por fuente. */
+.fuente-item {
+  border: 1px solid var(--line); border-radius: 12px;
+  padding: 12px; margin-bottom: 10px; background: #fbfbfc;
+}
+.fuente-item .field { margin-bottom: 10px; }
+.fuente-item .field:last-of-type { margin-bottom: 0; }
+.fuente-cabeza {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 8px; font-size: 0.85rem; color: var(--muted);
+}
+.fuente-fila { display: flex; gap: 10px; }
+.fuente-fila .field { flex: 1 1 0; min-width: 0; }
 .version { text-align: center; }
 
 /* Buttons */
@@ -796,3 +818,41 @@ h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; }
 }
 .cambio.perdido { opacity: 0.55; }
 .cambio.perdido .cambio-motivo { color: var(--danger); }
+
+/* ── Publicar en la web ─────────────────────────────────────────────────── */
+/* Ventana de confirmacion: publicar es una accion publica que no se deshace,
+   asi que siempre se ensena antes exactamente lo que se va a subir. */
+.overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px; overflow-y: auto;
+}
+.overlay-card {
+  background: #fff; border-radius: 16px; padding: 20px;
+  width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+}
+.overlay-card h3 { margin: 0 0 6px; }
+
+.pub-resumen {
+  display: grid; grid-template-columns: auto 1fr; gap: 6px 14px;
+  margin: 14px 0 0; font-size: 0.95rem;
+}
+.pub-resumen dt { color: var(--muted); font-size: 0.85rem; align-self: center; }
+.pub-resumen dd { margin: 0; overflow-wrap: anywhere; }
+.pub-url { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85rem; }
+
+.pub-detalle { margin-top: 14px; }
+.pub-detalle summary { cursor: pointer; color: var(--muted); font-size: 0.9rem; }
+.pub-md {
+  margin-top: 8px; padding: 12px; max-height: 40vh; overflow: auto;
+  background: #f6f7f9; border: 1px solid var(--line); border-radius: 12px;
+  font-size: 0.8rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere;
+}
+
+.revision-avisos {
+  margin-top: 10px; padding: 12px 14px; border-radius: 12px;
+  background: #fff4f4; border: 1px solid #f0c9c9;
+  font-size: 0.9rem; line-height: 1.5; color: #7a2020;
+}
