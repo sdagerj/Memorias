@@ -78,8 +78,20 @@ function yamlStr(valor) {
   return `"${String(valor ?? '').replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
 }
 
+// En el editor de la app un parrafo se separa del siguiente con un solo Enter.
+// Markdown necesita un renglon EN BLANCO: sin el, une todas las lineas en un
+// unico parrafo gigante e ilegible. Aqui se traduce de un formato al otro.
+export function separarParrafos(texto) {
+  return String(texto || '')
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .map((l) => l.trimEnd())
+    .filter((l) => l.length > 0)
+    .join('\n\n');
+}
+
 function cuerpo(entrega) {
-  const texto = String(entrega.editorial || '').trim();
+  const texto = separarParrafos(entrega.editorial);
   const destaque = String(entrega.destaque || '').trim();
   if (!destaque) return texto;
   // Si la frase ya está dentro del editorial no se repite: se destacaría dos
@@ -251,7 +263,11 @@ export async function publicarEnLaWeb(entrega, token) {
   return {
     archivo,
     actualizado: Boolean(sha),
-    url: `https://elnumero.netlify.app/n/${archivo.replace(/\.md$/, '')}/`,
+    borrador: Boolean(entrega.borrador),
+    // Un borrador no genera pagina: dar su direccion seria mandar a un 404.
+    url: entrega.borrador
+      ? null
+      : `https://elnumero.netlify.app/n/${archivo.replace(/\.md$/, '')}/`,
   };
 }
 

@@ -251,6 +251,10 @@ function mostrarEstadoPublicacion(n) {
   const p = $('#numPublicarEstado');
   if (!p) return;
   if (!n?.webArchivo) { p.textContent = ''; return; }
+  if (n.borrador) {
+    p.textContent = 'Subido como borrador: está en la web pero no se ve. Desmarca la casilla de arriba y vuelve a publicar para que salga.';
+    return;
+  }
   const cuando = n.webPublicadoEn
     ? ` el ${new Date(n.webPublicadoEn).toLocaleDateString('es', { day: 'numeric', month: 'long' })}`
     : '';
@@ -992,8 +996,10 @@ function showNumPrintOverlay(contentHtml) {
       await renderNumerosList();
       showToast(r.actualizado ? 'Actualizado en la web ✨' : 'Publicado ✨');
       alert(
-        (r.actualizado ? 'Actualizado.' : '¡Publicado!') +
-        '\n\nLa web tarda un par de minutos en reconstruirse. Después estará en:\n' + r.url
+        r.borrador
+          ? 'Subido como BORRADOR.\n\nQueda guardado en la web pero no se ve, y todavía no tiene dirección propia.\n\nCuando lo quieras publicar de verdad: desmarca la casilla de borrador y vuelve a darle a Publicar.'
+          : (r.actualizado ? 'Actualizado.' : '¡Publicado!') +
+            '\n\nLa web tarda un par de minutos en reconstruirse. Después estará en:\n' + r.url
       );
     } catch (e) {
       alert('No se pudo publicar.\n\n' + e.message + '\n\nTu editorial está guardado: no se perdió nada.');
