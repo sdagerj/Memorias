@@ -1,9 +1,9 @@
 // Publicar una entrega de El Número directamente en la web.
 //
-// La web (elnumero.netlify.app) se construye sola desde el repositorio
+// La web (elnumero.pages.dev) se construye sola desde el repositorio
 // sdagerj/el-numero: cada editorial es un archivo Markdown dentro de
 // src/content/editoriales/. Aquí se arma ese archivo y se escribe con la API
-// de GitHub. Netlify ve el cambio y reconstruye. No hay servidor de por medio.
+// de GitHub. Cloudflare ve el cambio y reconstruye. No hay servidor de por medio.
 //
 // El token se guarda solo en este dispositivo, igual que la key de Claude, y
 // solo se manda a api.github.com.
@@ -13,6 +13,10 @@ import { getSetting, setSetting } from './db.js';
 const REPO = 'sdagerj/el-numero';
 const CARPETA = 'src/content/editoriales';
 const RAMA = 'main';
+
+// La direccion publica del sitio. En un solo sitio, para que cambiar de alojamiento
+// no obligue a buscarla por todo el codigo — ya paso una vez, al salir de Netlify.
+export const SITIO_WEB = 'https://elnumero.pages.dev';
 
 export const CANTERAS_WEB = [
   { id: 'mercados', nombre: 'Mercados' },
@@ -267,7 +271,7 @@ export async function publicarEnLaWeb(entrega, token) {
     // Un borrador no genera pagina: dar su direccion seria mandar a un 404.
     url: entrega.borrador
       ? null
-      : `https://elnumero.netlify.app/n/${archivo.replace(/\.md$/, '')}/`,
+      : `${SITIO_WEB}/n/${archivo.replace(/\.md$/, '')}/`,
   };
 }
 

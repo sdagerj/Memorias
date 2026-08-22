@@ -4,7 +4,7 @@ import { fetchHeadlines, DEFAULT_SOURCES } from './rss.js';
 import { callClaude, getApiKey, hasApiKey, describeApiKeyProblem } from './claude-api.js';
 import {
   publicarEnLaWeb, construirMarkdown, problemasParaPublicar,
-  nombreArchivo, getGithubToken,
+  nombreArchivo, getGithubToken, SITIO_WEB,
 } from './publicar.js';
 
 const $ = (sel) => document.querySelector(sel);
@@ -258,7 +258,7 @@ function mostrarEstadoPublicacion(n) {
   const cuando = n.webPublicadoEn
     ? ` el ${new Date(n.webPublicadoEn).toLocaleDateString('es', { day: 'numeric', month: 'long' })}`
     : '';
-  const url = `https://elnumero.netlify.app/n/${n.webArchivo.replace(/\.md$/, '')}/`;
+  const url = `${SITIO_WEB}/n/${n.webArchivo.replace(/\.md$/, '')}/`;
   p.innerHTML = `Publicado${cuando}. <a href="${url}" target="_blank" rel="noopener">Verlo en la web ↗</a><br>Si vuelves a publicar, se actualiza — no se duplica.`;
 }
 
