@@ -261,6 +261,33 @@ prueba('Publicar valida antes de subir y arma el archivo de la web', async (b) =
   comprobar('el archivo ofrecido lleva el editorial', contenido.includes('Un texto.'));
 });
 
+prueba('Los párrafos del editor se separan como los quiere Markdown', async (b) => {
+  // En el editor un parrafo se separa del siguiente con un solo Enter. Sin
+  // traducirlo, Markdown pega todo el editorial en un unico bloque ilegible.
+  const p = await nuevaPagina(b);
+  const r = await p.evaluate(async () => {
+    const m = await import('./js/publicar.js');
+    const e = { numero: '300', gancho: 'Los Medici', fecha: '2026-08-21',
+                resumen: 'R', cantera: 'vida',
+                editorial: 'Primero.\nSegundo.\n\n\nTercero.  \n' };
+    return { md: m.construirMarkdown(e), sep: m.separarParrafos('Uno.\nDos.') };
+  });
+  comprobar('un Enter se vuelve renglón en blanco', r.sep === 'Uno.\n\nDos.', r.sep);
+  comprobar('no deja líneas pegadas', !/Primero\.\nSegundo/.test(r.md));
+  comprobar('separa los tres párrafos', r.md.includes('Primero.\n\nSegundo.\n\nTercero.'));
+});
+
+prueba('Un borrador no promete una dirección que da 404', async (b) => {
+  const p = await nuevaPagina(b);
+  const r = await p.evaluate(async () => {
+    const m = await import('./js/publicar.js');
+    const e = { numero: '1', gancho: 'T', fecha: '2026-01-01', resumen: 'R',
+                cantera: 'vida', editorial: 'X', borrador: true };
+    return { md: m.construirMarkdown(e) };
+  });
+  comprobar('marca el borrador en el archivo', r.md.includes('borrador: true'));
+});
+
 prueba('Una fuente con enlace inválido no llega a la web', async (b) => {
   const p = await nuevaPagina(b);
   const problemas = await p.evaluate(async () => {
