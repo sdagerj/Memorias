@@ -288,6 +288,77 @@ prueba('Un borrador no promete una dirección que da 404', async (b) => {
   comprobar('marca el borrador en el archivo', r.md.includes('borrador: true'));
 });
 
+prueba('El editorial se exporta a Word con la firma al final', async (b) => {
+  const p = await nuevaPagina(b);
+  await p.click('.tab[data-view="numero"]'); await p.waitForTimeout(500);
+  await p.click('#newNumeroBtn'); await p.waitForTimeout(300);
+
+  const r = await p.evaluate(async () => {
+    const m = await import('./js/word.js');
+    const e = { numero: '300', gancho: 'No pretendas ser lo que no eres',
+                editorial: 'Primero.\nSegundo.', destaque: 'Una cita.',
+                fuentes: [{ nombre: 'DANE', documento: 'GEIH', anio: '2026' }] };
+    const bytes = m.construirDocx(e);
+    // Los cuatro primeros bytes de todo ZIP: PK\x03\x04.
+    const cabecera = Array.from(bytes.slice(0, 4));
+    // El XML del documento va dentro del ZIP; se busca en crudo porque no
+    // está comprimido, que es justo por lo que se eligió así.
+    const crudo = new TextDecoder().decode(bytes);
+    return {
+      cabecera,
+      bytes: bytes.length,
+      firma: crudo.includes('Stephanie Dager'),
+      titulo: crudo.includes('No pretendas ser lo que no eres'),
+      parrafos: (crudo.match(/<w:p>/g) || []).length,
+      cita: crudo.includes('Una cita.'),
+      fuente: crudo.includes('DANE'),
+      nombre: m.nombreDocx(e),
+      docXml: crudo.includes('word/document.xml'),
+      tipos: crudo.includes('[Content_Types].xml'),
+    };
+  });
+
+  comprobar('es un ZIP de verdad', JSON.stringify(r.cabecera) === '[80,75,3,4]', String(r.cabecera));
+  comprobar('trae las piezas que Word exige', r.docXml && r.tipos);
+  comprobar('lleva el título', r.titulo);
+  comprobar('lleva la firma', r.firma);
+  comprobar('lleva la frase destacada', r.cita);
+  comprobar('lleva las fuentes', r.fuente);
+  comprobar('separa los párrafos', r.parrafos >= 5, 'párrafos: ' + r.parrafos);
+  comprobar('el archivo se llama por el número y el título',
+    r.nombre === '300-No-pretendas-ser-lo-que-no-eres.docx', r.nombre);
+
+  // Un editorial vacío no debe descargar nada.
+  await p.fill('#numNumero', '1');
+  await p.click('#exportNumeroWordBtn'); await p.waitForTimeout(400);
+  comprobar('sin editorial no exporta', await p.locator('#toast').count() >= 0);
+});
+
+prueba('El Word no se rompe con comillas, acentos ni signos raros', async (b) => {
+  const p = await nuevaPagina(b);
+  const r = await p.evaluate(async () => {
+    const m = await import('./js/word.js');
+    const bytes = m.construirDocx({
+      numero: '1', gancho: 'Comillas "dobles" & <signos>',
+      editorial: 'Ñandú, así: «cita» —raya—.\u0007Con un carácter de control.',
+      fuentes: [],
+    });
+    const crudo = new TextDecoder().decode(bytes);
+    return {
+      escapado: crudo.includes('&quot;dobles&quot;') && crudo.includes('&amp;'),
+      sinCrudos: !/<w:t[^>]*>[^<]*[<>]/.test(crudo.split('<w:body>')[1] || ''),
+      control: crudo.includes('\u0007'),
+      enie: crudo.includes('Ñandú'),
+      nombre: m.nombreDocx({ gancho: 'Comillas "dobles" & <signos>', numero: '1' }),
+    };
+  });
+  comprobar('escapa comillas y signos', r.escapado);
+  comprobar('quita los caracteres de control', !r.control);
+  comprobar('conserva las eñes y las tildes', r.enie);
+  comprobar('el nombre del archivo no lleva signos raros',
+    !/["&<>]/.test(r.nombre), r.nombre);
+});
+
 prueba('Una fuente con enlace inválido no llega a la web', async (b) => {
   const p = await nuevaPagina(b);
   const problemas = await p.evaluate(async () => {
@@ -479,7 +550,7 @@ prueba('El PDF de un recuerdo abre y cierra sin atascar la app', async (b) => {
 });
 
 prueba('El código no tiene comillas tipográficas en atributos HTML', async () => {
-  const archivos = ['js/app.js', 'js/numero.js', 'js/db.js', 'js/claude-api.js', 'js/publicar.js', 'index.html'];
+  const archivos = ['js/app.js', 'js/numero.js', 'js/db.js', 'js/claude-api.js', 'js/publicar.js', 'js/word.js', 'index.html'];
   for (const f of archivos) {
     const txt = fs.readFileSync(path.join(RAIZ, f), 'utf8');
     const malas = txt.match(/=\s*[“”]/g);

@@ -6,6 +6,7 @@ import {
   publicarEnLaWeb, construirMarkdown, problemasParaPublicar,
   nombreArchivo, getGithubToken, SITIO_WEB,
 } from './publicar.js';
+import { descargarDocx, FIRMA } from './word.js';
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
@@ -810,6 +811,19 @@ export async function initNumero() {
     await renderNumerosList();
   });
 
+  // Word, que es el formato en el que los periódicos piden la columna. Lleva la
+  // firma al final, como la mandan ellos.
+  $('#exportNumeroWordBtn')?.addEventListener('click', () => {
+    const data = readEditor();
+    if (!data.editorial) { showToast('Escribe el editorial primero'); return; }
+    try {
+      const nombre = descargarDocx(data);
+      showToast(`Descargado: ${nombre}`);
+    } catch (e) {
+      showErrorPanel('No se pudo crear el archivo de Word: ' + e.message);
+    }
+  });
+
   $('#exportNumeroPdfBtn').addEventListener('click', () => {
     const data = readEditor();
     if (!data.editorial && !data.numero) { showToast('Escribe el editorial primero'); return; }
@@ -831,7 +845,8 @@ export async function initNumero() {
 </div>
 <h1 style="font-family:Georgia,serif;font-size:1.5rem;color:#1a4d72;margin-bottom:1.5rem">${escHtml(data.gancho || '')}</h1>
 <div style="font-family:Georgia,serif;white-space:pre-wrap;font-size:1rem;line-height:1.7;color:#222">${escHtml(data.editorial || '')}</div>
-${destaqueHtml}`;
+${destaqueHtml}
+<p style="text-align:right;font-weight:700;margin-top:2.5rem;color:#1a4d72">${escHtml(FIRMA)}</p>`;
 
     showNumPrintOverlay(content);
   });
