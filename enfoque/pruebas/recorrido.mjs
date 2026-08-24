@@ -82,7 +82,7 @@ await pagina.waitForSelector('h2')
 revisar('la sesión abre con dígitos inversos',
   (await pagina.locator('h2').first().textContent())?.trim() === 'Al revés')
 
-const tarjeta = pagina.locator('section').first()
+const zona = pagina.locator('[data-zona="ejercicio"]')
 
 let ensayos = 0
 let ultimoDictado = []
@@ -99,7 +99,7 @@ while (ensayos < 20) {
 
   // La comprobación que da sentido a toda la aplicación: el estímulo se
   // escuchó, y no está escrito en ninguna parte de la tarjeta.
-  const textoTarjeta = await tarjeta.innerText()
+  const textoTarjeta = await zona.innerText()
   const filtrado = textoTarjeta.replace(/Tu respuesta|Confirmar|Escuchando…/g, '')
   if (ultimoDictado.some((d) => filtrado.includes(d))) {
     console.log('FALLA · el estímulo aparece escrito:', filtrado)
@@ -138,12 +138,12 @@ for (const palabra of ['perro', 'gato', 'perros', 'mesa', 'león']) {
   await pagina.waitForTimeout(60)
 }
 revisar('el contador de palabras avanza',
-  (await tarjeta.innerText()).includes('Van 5'))
+  (await zona.innerText()).includes('Van 5'))
 
 await pagina.getByRole('button', { name: 'Terminar antes' }).click()
 await pagina.waitForTimeout(300)
 
-const textoRevision = await tarjeta.innerText()
+const textoRevision = await zona.innerText()
 revisar('pregunta por las palabras que no conoce', textoRevision.includes('¿Cuentan?'))
 revisar('no pregunta por la repetición, que ya resolvió sola',
   !/^perros$/m.test(textoRevision))

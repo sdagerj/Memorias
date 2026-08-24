@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Boton } from '../ui/Boton'
-import { Tarjeta } from '../ui/Tarjeta'
+import { Escena, clasesCampo } from '../ui/Escena'
 import { clasificarPalabras, calcularMetricas, resolverPendiente } from '../nucleo/fluidez/puntuar'
 import { agruparEnClusters, mismoGrupoFonologico } from '../nucleo/fluidez/clusters'
 import { distribuirEnBloques, DURACION_PRUEBA_MS } from '../nucleo/fluidez/bloques'
@@ -163,36 +163,33 @@ export function Fluidez({
   const segundos = Math.ceil(restante / 1000)
 
   return (
-    <Tarjeta className="text-center">
-      <h2>{enunciado}</h2>
-
+    <Escena
+      titulo={enunciado}
+      {...(fase === 'listo'
+        ? { instruccion: 'Tienes un minuto para decir todas las que puedas. No importa el orden.' }
+        : {})}
+    >
       {fase === 'listo' && (
-        <>
-          <p className="mx-auto mt-3 max-w-sm text-[1.125rem] leading-relaxed text-texto-suave">
-            Tienes un minuto para decir todas las que puedas. No importa el orden.
-          </p>
-          <Boton onClick={empezar} ancho className="mt-10">
-            Empezar
-          </Boton>
-        </>
+        <Boton onClick={empezar} ancho>
+          Empezar
+        </Boton>
       )}
 
       {fase === 'corriendo' && (
         <>
-          {/* Único número en pantalla durante la prueba: el tiempo. Ni el
-              conteo de palabras ni la lista, para no inducir la sensación de
-              estar rindiendo poco mientras se responde. */}
-          {/* Barra que se vacía despacio, sin cambio de color al final: una
-              cuenta regresiva que se pone roja es presión pura. */}
-          <div className="mx-auto mt-8 mb-6 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-borde-suave">
+          {/* El tiempo se muestra como una barra que se vacía despacio y sin
+              cambio de color al final. Una cuenta regresiva que se pone roja
+              es presión pura, y aquí eso está descartado por diseño. */}
+          <div className="mx-auto mb-7 h-1 w-full max-w-[13rem] overflow-hidden rounded-full bg-borde-suave">
             <div
               className="h-full rounded-full bg-acento-borde transition-[width] duration-200 ease-linear"
               style={{ width: `${Math.max(0, (restante / DURACION_PRUEBA_MS) * 100)}%` }}
             />
           </div>
-          <p className="mb-7 text-[3.25rem] font-light leading-none tabular-nums" aria-live="off">
+          <p className="cifra mb-8 text-[3.75rem] leading-none" aria-live="off">
             {segundos}
           </p>
+
           <input
             ref={campo}
             value={texto}
@@ -207,9 +204,9 @@ export function Fluidez({
             spellCheck={false}
             aria-label="Escribe una palabra y pulsa Enter"
             placeholder="Una palabra y Enter"
-            className="w-full rounded-suave border-2 border-borde bg-fondo px-4 py-5 text-center text-[1.375rem] focus:border-acento-borde"
+            className={clasesCampo()}
           />
-          <p className="mt-3.5 text-[1rem] text-texto-tenue">
+          <p className="mt-4 text-[1rem] text-texto-tenue">
             {palabras.length === 0 ? 'Van cero' : `Van ${palabras.length}`}
           </p>
           {avisoMicrofono !== '' && (
@@ -217,56 +214,51 @@ export function Fluidez({
               {avisoMicrofono} Puedes escribirlas.
             </p>
           )}
-          <Boton tono="discreto" onClick={terminarPrueba} ancho className="mt-5">
+          <Boton tono="discreto" onClick={terminarPrueba} ancho className="mt-6">
             Terminar antes
           </Boton>
         </>
       )}
 
-      {fase === 'revisando' && (
-        <>
-          {pendientes.length === 0 ? (
-            <>
-              <p className="mx-auto mt-5 max-w-sm text-[1.125rem] text-texto-suave">
-                Listo. Ya quedó guardado.
-              </p>
-              <Boton onClick={cerrar} ancho className="mt-10">
-                Continuar
-              </Boton>
-            </>
-          ) : (
-            <>
-              <p className="mx-auto mt-3 max-w-sm text-[1.125rem] leading-relaxed text-texto-suave">
-                Estas no están en mi lista. ¿Cuentan?
-              </p>
-              <ul className="mt-7 space-y-3 text-left">
-                {pendientes.map(({ palabra, indice }) => (
-                  <li
-                    key={indice}
-                    className="flex items-center gap-3 rounded-suave bg-fondo px-4 py-2.5"
+      {fase === 'revisando' &&
+        (pendientes.length === 0 ? (
+          <>
+            <p className="text-[1.125rem] text-texto-suave">Listo. Ya quedó guardado.</p>
+            <Boton onClick={cerrar} ancho className="mt-9">
+              Continuar
+            </Boton>
+          </>
+        ) : (
+          <>
+            <p className="mx-auto max-w-[22rem] text-[1.125rem] leading-relaxed text-texto-suave">
+              Estas no están en mi lista. ¿Cuentan?
+            </p>
+            <ul className="mt-7 space-y-2.5 text-left">
+              {pendientes.map(({ palabra, indice }) => (
+                <li
+                  key={indice}
+                  className="flex items-center gap-2.5 rounded-suave border border-borde-suave bg-superficie py-2 pl-5 pr-2"
+                >
+                  <span className="flex-1 text-[1.25rem] font-medium">{palabra.texto}</span>
+                  <Boton
+                    tono="secundario"
+                    className="min-h-12 px-5 py-2 text-[1.0625rem]"
+                    onClick={() => setPalabras((p) => resolverPendiente(p, indice, true))}
                   >
-                    <span className="flex-1 text-[1.25rem] font-medium">{palabra.texto}</span>
-                    <Boton
-                      tono="secundario"
-                      className="min-h-12 px-5 py-2 text-[1.0625rem]"
-                      onClick={() => setPalabras((p) => resolverPendiente(p, indice, true))}
-                    >
-                      Sí
-                    </Boton>
-                    <Boton
-                      tono="discreto"
-                      className="min-h-12 px-5 py-2 text-[1.0625rem]"
-                      onClick={() => setPalabras((p) => resolverPendiente(p, indice, false))}
-                    >
-                      No
-                    </Boton>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-        </>
-      )}
-    </Tarjeta>
+                    Sí
+                  </Boton>
+                  <Boton
+                    tono="discreto"
+                    className="min-h-12 px-5 py-2 text-[1.0625rem]"
+                    onClick={() => setPalabras((p) => resolverPendiente(p, indice, false))}
+                  >
+                    No
+                  </Boton>
+                </li>
+              ))}
+            </ul>
+          </>
+        ))}
+    </Escena>
   )
 }

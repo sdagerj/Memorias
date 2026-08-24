@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Boton } from '../ui/Boton'
-import { Tarjeta } from '../ui/Tarjeta'
+import { Escena, Puntos, clasesCampo } from '../ui/Escena'
 import {
   iniciarEscalera,
   registrarEnsayo,
@@ -158,70 +158,48 @@ export function Amplitud({
   const instruccion = useMemo(() => INSTRUCCIONES[variante], [variante])
 
   return (
-    <Tarjeta className="text-center">
-      <h2>{TITULOS[variante]}</h2>
-      <p className="mx-auto mt-3 max-w-sm text-[1.125rem] leading-relaxed text-texto-suave">
-        {instruccion}
-      </p>
+    <Escena titulo={TITULOS[variante]} instruccion={instruccion}>
+      {fase === 'listo' && (
+        <Boton onClick={presentar} ancho>
+          Escuchar la serie
+        </Boton>
+      )}
 
-      <div className="my-10 flex min-h-36 flex-col items-center justify-center">
-        {fase === 'listo' && (
-          <Boton onClick={presentar} ancho>
-            Escuchar la serie
+      {fase === 'dictando' && (
+        <Puntos total={serie.length} actual={avance} etiqueta="Escuchando…" />
+      )}
+
+      {fase === 'respondiendo' && (
+        <div className="w-full">
+          <input
+            ref={campo}
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') enviar()
+            }}
+            inputMode={variante === 'letras-numeros' ? 'text' : 'numeric'}
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
+            aria-label="Tu respuesta"
+            placeholder="Tu respuesta"
+            className={clasesCampo({ variante: 'grande' })}
+          />
+          <Boton onClick={enviar} ancho className="mt-4">
+            Confirmar
           </Boton>
-        )}
-
-        {fase === 'dictando' && (
-          <div aria-live="polite">
-            {/* Puntos de avance. Nunca se muestran los elementos dictados: el
-                ejercicio es auditivo y verlos lo convertiría en otra cosa. */}
-            <div className="flex justify-center gap-2.5">
-              {serie.map((_, i) => (
-                <span
-                  key={i}
-                  className={[
-                    'h-3.5 w-3.5 rounded-full transition-all duration-300',
-                    i <= avance ? 'scale-100 bg-acento' : 'scale-75 bg-borde',
-                  ].join(' ')}
-                />
-              ))}
-            </div>
-            <p className="mt-5 text-[1.0625rem] text-texto-tenue">Escuchando…</p>
-          </div>
-        )}
-
-        {fase === 'respondiendo' && (
-          <div className="w-full">
-            <input
-              ref={campo}
-              value={texto}
-              onChange={(e) => setTexto(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') enviar()
-              }}
-              inputMode={variante === 'letras-numeros' ? 'text' : 'numeric'}
-              autoComplete="off"
-              autoCorrect="off"
-              spellCheck={false}
-              aria-label="Tu respuesta"
-              placeholder="Tu respuesta"
-              className="w-full rounded-suave border-2 border-borde bg-fondo px-4 py-5 text-center text-[2rem] font-medium tracking-[0.18em] tabular-nums focus:border-acento-borde"
-            />
-            <Boton onClick={enviar} ancho className="mt-4">
-              Confirmar
-            </Boton>
-            {avisoMicrofono !== '' ? (
-              <p className="mt-3 text-[1rem] text-texto-tenue">
-                {avisoMicrofono} Puedes responder con el teclado.
-              </p>
-            ) : (
-              microfonoActivo && (
-                <p className="mt-3 text-[1rem] text-texto-tenue">Puedes decirla en voz alta.</p>
-              )
-            )}
-          </div>
-        )}
-      </div>
-    </Tarjeta>
+          {avisoMicrofono !== '' ? (
+            <p className="mt-4 text-[1rem] text-texto-tenue">
+              {avisoMicrofono} Puedes responder con el teclado.
+            </p>
+          ) : (
+            microfonoActivo && (
+              <p className="mt-4 text-[1rem] text-texto-tenue">Puedes decirla en voz alta.</p>
+            )
+          )}
+        </div>
+      )}
+    </Escena>
   )
 }

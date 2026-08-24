@@ -1,6 +1,6 @@
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -43,8 +43,10 @@ export function Grafica({
 
   const valores = serie.map((p) => p.valor)
   const referencias = basal === null || basal === undefined ? valores : [...valores, basal]
-  const minimo = Math.max(0, Math.floor(Math.min(...referencias) - 1))
-  const maximo = Math.ceil(Math.max(...referencias) + 1)
+  const marcas = calcularMarcas(Math.min(...referencias), Math.max(...referencias))
+  const minimo = marcas[0] as number
+  const maximo = marcas[marcas.length - 1] as number
+  const idGradiente = `degradado-${idCaptura ?? titulo.replace(/\s/g, '')}`
 
   return (
     <div
@@ -56,8 +58,14 @@ export function Grafica({
 
       <div style={{ width: '100%', height: 240 }}>
         <ResponsiveContainer>
-          <LineChart data={serie} margin={{ top: 8, right: 12, bottom: 4, left: -18 }}>
-            <CartesianGrid stroke="var(--color-borde)" vertical={false} />
+          <AreaChart data={serie} margin={{ top: 10, right: 14, bottom: 4, left: -16 }}>
+            <defs>
+              <linearGradient id={idGradiente} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={color} stopOpacity={0.16} />
+                <stop offset="100%" stopColor={color} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid stroke="var(--color-borde-suave)" vertical={false} />
             <XAxis
               dataKey="fecha"
               tickFormatter={etiquetaFecha}
@@ -66,7 +74,9 @@ export function Grafica({
             />
             <YAxis
               domain={[minimo, maximo]}
+              ticks={marcas}
               allowDecimals={false}
+              width={38}
               tick={{ fontSize: 13, fill: 'var(--color-texto-tenue)' }}
               stroke="var(--color-borde)"
             />
@@ -74,8 +84,10 @@ export function Grafica({
               formatter={(valor) => [`${String(valor)} ${unidad}`, '']}
               labelFormatter={(fecha) => etiquetaFecha(String(fecha))}
               contentStyle={{
-                borderRadius: 12,
+                borderRadius: 14,
                 border: '1px solid var(--color-borde)',
+                backgroundColor: 'var(--color-superficie)',
+                boxShadow: 'var(--shadow-tarjeta)',
                 fontSize: 15,
               }}
             />
@@ -92,18 +104,50 @@ export function Grafica({
                 }}
               />
             )}
-            <Line
+            <Area
               type="monotone"
               dataKey="valor"
               stroke={color}
-              strokeWidth={2}
-              dot={{ r: 3, fill: color }}
-              activeDot={{ r: 5 }}
+              strokeWidth={2.25}
+              fill={`url(#${idGradiente})`}
+              dot={{ r: 3.5, fill: 'var(--color-superficie)', stroke: color, strokeWidth: 2 }}
+              activeDot={{ r: 5.5, fill: color, stroke: 'var(--color-superficie)', strokeWidth: 2 }}
               isAnimationActive={false}
             />
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       </div>
     </div>
   )
+}
+
+/**
+ * Marcas del eje vertical en números redondos.
+ *
+ * Dejar que la librería elija, o repartir el rango sin más, produce escalas
+ * como 2, 7, 12, 19: son correctas y no se leen. Aquí el paso se redondea a
+ * 1, 2, 5, 10… y las marcas se alinean a múltiplos de ese paso, de modo que
+ * el eje siempre cae en cifras que se reconocen de un vistazo.
+ *
+ * El eje empieza siempre en cero, aunque el dato más bajo esté lejos. Es una
+ * decisión de honestidad, no de estética: recortando el eje por abajo, pasar
+ * de tres a cuatro dígitos se dibuja como si el rendimiento se hubiera
+ * duplicado. Estas gráficas van a un informe médico y no pueden exagerar la
+ * pendiente.
+ *
+ * El rango incluye siempre el valor basal, porque la línea de referencia de
+ * septiembre de 2025 tiene que quedar dentro de la gráfica y no fuera de
+ * cuadro.
+ */
+export function calcularMarcas(_minimo: number, maximo: number): number[] {
+  const PASOS = [1, 2, 5, 10, 20, 25, 50, 100]
+  const OBJETIVO = 5
+
+  const crudo = Math.max(1, maximo / OBJETIVO)
+  const paso = PASOS.find((p) => p >= crudo) ?? PASOS[PASOS.length - 1] ?? 1
+  const hasta = Math.max(paso, Math.ceil(maximo / paso) * paso)
+
+  const marcas: number[] = []
+  for (let valor = 0; valor <= hasta; valor += paso) marcas.push(valor)
+  return marcas
 }

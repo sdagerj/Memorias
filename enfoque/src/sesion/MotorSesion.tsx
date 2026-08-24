@@ -135,23 +135,28 @@ export function MotorSesion({
   if (cerrada !== null) {
     return (
       <Pantalla titulo="Sesión terminada">
+        <p className="-mt-3 mb-7 text-[1.125rem] leading-relaxed text-texto-suave">
+          {mensajeDeCierre(cerrada)}
+        </p>
         <Tarjeta>
-          <p className="text-[1.125rem] leading-relaxed text-texto-suave">{mensajeDeCierre(cerrada)}</p>
-          <ul className="mt-7 space-y-3.5">
+          <p className="rotulo">Lo de hoy</p>
+          <ul className="mt-4">
             {terminados.map((t, i) => (
               <li
                 key={i}
-                className="flex justify-between gap-4 border-b border-borde-suave pb-3 last:border-0"
+                className="flex items-baseline justify-between gap-4 border-b border-borde-suave py-3.5 last:border-0 last:pb-0"
               >
-                <span className="font-medium">{t.nombre}</span>
-                <span className="tabular-nums text-texto-suave">{t.resumen}</span>
+                <span>{t.nombre}</span>
+                <span className="cifra whitespace-nowrap text-[1.25rem] text-texto-suave">
+                  {t.resumen}
+                </span>
               </li>
             ))}
           </ul>
-          <Boton onClick={alSalir} ancho className="mt-8">
-            Volver al inicio
-          </Boton>
         </Tarjeta>
+        <Boton onClick={alSalir} ancho className="mt-5">
+          Volver al inicio
+        </Boton>
       </Pantalla>
     )
   }
@@ -190,9 +195,23 @@ export function MotorSesion({
         />
       )}
 
-      <p className="mt-7 text-center text-[1rem] text-texto-tenue">
-        {indice + 1} de {plan.length}
-      </p>
+      {/* Avance de la sesión en puntos y no en cifras: es información
+          periférica y no debe pedir que se lea nada. */}
+      <div
+        className="mt-10 flex justify-center gap-2"
+        role="img"
+        aria-label={`Ejercicio ${indice + 1} de ${plan.length}`}
+      >
+        {plan.map((_, i) => (
+          <span
+            key={i}
+            className={[
+              'h-1.5 rounded-full transition-all duration-300',
+              i < indice ? 'w-6 bg-acento-borde' : i === indice ? 'w-6 bg-acento' : 'w-1.5 bg-borde',
+            ].join(' ')}
+          />
+        ))}
+      </div>
     </Pantalla>
   )
 }

@@ -164,7 +164,7 @@ export function Progreso({ alVolver }: Props) {
   return (
     <Pantalla titulo="Progreso">
       <Tarjeta>
-        <p className="text-[1rem] text-texto-tenue">Periodo: {rangoDeFechas(resultados)}</p>
+        <p className="rotulo">Resumen · {rangoDeFechas(resultados)}</p>
         <TablaResumen filas={resumen} />
       </Tarjeta>
 
@@ -183,7 +183,8 @@ export function Progreso({ alVolver }: Props) {
       </div>
 
       <Tarjeta className="mt-5">
-        <h2>Llevar los datos a consulta</h2>
+        <p className="rotulo">Exportar</p>
+        <h2 className="mt-2">Llevar los datos a consulta</h2>
         <p className="mt-2 text-[1.0625rem] leading-relaxed text-texto-tenue">
           El PDF trae la tabla resumen, las gráficas y el rango de fechas. El CSV trae el detalle,
           incluida cada palabra de fluidez con su clasificación.
@@ -216,12 +217,12 @@ export function Progreso({ alVolver }: Props) {
 function TablaResumen({ filas }: { filas: FilaResumen[] }) {
   return (
     <div className="mt-4">
-      <ul className="space-y-3 sm:hidden">
+      <ul className="sm:hidden">
         {filas.map((fila) => (
-          <li key={fila.dominio} className="border-b border-borde pb-3 last:border-0">
-            <p className="text-[1.125rem] font-semibold">{fila.etiqueta}</p>
-            <p className="text-[1rem] text-texto-tenue">{fila.unidad}</p>
-            <dl className="mt-2 grid grid-cols-4 gap-2 text-center">
+          <li key={fila.dominio} className="border-b border-borde-suave py-4 first:pt-1 last:border-0 last:pb-0">
+            <h3 className="text-[1.1875rem]">{fila.etiqueta}</h3>
+            <p className="text-[0.9375rem] text-texto-tenue">{fila.unidad}</p>
+            <dl className="mt-3 grid grid-cols-4 gap-2 text-center">
               <Cifra etiqueta="Primera" valor={fila.primero} />
               <Cifra etiqueta="Última" valor={fila.ultimo} />
               <Cifra etiqueta="Mejor" valor={fila.mejor} />
@@ -233,7 +234,7 @@ function TablaResumen({ filas }: { filas: FilaResumen[] }) {
 
       <table className="hidden w-full border-collapse text-[1rem] sm:table">
         <thead>
-          <tr className="border-b border-borde text-left text-texto-tenue">
+          <tr className="border-b border-borde text-left align-bottom text-[0.9375rem] text-texto-tenue">
             <th className="py-2 pr-3 font-medium">Dominio</th>
             <th className="py-2 pr-3 font-medium">Primera</th>
             <th className="py-2 pr-3 font-medium">Última</th>
@@ -243,12 +244,12 @@ function TablaResumen({ filas }: { filas: FilaResumen[] }) {
         </thead>
         <tbody>
           {filas.map((fila) => (
-            <tr key={fila.dominio} className="border-b border-borde last:border-0">
-              <td className="py-2 pr-3">{fila.etiqueta}</td>
-              <td className="py-2 pr-3 tabular-nums">{formatear(fila.primero)}</td>
-              <td className="py-2 pr-3 tabular-nums">{formatear(fila.ultimo)}</td>
-              <td className="py-2 pr-3 tabular-nums">{formatear(fila.mejor)}</td>
-              <td className="py-2 tabular-nums text-texto-tenue">{formatear(fila.basal)}</td>
+            <tr key={fila.dominio} className="border-b border-borde-suave last:border-0">
+              <td className="py-3 pr-3">{fila.etiqueta}</td>
+              <td className="cifra py-3 pr-3">{formatear(fila.primero)}</td>
+              <td className="cifra py-3 pr-3">{formatear(fila.ultimo)}</td>
+              <td className="cifra py-3 pr-3">{formatear(fila.mejor)}</td>
+              <td className="cifra py-3 text-texto-tenue">{formatear(fila.basal)}</td>
             </tr>
           ))}
         </tbody>
@@ -269,7 +270,7 @@ function Cifra({
   return (
     <div>
       <dt className="text-[0.875rem] text-texto-tenue">{etiqueta}</dt>
-      <dd className={`text-[1.375rem] font-medium tabular-nums ${tenue ? 'text-texto-tenue' : ''}`}>
+      <dd className={`cifra text-[1.5rem] ${tenue ? 'text-texto-tenue' : ''}`}>
         {formatear(valor)}
       </dd>
     </div>

@@ -37,6 +37,30 @@ empezar. Si el rendimiento se desploma dentro de la sesión, propone parar.
 
 ---
 
+## El aspecto
+
+Fondo cálido en vez de blanco, un solo color de acento, y **Source Serif 4**
+para títulos y cifras sobre la tipografía del sistema para el texto corrido
+—que en iPhone es San Francisco y se lee mejor que cualquier fuente
+importada—.
+
+La fuente se aloja dentro de la aplicación en `public/tipografia/`, no se
+enlaza desde un servidor externo. Por dos razones: la aplicación debe
+funcionar sin conexión, y ninguna petición debe salir del dispositivo, ni
+siquiera la de una fuente. Licencia SIL Open Font en la misma carpeta.
+
+Durante los ejercicios no hay tarjeta, ni borde, ni sombra: el contenido
+flota centrado sobre el fondo. El principio de un elemento a la vez no es
+solo no mostrar dos ejercicios juntos, es que tampoco compita el marco que
+los rodea.
+
+Las gráficas empiezan siempre en cero. Es honestidad, no estética: con el
+eje recortado por abajo, pasar de tres a cuatro dígitos se dibujaría como si
+el rendimiento se hubiera duplicado, y estas gráficas van a un informe
+médico.
+
+---
+
 ## Qué hace
 
 ### Ejercicios
@@ -192,7 +216,8 @@ carpeta `cognitiva/` de la raíz del repositorio:
 
 ```bash
 npm run publicar               # compila a ../cognitiva con la ruta base correcta
-npm run recorrido:publicada    # comprueba que funcione bajo el subdirectorio
+npm run recorrido:publicada    # comprueba que funcione bajo el subdirectorio,
+                               # incluida la carga de la tipografía propia
 ```
 
 El resultado se versiona a propósito: GitHub Pages sirve archivos tal cual y

@@ -49,27 +49,30 @@ export function Inicio({ alEmpezar, alVerProgreso, alVerAjustes }: Props) {
   const hayAlgo = energia !== null || sueno !== null || niebla !== null
 
   return (
-    <Pantalla titulo="Enfoque" entrada="Práctica breve, todos los días que quieras.">
+    <Pantalla titulo="Enfoque" entrada="Práctica breve, los días que quieras.">
       <Tarjeta>
         <p className="text-[1.125rem] leading-relaxed text-texto-suave">
           Una sesión dura entre quince y dieciocho minutos, y termina sola. Cada ejercicio es
           corto.
         </p>
-        {ultima !== null && (
-          <p className="mt-2.5 text-[1rem] text-texto-tenue">Última sesión: {ultima}</p>
-        )}
         <Boton onClick={alEmpezar} ancho className="mt-6">
           Empezar sesión
         </Boton>
+        {ultima !== null && (
+          <p className="mt-4 text-center text-[1rem] text-texto-tenue">
+            Última sesión: {ultima}
+          </p>
+        )}
       </Tarjeta>
 
       <Tarjeta className="mt-5">
-        <h2>¿Cómo amaneciste?</h2>
+        <p className="rotulo">Antes de empezar</p>
+        <h2 className="mt-2">¿Cómo amaneciste?</h2>
         <p className="mt-2 text-[1.0625rem] leading-relaxed text-texto-tenue">
           Opcional. Sirve para cruzar el rendimiento con cómo te sentías ese día.
         </p>
 
-        <div className="mt-6 space-y-6">
+        <div className="mt-7 space-y-6">
           <Escala
             etiqueta="Energía"
             valor={energia}
@@ -111,7 +114,7 @@ export function Inicio({ alEmpezar, alVerProgreso, alVerAjustes }: Props) {
               }}
               rows={2}
               placeholder="Medicamentos, cambios de dosis, lo que quieras recordar"
-              className="w-full resize-none rounded-suave border border-borde bg-fondo px-4 py-3.5 leading-relaxed focus:border-acento-borde"
+              className="w-full resize-none rounded-suave border border-borde bg-velo px-4 py-3.5 leading-relaxed transition-colors focus:border-acento-borde focus:outline-none"
             />
           </div>
 
@@ -135,8 +138,9 @@ export function Inicio({ alEmpezar, alVerProgreso, alVerAjustes }: Props) {
         </Boton>
       </div>
 
-      <div className="mt-9 border-t border-borde pt-6">
-        <p className="text-[0.9375rem] leading-relaxed text-texto-tenue">{AVISO_CLINICO}</p>
+      <div className="mt-10 border-t border-borde pt-6">
+        <p className="rotulo">Advertencia</p>
+        <p className="mt-2.5 text-[0.9375rem] leading-relaxed text-texto-tenue">{AVISO_CLINICO}</p>
       </div>
     </Pantalla>
   )

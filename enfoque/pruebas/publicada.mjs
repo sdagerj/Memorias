@@ -36,6 +36,18 @@ const manifiesto = await pagina.evaluate(async () => {
 revisar('el manifiesto apunta al subdirectorio',
   manifiesto?.start_url === '/Memorias/cognitiva/')
 revisar('la aplicación se puede instalar', manifiesto?.display === 'standalone')
+
+// La tipografía se aloja en la propia aplicación. Si la ruta base no se
+// aplicara al `url()` del CSS, la fuente fallaría solo una vez publicada.
+const tipografia = await pagina.evaluate(async () => {
+  await document.fonts.ready
+  return {
+    cargada: document.fonts.check('600 2rem "Serif Enfoque"'),
+    familia: getComputedStyle(document.querySelector('h1')).fontFamily,
+  }
+})
+revisar('la tipografía propia carga desde el subdirectorio', tipografia.cargada)
+revisar('los títulos la usan', tipografia.familia.includes('Serif Enfoque'))
 revisar('sin errores de consola', errores.length === 0)
 if (errores.length > 0) console.log('   ', errores.join('\n    '))
 

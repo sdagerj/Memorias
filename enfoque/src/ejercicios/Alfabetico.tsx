@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Boton } from '../ui/Boton'
-import { Tarjeta } from '../ui/Tarjeta'
+import { Escena, Puntos, clasesCampo } from '../ui/Escena'
 import {
   iniciarEscalera,
   registrarEnsayo,
@@ -120,61 +120,44 @@ export function Alfabetico({ alTerminar, velocidadVoz, voz, usarMicrofono }: Pro
   }, [fase, alTerminar, escalera.spanMaximo])
 
   return (
-    <Tarjeta className="text-center">
-      <h2>En orden alfabético</h2>
-      <p className="mx-auto mt-3 max-w-sm text-[1.125rem] leading-relaxed text-texto-suave">
-        Escucha las palabras y devuélvelas en orden alfabético.
-      </p>
+    <Escena
+      titulo="En orden alfabético"
+      instruccion="Escucha las palabras y devuélvelas en orden alfabético."
+    >
+      {fase === 'listo' && (
+        <Boton onClick={presentar} ancho>
+          Escuchar las palabras
+        </Boton>
+      )}
 
-      <div className="my-10 flex min-h-36 flex-col items-center justify-center">
-        {fase === 'listo' && (
-          <Boton onClick={presentar} ancho>
-            Escuchar las palabras
+      {fase === 'dictando' && (
+        <Puntos total={lista.length} actual={avance} etiqueta="Escuchando…" />
+      )}
+
+      {fase === 'respondiendo' && (
+        <div className="w-full">
+          <textarea
+            ref={campo}
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            rows={3}
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
+            aria-label="Las palabras en orden alfabético"
+            placeholder="Las palabras, separadas por espacios"
+            className={`${clasesCampo()} resize-none`}
+          />
+          <Boton onClick={enviar} ancho className="mt-4">
+            Confirmar
           </Boton>
-        )}
-
-        {fase === 'dictando' && (
-          <div aria-live="polite">
-            <div className="flex justify-center gap-2.5">
-              {lista.map((_, i) => (
-                <span
-                  key={i}
-                  className={[
-                    'h-3.5 w-3.5 rounded-full transition-all duration-300',
-                    i <= avance ? 'scale-100 bg-acento' : 'scale-75 bg-borde',
-                  ].join(' ')}
-                />
-              ))}
-            </div>
-            <p className="mt-5 text-[1.0625rem] text-texto-tenue">Escuchando…</p>
-          </div>
-        )}
-
-        {fase === 'respondiendo' && (
-          <div className="w-full">
-            <textarea
-              ref={campo}
-              value={texto}
-              onChange={(e) => setTexto(e.target.value)}
-              rows={3}
-              autoComplete="off"
-              autoCorrect="off"
-              spellCheck={false}
-              aria-label="Las palabras en orden alfabético"
-              placeholder="Las palabras, separadas por espacios"
-              className="w-full resize-none rounded-suave border-2 border-borde bg-fondo px-4 py-4 text-center text-[1.25rem] leading-relaxed focus:border-acento-borde"
-            />
-            <Boton onClick={enviar} ancho className="mt-4">
-              Confirmar
-            </Boton>
-            {avisoMicrofono !== '' && (
-              <p className="mt-3 text-[1rem] text-texto-tenue">
-                {avisoMicrofono} Puedes responder con el teclado.
-              </p>
-            )}
-          </div>
-        )}
-      </div>
-    </Tarjeta>
+          {avisoMicrofono !== '' && (
+            <p className="mt-4 text-[1rem] text-texto-tenue">
+              {avisoMicrofono} Puedes responder con el teclado.
+            </p>
+          )}
+        </div>
+      )}
+    </Escena>
   )
 }
