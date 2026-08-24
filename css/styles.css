@@ -856,3 +856,20 @@ h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; }
   background: #fff4f4; border: 1px solid #f0c9c9;
   font-size: 0.9rem; line-height: 1.5; color: #7a2020;
 }
+
+/* ── Historia para Instagram ─────────────────────────────────────────────── */
+.historia-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.historia-tabs button {
+  flex: 1 1 auto; padding: 8px 14px; border-radius: 999px;
+  border: 1px solid var(--line); background: #fff; color: var(--muted);
+  font-family: inherit; font-size: 0.9rem; cursor: pointer;
+}
+.historia-tabs button[aria-pressed='true'] {
+  background: var(--brand, #1a4d72); border-color: var(--brand, #1a4d72); color: #fff;
+}
+/* La historia es muy alta: se muestra a escala para que quepa sin scroll. */
+.historia-vista { display: flex; justify-content: center; }
+.historia-vista canvas {
+  width: auto; height: min(58vh, 420px);
+  border-radius: 12px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}

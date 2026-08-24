@@ -359,6 +359,52 @@ prueba('El Word no se rompe con comillas, acentos ni signos raros', async (b) =>
     !/["&<>]/.test(r.nombre), r.nombre);
 });
 
+prueba('La historia sale en 1080x1920 y con la marca', async (b) => {
+  const p = await nuevaPagina(b);
+  await p.click('.tab[data-view="numero"]'); await p.waitForTimeout(500);
+  await p.click('#newNumeroBtn'); await p.waitForTimeout(300);
+  await p.fill('#numNumero', '300');
+  await p.fill('#numGancho', 'No pretendas ser lo que no eres');
+  await p.fill('#numEditorial', 'Un texto.');
+  await p.fill('#numDestaque', 'El poder que se muestra, se gasta.');
+
+  await p.click('#historiaBtn');
+  await p.waitForTimeout(2500);
+  comprobar('abre el panel', !(await p.locator('#historiaPanel').isHidden()));
+  comprobar('ofrece las tres plantillas', await p.locator('#historiaTabs button').count() === 3);
+
+  const med = await p.evaluate(() => {
+    const c = document.querySelector('#historiaLienzo');
+    const d = c.getContext('2d').getImageData(4, 4, 1, 1).data;
+    return { w: c.width, h: c.height, esquina: [d[0], d[1], d[2]] };
+  });
+  comprobar('mide 1080×1920', med.w === 1080 && med.h === 1920, `${med.w}×${med.h}`);
+  // #12486c = 18,72,108. Si el fondo no es el navy de la marca, algo se rompió.
+  comprobar('el fondo es el navy de la marca',
+    JSON.stringify(med.esquina) === '[18,72,108]', String(med.esquina));
+
+  // Un numero larguisimo no puede desbordar el margen.
+  const cabe = await p.evaluate(async () => {
+    const m = await import('./js/historia.js');
+    const c = await m.dibujarHistoria({ numero: '1.000.000.000', gancho: 'T' }, 'numero');
+    const ctx = c.getContext('2d');
+    // Se mira si hay dorado pegado al borde izquierdo: eso seria desborde.
+    const franja = ctx.getImageData(0, 0, 40, 1920).data;
+    let tocaBorde = false;
+    for (let i = 0; i < franja.length; i += 4) {
+      if (franja[i] > 200 && franja[i + 1] > 180 && franja[i + 2] < 140) tocaBorde = true;
+    }
+    return !tocaBorde;
+  });
+  comprobar('un número larguísimo no se sale del margen', cabe);
+
+  // Sin destaque, la plantilla de la frase no se ofrece.
+  await p.fill('#numDestaque', '');
+  await p.click('#historiaBtn'); await p.waitForTimeout(1200);
+  comprobar('sin frase destacada solo ofrece dos plantillas',
+    await p.locator('#historiaTabs button').count() === 2);
+});
+
 prueba('Una fuente con enlace inválido no llega a la web', async (b) => {
   const p = await nuevaPagina(b);
   const problemas = await p.evaluate(async () => {
@@ -550,7 +596,7 @@ prueba('El PDF de un recuerdo abre y cierra sin atascar la app', async (b) => {
 });
 
 prueba('El código no tiene comillas tipográficas en atributos HTML', async () => {
-  const archivos = ['js/app.js', 'js/numero.js', 'js/db.js', 'js/claude-api.js', 'js/publicar.js', 'js/word.js', 'index.html'];
+  const archivos = ['js/app.js', 'js/numero.js', 'js/db.js', 'js/claude-api.js', 'js/publicar.js', 'js/word.js', 'js/historia.js', 'index.html'];
   for (const f of archivos) {
     const txt = fs.readFileSync(path.join(RAIZ, f), 'utf8');
     const malas = txt.match(/=\s*[“”]/g);

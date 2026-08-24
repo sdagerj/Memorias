@@ -7,6 +7,7 @@ import {
   nombreArchivo, getGithubToken, SITIO_WEB,
 } from './publicar.js';
 import { descargarDocx, FIRMA } from './word.js';
+import { dibujarHistoria, compartirHistoria, PLANTILLAS } from './historia.js';
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
@@ -713,6 +714,8 @@ TEMA: ${data.editorial ? data.editorial.slice(0, 300) + '…' : '(sin editorial 
 function clearClaudePanels() {
   const avisos = $('#numRevisionAvisos');
   if (avisos) avisos.hidden = true;
+  const hist = $('#historiaPanel');
+  if (hist) hist.hidden = true;
   const panel = $('#numCambios');
   if (panel) panel.hidden = true;
   const undo = $('#numUndoCorreccion');
@@ -810,6 +813,76 @@ export async function initNumero() {
     showNumeroScreen();
     await renderNumerosList();
   });
+
+  // ── Historia para Instagram ──
+  // Se enseña la imagen antes de compartirla: es lo que va a ver su gente, y
+  // un título que se sale del margen no se arregla después de publicarlo.
+
+  let plantillaActual = 'numero';
+
+  async function pintarHistoria() {
+    const data = readEditor();
+    const lienzo = await dibujarHistoria(data, plantillaActual);
+    const destino = $('#historiaLienzo');
+    destino.width = lienzo.width;
+    destino.height = lienzo.height;
+    destino.getContext('2d').drawImage(lienzo, 0, 0);
+  }
+
+  function pintarPestanas() {
+    const cont = $('#historiaTabs');
+    if (!cont) return;
+    const data = readEditor();
+    cont.innerHTML = '';
+    for (const p of PLANTILLAS) {
+      // "La frase" solo tiene sentido si hay destaque escrito.
+      if (p.id === 'destaque' && !data.destaque) continue;
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = p.nombre;
+      b.setAttribute('aria-pressed', String(p.id === plantillaActual));
+      b.addEventListener('click', async () => {
+        plantillaActual = p.id;
+        pintarPestanas();
+        await pintarHistoria();
+      });
+      cont.appendChild(b);
+    }
+  }
+
+  $('#historiaBtn')?.addEventListener('click', async () => {
+    const data = readEditor();
+    if (!data.numero && !data.gancho) { showToast('Escribe el número y el título primero'); return; }
+    const panel = $('#historiaPanel');
+    panel.hidden = false;
+    if (plantillaActual === 'destaque' && !data.destaque) plantillaActual = 'numero';
+    pintarPestanas();
+    try {
+      await pintarHistoria();
+      $('#historiaNota').textContent = navigator.canShare
+        ? 'Al compartir, elige Instagram → Historia.'
+        : 'Tu navegador no comparte archivos: se descargará la imagen y la subes desde Instagram.';
+      panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch (e) {
+      showErrorPanel('No se pudo crear la historia: ' + e.message);
+    }
+  });
+
+  $('#historiaCompartir')?.addEventListener('click', async () => {
+    const btn = $('#historiaCompartir');
+    btn.disabled = true;
+    try {
+      const r = await compartirHistoria(readEditor(), plantillaActual);
+      if (r.cancelado) showToast('Cancelado');
+      else showToast(r.compartido ? 'Compartido ✨' : `Descargado: ${r.nombre}`);
+    } catch (e) {
+      showErrorPanel('No se pudo compartir: ' + e.message);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  $('#historiaCerrar')?.addEventListener('click', () => { $('#historiaPanel').hidden = true; });
 
   // Word, que es el formato en el que los periódicos piden la columna. Lleva la
   // firma al final, como la mandan ellos.
