@@ -9,8 +9,8 @@ export function Tarjeta({ children, className = '' }: Props) {
   return (
     <section
       className={[
-        'rounded-suave border border-borde',
-        'bg-superficie p-5',
+        'rounded-hondo border border-borde-suave bg-superficie',
+        'p-6 shadow-[var(--shadow-tarjeta)]',
         className,
       ].join(' ')}
     >

@@ -55,7 +55,7 @@ const revisar = (etiqueta, condicion) =>
 await pagina.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle' })
 
 revisar('la pantalla de inicio se muestra',
-  await pagina.getByRole('button', { name: 'Empezar la sesión de hoy' }).isVisible())
+  await pagina.getByRole('button', { name: 'Empezar sesión' }).isVisible())
 revisar('el aviso clínico está a la vista',
   (await pagina.getByText(/no es un instrumento diagnóstico/i).count()) > 0)
 revisar('no aparece ningún rojo en la paleta',
@@ -71,13 +71,13 @@ await pagina.screenshot({ path: 'capturas/01-inicio.png', fullPage: true })
 await pagina.getByRole('radiogroup', { name: 'Energía' }).getByRole('radio').nth(2).click()
 await pagina.getByRole('radiogroup', { name: 'Calidad del sueño' }).getByRole('radio').nth(1).click()
 await pagina.getByRole('radiogroup', { name: 'Niebla mental' }).getByRole('radio').nth(3).click()
-await pagina.getByRole('button', { name: /Guardar el registro/ }).click()
+await pagina.getByRole('button', { name: /Guardar registro/ }).click()
 await pagina.waitForTimeout(300)
 revisar('el registro diario se guarda',
   await pagina.getByRole('button', { name: 'Registro guardado' }).isVisible())
 
 // Sesión: primer ejercicio
-await pagina.getByRole('button', { name: 'Empezar la sesión de hoy' }).click()
+await pagina.getByRole('button', { name: 'Empezar sesión' }).click()
 await pagina.waitForSelector('h2')
 revisar('la sesión abre con dígitos inversos',
   (await pagina.locator('h2').first().textContent())?.trim() === 'Al revés')
@@ -159,7 +159,7 @@ await pagina.waitForTimeout(400)
 
 // Sale de la sesión y comprueba lo guardado
 await pagina.evaluate(() => window.location.reload())
-await pagina.waitForSelector('text=Empezar la sesión de hoy')
+await pagina.waitForSelector('text=Empezar sesión')
 
 const guardado = await pagina.evaluate(async () => {
   const abrir = indexedDB.open('enfoque')

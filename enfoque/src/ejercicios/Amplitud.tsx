@@ -159,10 +159,12 @@ export function Amplitud({
 
   return (
     <Tarjeta className="text-center">
-      <h2 className="text-xl font-semibold">{TITULOS[variante]}</h2>
-      <p className="mx-auto mt-2 max-w-sm text-texto-suave">{instruccion}</p>
+      <h2>{TITULOS[variante]}</h2>
+      <p className="mx-auto mt-3 max-w-sm text-[1.125rem] leading-relaxed text-texto-suave">
+        {instruccion}
+      </p>
 
-      <div className="my-8 flex min-h-32 flex-col items-center justify-center">
+      <div className="my-10 flex min-h-36 flex-col items-center justify-center">
         {fase === 'listo' && (
           <Boton onClick={presentar} ancho>
             Escuchar la serie
@@ -173,18 +175,18 @@ export function Amplitud({
           <div aria-live="polite">
             {/* Puntos de avance. Nunca se muestran los elementos dictados: el
                 ejercicio es auditivo y verlos lo convertiría en otra cosa. */}
-            <div className="flex justify-center gap-2">
+            <div className="flex justify-center gap-2.5">
               {serie.map((_, i) => (
                 <span
                   key={i}
                   className={[
-                    'h-3 w-3 rounded-full transition-colors',
-                    i <= avance ? 'bg-acento' : 'bg-borde',
+                    'h-3.5 w-3.5 rounded-full transition-all duration-300',
+                    i <= avance ? 'scale-100 bg-acento' : 'scale-75 bg-borde',
                   ].join(' ')}
                 />
               ))}
             </div>
-            <p className="mt-4 text-texto-tenue">Escuchando…</p>
+            <p className="mt-5 text-[1.0625rem] text-texto-tenue">Escuchando…</p>
           </div>
         )}
 
@@ -203,18 +205,18 @@ export function Amplitud({
               spellCheck={false}
               aria-label="Tu respuesta"
               placeholder="Tu respuesta"
-              className="w-full rounded-suave border border-borde bg-fondo px-4 py-4 text-center text-2xl tracking-widest"
+              className="w-full rounded-suave border-2 border-borde bg-fondo px-4 py-5 text-center text-[2rem] font-medium tracking-[0.18em] tabular-nums focus:border-acento-borde"
             />
-            <Boton onClick={enviar} ancho className="mt-3">
+            <Boton onClick={enviar} ancho className="mt-4">
               Confirmar
             </Boton>
             {avisoMicrofono !== '' ? (
-              <p className="mt-2 text-sm text-texto-tenue">
+              <p className="mt-3 text-[1rem] text-texto-tenue">
                 {avisoMicrofono} Puedes responder con el teclado.
               </p>
             ) : (
               microfonoActivo && (
-                <p className="mt-2 text-sm text-texto-tenue">Puedes decirla en voz alta.</p>
+                <p className="mt-3 text-[1rem] text-texto-tenue">Puedes decirla en voz alta.</p>
               )
             )}
           </div>

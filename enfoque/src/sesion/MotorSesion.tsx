@@ -136,16 +136,19 @@ export function MotorSesion({
     return (
       <Pantalla titulo="Sesión terminada">
         <Tarjeta>
-          <p className="text-texto-suave">{mensajeDeCierre(cerrada)}</p>
-          <ul className="mt-5 space-y-3">
+          <p className="text-[1.125rem] leading-relaxed text-texto-suave">{mensajeDeCierre(cerrada)}</p>
+          <ul className="mt-7 space-y-3.5">
             {terminados.map((t, i) => (
-              <li key={i} className="flex justify-between gap-4 border-b border-borde pb-2">
-                <span>{t.nombre}</span>
-                <span className="text-texto-suave">{t.resumen}</span>
+              <li
+                key={i}
+                className="flex justify-between gap-4 border-b border-borde-suave pb-3 last:border-0"
+              >
+                <span className="font-medium">{t.nombre}</span>
+                <span className="tabular-nums text-texto-suave">{t.resumen}</span>
               </li>
             ))}
           </ul>
-          <Boton onClick={alSalir} ancho className="mt-6">
+          <Boton onClick={alSalir} ancho className="mt-8">
             Volver al inicio
           </Boton>
         </Tarjeta>
@@ -159,9 +162,9 @@ export function MotorSesion({
   return (
     <Pantalla>
       {propuesta !== '' && (
-        <Tarjeta className="mb-4 border-acento-borde bg-acento-suave">
-          <p>{propuesta}</p>
-          <div className="mt-3 flex gap-3">
+        <Tarjeta className="mb-5 border-acento-borde bg-acento-suave">
+          <p className="text-[1.125rem] leading-relaxed">{propuesta}</p>
+          <div className="mt-4 flex gap-3">
             <Boton onClick={() => finalizar('usuaria')} ancho>
               Terminar aquí
             </Boton>
@@ -187,7 +190,7 @@ export function MotorSesion({
         />
       )}
 
-      <p className="mt-6 text-center text-sm text-texto-tenue">
+      <p className="mt-7 text-center text-[1rem] text-texto-tenue">
         {indice + 1} de {plan.length}
       </p>
     </Pantalla>

@@ -12,31 +12,44 @@
  * - Un solo color de acento. Todo lo demás es neutro.
  * - Durante los ejercicios hay un elemento en pantalla. Ni contadores, ni
  *   marcadores, ni progreso visible: cualquier distractor visual perjudica.
+ *
+ * La letra es deliberadamente grande. No es un gesto de accesibilidad
+ * genérico: con fatiga cognitiva, leer una instrucción pequeña consume
+ * atención que debería ir al ejercicio.
  */
 
 @theme {
-  --color-fondo: #faf8f5;
-  --color-superficie: #ffffff;
-  --color-borde: #e8e2da;
-  --color-texto: #2c2926;
-  --color-texto-suave: #6b645c;
-  --color-texto-tenue: #9a938a;
+  /* Fondo cálido, no blanco puro: cansa menos en sesiones seguidas. */
+  --color-fondo: #f7f4ef;
+  --color-superficie: #fffefc;
+  --color-borde: #e9e2d8;
+  --color-borde-suave: #f0eae1;
+  --color-texto: #292622;
+  --color-texto-suave: #635c53;
+  --color-texto-tenue: #948c81;
 
   /* Único acento. Verde apagado, sin saturación agresiva. */
-  --color-acento: #4a7c6f;
-  --color-acento-suave: #e6f0ed;
-  --color-acento-borde: #b8d4cc;
+  --color-acento: #427062;
+  --color-acento-hondo: #35594e;
+  --color-acento-suave: #e8f0ec;
+  --color-acento-borde: #bcd5cb;
 
   /* Neutros para las gráficas. Ningún rojo, ningún verde de "correcto". */
-  --color-serie-1: #4a7c6f;
-  --color-serie-2: #8a7f6d;
-  --color-serie-3: #6b7f96;
-  --color-serie-4: #a08c7d;
-  --color-referencia: #b5ada2;
+  --color-serie-1: #427062;
+  --color-serie-2: #8a7c66;
+  --color-serie-3: #64768f;
+  --color-serie-4: #9d8878;
+  --color-referencia: #b3aa9e;
 
-  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'SF Pro Text',
+    'Segoe UI', Roboto, sans-serif;
 
-  --radius-suave: 0.875rem;
+  --radius-suave: 1.125rem;
+  --radius-hondo: 1.5rem;
+
+  /* Sombras muy tenues: dan relieve sin añadir ruido visual. */
+  --shadow-tarjeta: 0 1px 2px rgb(41 38 34 / 0.04), 0 6px 16px -8px rgb(41 38 34 / 0.07);
+  --shadow-realce: 0 2px 4px rgb(41 38 34 / 0.06), 0 12px 28px -12px rgb(41 38 34 / 0.14);
 }
 
 @layer base {
@@ -50,30 +63,68 @@
     background-color: var(--color-fondo);
     color: var(--color-texto);
     font-family: var(--font-sans);
-    font-size: 1.0625rem;
-    line-height: 1.6;
+    /* Base grande a propósito. En iPhone equivale a un cuerpo cómodo de leer
+       con el teléfono en la mano y sin acercárselo a la cara. */
+    font-size: 1.1875rem;
+    line-height: 1.62;
+    letter-spacing: -0.006em;
     -webkit-font-smoothing: antialiased;
-    /* Respeta la zona segura del iPhone con muesca. */
+    text-rendering: optimizeLegibility;
     padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  h1 {
+    font-size: 2.125rem;
+    line-height: 1.15;
+    letter-spacing: -0.024em;
+    font-weight: 600;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+    line-height: 1.25;
+    letter-spacing: -0.018em;
+    font-weight: 600;
+  }
+
+  h3 {
+    font-size: 1.25rem;
+    line-height: 1.3;
+    letter-spacing: -0.012em;
+    font-weight: 600;
   }
 
   /* Área táctil generosa en todo lo pulsable, requisito de uso en iPhone. */
   button,
   [role='button'] {
-    min-height: 3.25rem;
+    min-height: 3.5rem;
     touch-action: manipulation;
+    font-family: inherit;
   }
 
   input,
   textarea,
   select {
-    /* 16px evita que Safari haga zoom automático al enfocar un campo. */
-    font-size: 1rem;
+    font-family: inherit;
+    /* Nunca por debajo de 16px: Safari hace zoom automático al enfocar un
+       campo más pequeño y descoloca toda la pantalla a media respuesta. */
+    font-size: 1.0625rem;
+  }
+
+  ::placeholder {
+    color: var(--color-texto-tenue);
+    opacity: 1;
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-acento);
-    outline-offset: 2px;
+    outline: 2.5px solid var(--color-acento);
+    outline-offset: 3px;
+  }
+
+  /* Números tabulares en todo lo que sea una cifra, para que no bailen
+     de ancho al cambiar de valor. */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
   }
 }
 

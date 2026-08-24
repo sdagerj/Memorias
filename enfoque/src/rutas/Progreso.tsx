@@ -138,7 +138,7 @@ export function Progreso({ alVolver }: Props) {
   if (cargando) {
     return (
       <Pantalla titulo="Progreso">
-        <p className="text-texto-tenue">Cargando…</p>
+        <p className="text-[1.125rem] text-texto-tenue">Cargando…</p>
       </Pantalla>
     )
   }
@@ -147,11 +147,11 @@ export function Progreso({ alVolver }: Props) {
     return (
       <Pantalla titulo="Progreso">
         <Tarjeta>
-          <p className="text-texto-suave">
+          <p className="text-[1.125rem] leading-relaxed text-texto-suave">
             Todavía no hay sesiones registradas. Después de la primera aparecerán aquí las
             gráficas y tus líneas de referencia de septiembre de 2025.
           </p>
-          <Boton tono="secundario" ancho className="mt-5" onClick={alVolver}>
+          <Boton tono="secundario" ancho className="mt-6" onClick={alVolver}>
             Volver
           </Boton>
         </Tarjeta>
@@ -164,11 +164,11 @@ export function Progreso({ alVolver }: Props) {
   return (
     <Pantalla titulo="Progreso">
       <Tarjeta>
-        <p className="text-sm text-texto-tenue">Periodo: {rangoDeFechas(resultados)}</p>
+        <p className="text-[1rem] text-texto-tenue">Periodo: {rangoDeFechas(resultados)}</p>
         <TablaResumen filas={resumen} />
       </Tarjeta>
 
-      <div className="mt-4 space-y-4">
+      <div className="mt-5 space-y-5">
         {graficas.map((definicion) => (
           <Grafica
             key={definicion.id}
@@ -182,9 +182,9 @@ export function Progreso({ alVolver }: Props) {
         ))}
       </div>
 
-      <Tarjeta className="mt-4">
-        <h2 className="font-medium">Llevar los datos a consulta</h2>
-        <p className="mt-1 text-sm text-texto-tenue">
+      <Tarjeta className="mt-5">
+        <h2>Llevar los datos a consulta</h2>
+        <p className="mt-2 text-[1.0625rem] leading-relaxed text-texto-tenue">
           El PDF trae la tabla resumen, las gráficas y el rango de fechas. El CSV trae el detalle,
           incluida cada palabra de fluidez con su clasificación.
         </p>
@@ -198,7 +198,7 @@ export function Progreso({ alVolver }: Props) {
         </div>
       </Tarjeta>
 
-      <Boton tono="secundario" ancho className="mt-4" onClick={alVolver}>
+      <Boton tono="secundario" ancho className="mt-5" onClick={alVolver}>
         Volver
       </Boton>
     </Pantalla>
@@ -219,8 +219,8 @@ function TablaResumen({ filas }: { filas: FilaResumen[] }) {
       <ul className="space-y-3 sm:hidden">
         {filas.map((fila) => (
           <li key={fila.dominio} className="border-b border-borde pb-3 last:border-0">
-            <p className="font-medium">{fila.etiqueta}</p>
-            <p className="text-sm text-texto-tenue">{fila.unidad}</p>
+            <p className="text-[1.125rem] font-semibold">{fila.etiqueta}</p>
+            <p className="text-[1rem] text-texto-tenue">{fila.unidad}</p>
             <dl className="mt-2 grid grid-cols-4 gap-2 text-center">
               <Cifra etiqueta="Primera" valor={fila.primero} />
               <Cifra etiqueta="Última" valor={fila.ultimo} />
@@ -231,7 +231,7 @@ function TablaResumen({ filas }: { filas: FilaResumen[] }) {
         ))}
       </ul>
 
-      <table className="hidden w-full border-collapse text-sm sm:table">
+      <table className="hidden w-full border-collapse text-[1rem] sm:table">
         <thead>
           <tr className="border-b border-borde text-left text-texto-tenue">
             <th className="py-2 pr-3 font-medium">Dominio</th>
@@ -268,8 +268,8 @@ function Cifra({
 }) {
   return (
     <div>
-      <dt className="text-xs text-texto-tenue">{etiqueta}</dt>
-      <dd className={`text-lg tabular-nums ${tenue ? 'text-texto-tenue' : ''}`}>
+      <dt className="text-[0.875rem] text-texto-tenue">{etiqueta}</dt>
+      <dd className={`text-[1.375rem] font-medium tabular-nums ${tenue ? 'text-texto-tenue' : ''}`}>
         {formatear(valor)}
       </dd>
     </div>

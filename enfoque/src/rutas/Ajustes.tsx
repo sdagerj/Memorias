@@ -67,19 +67,19 @@ export function Ajustes({ preferencias, alCambiar, alVolver }: Props) {
   return (
     <Pantalla titulo="Ajustes">
       <Tarjeta>
-        <h2 className="font-medium">Voz que dicta los ejercicios</h2>
-        <p className="mt-1 text-sm text-texto-tenue">
+        <h2>Voz que dicta los ejercicios</h2>
+        <p className="mt-2 text-[1.0625rem] leading-relaxed text-texto-tenue">
           Esta voz se genera dentro del dispositivo. No sale nada a internet.
         </p>
 
-        <label htmlFor="voz" className="mt-4 block text-sm font-medium">
+        <label htmlFor="voz" className="mt-5 block text-[1.0625rem] font-semibold">
           Voz
         </label>
         <select
           id="voz"
           value={preferencias.nombreVoz}
           onChange={(e) => actualizar({ nombreVoz: e.target.value })}
-          className="mt-1 w-full rounded-suave border border-borde bg-fondo px-4 py-3"
+          className="mt-2 w-full rounded-suave border border-borde bg-fondo px-4 py-3.5"
         >
           <option value="">La que elija el sistema</option>
           {voces.map((voz) => (
@@ -89,7 +89,7 @@ export function Ajustes({ preferencias, alCambiar, alVolver }: Props) {
           ))}
         </select>
 
-        <label htmlFor="velocidad" className="mt-5 block text-sm font-medium">
+        <label htmlFor="velocidad" className="mt-6 block text-[1.0625rem] font-semibold">
           Velocidad del dictado: {preferencias.velocidadVoz.toFixed(2)}×
         </label>
         <input
@@ -102,7 +102,7 @@ export function Ajustes({ preferencias, alCambiar, alVolver }: Props) {
           onChange={(e) => actualizar({ velocidadVoz: Number(e.target.value) })}
           className="mt-2 w-full accent-[var(--color-acento)]"
         />
-        <div className="flex justify-between text-sm text-texto-tenue">
+        <div className="flex justify-between text-[0.9375rem] text-texto-tenue">
           <span>Más lento</span>
           <span>Más rápido</span>
         </div>
@@ -112,12 +112,12 @@ export function Ajustes({ preferencias, alCambiar, alVolver }: Props) {
         </Boton>
       </Tarjeta>
 
-      <Tarjeta className="mt-4">
-        <h2 className="font-medium">Responder hablando</h2>
+      <Tarjeta className="mt-5">
+        <h2>Responder hablando</h2>
         {/* Es la única parte de la aplicación donde algo sale del dispositivo,
             y por eso se dice aquí con todas las letras en vez de en una nota
             al pie. */}
-        <p className="mt-1 text-sm text-texto-suave">
+        <p className="mt-2 text-[1.0625rem] leading-relaxed text-texto-suave">
           A diferencia del resto de la aplicación, el reconocimiento de voz no ocurre dentro del
           dispositivo: el navegador envía el audio a servidores de Apple o de Google para
           convertirlo en texto. El texto resultante sí se guarda solo aquí. Si lo desactivas,
@@ -131,20 +131,20 @@ export function Ajustes({ preferencias, alCambiar, alVolver }: Props) {
             checked={preferencias.usarMicrofono}
             disabled={!escuchaDisponible()}
             onChange={(e) => actualizar({ usarMicrofono: e.target.checked })}
-            className="h-6 w-6 accent-[var(--color-acento)]"
+            className="h-7 w-7 accent-[var(--color-acento)]"
           />
         </label>
 
         {!escuchaDisponible() && (
-          <p className="mt-2 text-sm text-texto-tenue">
+          <p className="mt-3 text-[1rem] text-texto-tenue">
             Este navegador no tiene reconocimiento de voz. Las respuestas van por teclado.
           </p>
         )}
       </Tarjeta>
 
-      <Tarjeta className="mt-4">
-        <h2 className="font-medium">Copia de seguridad</h2>
-        <p className="mt-1 text-sm text-texto-suave">
+      <Tarjeta className="mt-5">
+        <h2>Copia de seguridad</h2>
+        <p className="mt-2 text-[1.0625rem] leading-relaxed text-texto-suave">
           Los datos viven solo en este dispositivo. El navegador puede borrarlos si necesita
           espacio, y se pierden al cambiar de teléfono. Exporta de vez en cuando.
         </p>
@@ -169,14 +169,14 @@ export function Ajustes({ preferencias, alCambiar, alVolver }: Props) {
           />
         </div>
 
-        <p className="mt-3 text-sm text-texto-tenue">
+        <p className="mt-4 text-[1rem] text-texto-tenue">
           Importar reemplaza todo lo que haya guardado en este dispositivo.
         </p>
 
-        {mensaje !== '' && <p className="mt-3 text-sm">{mensaje}</p>}
+        {mensaje !== '' && <p className="mt-4 text-[1.0625rem]">{mensaje}</p>}
       </Tarjeta>
 
-      <Boton tono="secundario" ancho className="mt-4" onClick={alVolver}>
+      <Boton tono="secundario" ancho className="mt-5" onClick={alVolver}>
         Volver
       </Boton>
     </Pantalla>

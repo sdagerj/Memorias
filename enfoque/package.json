@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "recorrido": "node pruebas/recorrido.mjs"
+    "recorrido": "node pruebas/recorrido.mjs",
+    "publicar": "BASE_PATH=/Memorias/cognitiva/ vite build --outDir ../cognitiva --emptyOutDir",
+    "recorrido:publicada": "node pruebas/publicada.mjs"
   },
   "dependencies": {
     "dexie": "^4.4.5",

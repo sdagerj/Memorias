@@ -164,14 +164,14 @@ export function Fluidez({
 
   return (
     <Tarjeta className="text-center">
-      <h2 className="text-xl font-semibold">{enunciado}</h2>
+      <h2>{enunciado}</h2>
 
       {fase === 'listo' && (
         <>
-          <p className="mx-auto mt-2 max-w-sm text-texto-suave">
+          <p className="mx-auto mt-3 max-w-sm text-[1.125rem] leading-relaxed text-texto-suave">
             Tienes un minuto para decir todas las que puedas. No importa el orden.
           </p>
-          <Boton onClick={empezar} ancho className="mt-8">
+          <Boton onClick={empezar} ancho className="mt-10">
             Empezar
           </Boton>
         </>
@@ -182,7 +182,15 @@ export function Fluidez({
           {/* Único número en pantalla durante la prueba: el tiempo. Ni el
               conteo de palabras ni la lista, para no inducir la sensación de
               estar rindiendo poco mientras se responde. */}
-          <p className="my-6 text-5xl font-light tabular-nums" aria-live="off">
+          {/* Barra que se vacía despacio, sin cambio de color al final: una
+              cuenta regresiva que se pone roja es presión pura. */}
+          <div className="mx-auto mt-8 mb-6 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-borde-suave">
+            <div
+              className="h-full rounded-full bg-acento-borde transition-[width] duration-200 ease-linear"
+              style={{ width: `${Math.max(0, (restante / DURACION_PRUEBA_MS) * 100)}%` }}
+            />
+          </div>
+          <p className="mb-7 text-[3.25rem] font-light leading-none tabular-nums" aria-live="off">
             {segundos}
           </p>
           <input
@@ -199,17 +207,17 @@ export function Fluidez({
             spellCheck={false}
             aria-label="Escribe una palabra y pulsa Enter"
             placeholder="Una palabra y Enter"
-            className="w-full rounded-suave border border-borde bg-fondo px-4 py-4 text-center text-lg"
+            className="w-full rounded-suave border-2 border-borde bg-fondo px-4 py-5 text-center text-[1.375rem] focus:border-acento-borde"
           />
-          <p className="mt-3 text-sm text-texto-tenue">
+          <p className="mt-3.5 text-[1rem] text-texto-tenue">
             {palabras.length === 0 ? 'Van cero' : `Van ${palabras.length}`}
           </p>
           {avisoMicrofono !== '' && (
-            <p className="mt-2 text-sm text-texto-tenue">
+            <p className="mt-3 text-[1rem] text-texto-tenue">
               {avisoMicrofono} Puedes escribirlas.
             </p>
           )}
-          <Boton tono="discreto" onClick={terminarPrueba} ancho className="mt-4">
+          <Boton tono="discreto" onClick={terminarPrueba} ancho className="mt-5">
             Terminar antes
           </Boton>
         </>
@@ -219,32 +227,35 @@ export function Fluidez({
         <>
           {pendientes.length === 0 ? (
             <>
-              <p className="mx-auto mt-4 max-w-sm text-texto-suave">
+              <p className="mx-auto mt-5 max-w-sm text-[1.125rem] text-texto-suave">
                 Listo. Ya quedó guardado.
               </p>
-              <Boton onClick={cerrar} ancho className="mt-8">
+              <Boton onClick={cerrar} ancho className="mt-10">
                 Continuar
               </Boton>
             </>
           ) : (
             <>
-              <p className="mx-auto mt-2 max-w-sm text-texto-suave">
+              <p className="mx-auto mt-3 max-w-sm text-[1.125rem] leading-relaxed text-texto-suave">
                 Estas no están en mi lista. ¿Cuentan?
               </p>
-              <ul className="mt-6 space-y-3 text-left">
+              <ul className="mt-7 space-y-3 text-left">
                 {pendientes.map(({ palabra, indice }) => (
-                  <li key={indice} className="flex items-center gap-3">
-                    <span className="flex-1 text-lg">{palabra.texto}</span>
+                  <li
+                    key={indice}
+                    className="flex items-center gap-3 rounded-suave bg-fondo px-4 py-2.5"
+                  >
+                    <span className="flex-1 text-[1.25rem] font-medium">{palabra.texto}</span>
                     <Boton
                       tono="secundario"
-                      className="px-4 py-2"
+                      className="min-h-12 px-5 py-2 text-[1.0625rem]"
                       onClick={() => setPalabras((p) => resolverPendiente(p, indice, true))}
                     >
                       Sí
                     </Boton>
                     <Boton
                       tono="discreto"
-                      className="px-4 py-2"
+                      className="min-h-12 px-5 py-2 text-[1.0625rem]"
                       onClick={() => setPalabras((p) => resolverPendiente(p, indice, false))}
                     >
                       No

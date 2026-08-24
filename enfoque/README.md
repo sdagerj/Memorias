@@ -125,6 +125,7 @@ npm run test:watch   # las mismas, en modo continuo
 npm run build        # compila a dist/
 npm run preview      # sirve dist/ en http://localhost:4173
 npm run recorrido    # recorrido completo en un navegador (ver más abajo)
+npm run publicar     # compila la versión publicable a ../cognitiva
 ```
 
 ---
@@ -184,19 +185,36 @@ lo demás. Deja las capturas y el PDF en `capturas/`.
 La aplicación es estática: sirve desde cualquier alojamiento con HTTPS. Hace
 falta HTTPS porque el micrófono y el service worker no funcionan sin él.
 
-### GitHub Pages
+### Publicar desde el repositorio Memorias
 
-Si el repositorio sirve la aplicación desde su raíz, no hay que configurar
-nada. Si se sirve desde un subdirectorio, hay que indicar la ruta base al
-compilar:
+Mientras la aplicación viva dentro de `Memorias`, se publica compilada en la
+carpeta `cognitiva/` de la raíz del repositorio:
+
+```bash
+npm run publicar               # compila a ../cognitiva con la ruta base correcta
+npm run recorrido:publicada    # comprueba que funcione bajo el subdirectorio
+```
+
+El resultado se versiona a propósito: GitHub Pages sirve archivos tal cual y
+no compila nada. Con eso, la misma rama publica dos aplicaciones distintas:
+
+| Dirección | Aplicación |
+|---|---|
+| `https://sdagerj.github.io/Memorias/` | Memorias, el libro de recuerdos |
+| `https://sdagerj.github.io/Memorias/cognitiva/` | Enfoque |
+
+En **Settings → Pages**, elegir *Deploy from a branch*, la rama
+`claude/cognitive-rehab-app-psbk25` y la carpeta `/ (root)`.
+
+### En otro repositorio
+
+Si la aplicación se muda a un repositorio propio y se sirve desde la raíz, no
+hay que configurar nada: `npm run build` basta. Si queda en un subdirectorio,
+se indica la ruta base al compilar:
 
 ```bash
 BASE_PATH=/nombre-del-repositorio/ npm run build
 ```
-
-Después, en **Settings → Pages** del repositorio, elegir *Deploy from a branch*,
-la rama correspondiente y la carpeta que contenga el resultado de la
-compilación.
 
 ### Instalar en el iPhone o el iPad
 

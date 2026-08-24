@@ -49,27 +49,27 @@ export function Inicio({ alEmpezar, alVerProgreso, alVerAjustes }: Props) {
   const hayAlgo = energia !== null || sueno !== null || niebla !== null
 
   return (
-    <Pantalla titulo="Enfoque">
+    <Pantalla titulo="Enfoque" entrada="Práctica breve, todos los días que quieras.">
       <Tarjeta>
-        <p className="text-texto-suave">
+        <p className="text-[1.125rem] leading-relaxed text-texto-suave">
           Una sesión dura entre quince y dieciocho minutos, y termina sola. Cada ejercicio es
           corto.
         </p>
         {ultima !== null && (
-          <p className="mt-2 text-sm text-texto-tenue">Última sesión: {ultima}</p>
+          <p className="mt-2.5 text-[1rem] text-texto-tenue">Última sesión: {ultima}</p>
         )}
-        <Boton onClick={alEmpezar} ancho className="mt-5">
-          Empezar la sesión de hoy
+        <Boton onClick={alEmpezar} ancho className="mt-6">
+          Empezar sesión
         </Boton>
       </Tarjeta>
 
-      <Tarjeta className="mt-4">
-        <h2 className="font-medium">¿Cómo amaneciste?</h2>
-        <p className="mt-1 text-sm text-texto-tenue">
+      <Tarjeta className="mt-5">
+        <h2>¿Cómo amaneciste?</h2>
+        <p className="mt-2 text-[1.0625rem] leading-relaxed text-texto-tenue">
           Opcional. Sirve para cruzar el rendimiento con cómo te sentías ese día.
         </p>
 
-        <div className="mt-5 space-y-5">
+        <div className="mt-6 space-y-6">
           <Escala
             etiqueta="Energía"
             valor={energia}
@@ -99,7 +99,7 @@ export function Inicio({ alEmpezar, alVerProgreso, alVerAjustes }: Props) {
           />
 
           <div>
-            <label htmlFor="nota" className="mb-2 block font-medium">
+            <label htmlFor="nota" className="mb-2.5 block text-[1.0625rem] font-semibold">
               Nota del día
             </label>
             <textarea
@@ -111,7 +111,7 @@ export function Inicio({ alEmpezar, alVerProgreso, alVerAjustes }: Props) {
               }}
               rows={2}
               placeholder="Medicamentos, cambios de dosis, lo que quieras recordar"
-              className="w-full resize-none rounded-suave border border-borde bg-fondo px-4 py-3"
+              className="w-full resize-none rounded-suave border border-borde bg-fondo px-4 py-3.5 leading-relaxed focus:border-acento-borde"
             />
           </div>
 
@@ -121,12 +121,12 @@ export function Inicio({ alEmpezar, alVerProgreso, alVerAjustes }: Props) {
             disabled={!hayAlgo || guardado}
             onClick={() => void guardarRegistro()}
           >
-            {guardado ? 'Registro guardado' : 'Guardar el registro de hoy'}
+            {guardado ? 'Registro guardado' : 'Guardar registro'}
           </Boton>
         </div>
       </Tarjeta>
 
-      <div className="mt-4 flex gap-3">
+      <div className="mt-5 flex gap-3">
         <Boton tono="secundario" ancho onClick={alVerProgreso}>
           Progreso
         </Boton>
@@ -135,9 +135,9 @@ export function Inicio({ alEmpezar, alVerProgreso, alVerAjustes }: Props) {
         </Boton>
       </div>
 
-      <Tarjeta className="mt-4 border-transparent bg-transparent px-0">
-        <p className="text-sm leading-relaxed text-texto-tenue">{AVISO_CLINICO}</p>
-      </Tarjeta>
+      <div className="mt-9 border-t border-borde pt-6">
+        <p className="text-[0.9375rem] leading-relaxed text-texto-tenue">{AVISO_CLINICO}</p>
+      </div>
     </Pantalla>
   )
 }

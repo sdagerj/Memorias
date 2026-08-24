@@ -32,9 +32,11 @@ export function Grafica({
 }: Props) {
   if (serie.length === 0) {
     return (
-      <div className="rounded-suave border border-borde bg-superficie p-5">
-        <h3 className="font-medium">{titulo}</h3>
-        <p className="mt-2 text-sm text-texto-tenue">Todavía no hay datos de este ejercicio.</p>
+      <div className="rounded-hondo border border-borde-suave bg-superficie p-6 shadow-[var(--shadow-tarjeta)]">
+        <h3>{titulo}</h3>
+        <p className="mt-2.5 text-[1.0625rem] text-texto-tenue">
+          Todavía no hay datos de este ejercicio.
+        </p>
       </div>
     )
   }
@@ -45,24 +47,27 @@ export function Grafica({
   const maximo = Math.ceil(Math.max(...referencias) + 1)
 
   return (
-    <div className="rounded-suave border border-borde bg-superficie p-5" id={idCaptura}>
-      <h3 className="font-medium">{titulo}</h3>
-      <p className="mb-3 text-sm text-texto-tenue">{unidad}</p>
+    <div
+      className="rounded-hondo border border-borde-suave bg-superficie p-6 shadow-[var(--shadow-tarjeta)]"
+      id={idCaptura}
+    >
+      <h3>{titulo}</h3>
+      <p className="mb-4 text-[1.0625rem] text-texto-tenue">{unidad}</p>
 
-      <div style={{ width: '100%', height: 220 }}>
+      <div style={{ width: '100%', height: 240 }}>
         <ResponsiveContainer>
           <LineChart data={serie} margin={{ top: 8, right: 12, bottom: 4, left: -18 }}>
             <CartesianGrid stroke="var(--color-borde)" vertical={false} />
             <XAxis
               dataKey="fecha"
               tickFormatter={etiquetaFecha}
-              tick={{ fontSize: 12, fill: 'var(--color-texto-tenue)' }}
+              tick={{ fontSize: 13, fill: 'var(--color-texto-tenue)' }}
               stroke="var(--color-borde)"
             />
             <YAxis
               domain={[minimo, maximo]}
               allowDecimals={false}
-              tick={{ fontSize: 12, fill: 'var(--color-texto-tenue)' }}
+              tick={{ fontSize: 13, fill: 'var(--color-texto-tenue)' }}
               stroke="var(--color-borde)"
             />
             <Tooltip
@@ -71,7 +76,7 @@ export function Grafica({
               contentStyle={{
                 borderRadius: 12,
                 border: '1px solid var(--color-borde)',
-                fontSize: 13,
+                fontSize: 15,
               }}
             />
             {basal !== null && basal !== undefined && (
@@ -82,7 +87,7 @@ export function Grafica({
                 label={{
                   value: `Basal sep. 2025: ${basal}`,
                   position: 'insideTopLeft',
-                  fontSize: 11,
+                  fontSize: 12,
                   fill: 'var(--color-texto-tenue)',
                 }}
               />
