@@ -1,0 +1,87 @@
+@import 'tailwindcss';
+
+/**
+ * Paleta y tipografía.
+ *
+ * Reglas que no son estéticas sino clínicas:
+ *
+ * - No existe el rojo en esta aplicación. Ni en los errores, ni en las
+ *   gráficas, ni en las advertencias. El informe registra llanto e
+ *   irritabilidad ante los errores cognitivos, y el color de alarma es el
+ *   disparador más barato de esa reacción.
+ * - Un solo color de acento. Todo lo demás es neutro.
+ * - Durante los ejercicios hay un elemento en pantalla. Ni contadores, ni
+ *   marcadores, ni progreso visible: cualquier distractor visual perjudica.
+ */
+
+@theme {
+  --color-fondo: #faf8f5;
+  --color-superficie: #ffffff;
+  --color-borde: #e8e2da;
+  --color-texto: #2c2926;
+  --color-texto-suave: #6b645c;
+  --color-texto-tenue: #9a938a;
+
+  /* Único acento. Verde apagado, sin saturación agresiva. */
+  --color-acento: #4a7c6f;
+  --color-acento-suave: #e6f0ed;
+  --color-acento-borde: #b8d4cc;
+
+  /* Neutros para las gráficas. Ningún rojo, ningún verde de "correcto". */
+  --color-serie-1: #4a7c6f;
+  --color-serie-2: #8a7f6d;
+  --color-serie-3: #6b7f96;
+  --color-serie-4: #a08c7d;
+  --color-referencia: #b5ada2;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --radius-suave: 0.875rem;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    background-color: var(--color-fondo);
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--color-fondo);
+    color: var(--color-texto);
+    font-family: var(--font-sans);
+    font-size: 1.0625rem;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    /* Respeta la zona segura del iPhone con muesca. */
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Área táctil generosa en todo lo pulsable, requisito de uso en iPhone. */
+  button,
+  [role='button'] {
+    min-height: 3.25rem;
+    touch-action: manipulation;
+  }
+
+  input,
+  textarea,
+  select {
+    /* 16px evita que Safari haga zoom automático al enfocar un campo. */
+    font-size: 1rem;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-acento);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
