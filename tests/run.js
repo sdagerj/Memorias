@@ -359,6 +359,93 @@ prueba('El Word no se rompe con comillas, acentos ni signos raros', async (b) =>
     !/["&<>]/.test(r.nombre), r.nombre);
 });
 
+prueba('La revisión mide qué tan trabajado está el número elegido', async (b) => {
+  const p = await nuevaPagina(b);
+  const r = await p.evaluate(async () => {
+    const m = await import('./js/numero.js');
+    const texto = 'Los Medici marcaron Florencia durante casi tres siglos.\n' +
+                  'Un párrafo sin cifras.\n' +
+                  'Fueron 300 años, y otra vez 300.';
+    return {
+      // Cuenta apariciones y en qué párrafos, no solo si aparece.
+      medici: m.rastrearNumero(texto, '300', 'No pretendas ser lo que no eres'),
+      enTitulo: m.rastrearNumero('x', '52', 'El 52 que nadie mira'),
+      // «1.000» en la ficha puede estar escrito «1000» en el cuerpo.
+      miles: m.rastrearNumero('Fueron 1000 casos.', '1.000', ''),
+      sinNumero: m.rastrearNumero('Un texto.', '', ''),
+    };
+  });
+  comprobar('cuenta las veces', r.medici.veces === 2, String(r.medici.veces));
+  comprobar('dice en qué párrafos', JSON.stringify(r.medici.parrafos) === '[3]', String(r.medici.parrafos));
+  comprobar('sabe que el título lo ignora', r.medici.enTitulo === false);
+  comprobar('detecta el número en el título', r.enTitulo.enTitulo === true);
+  comprobar('encuentra 1.000 escrito como 1000', r.miles.veces === 1);
+  comprobar('sin número no inventa nada', r.sinNumero.veces === 0);
+
+  // El prompt tiene que llevar el dato ya contado y pedir dónde reforzarlo.
+  await p.addInitScript(() => Object.defineProperty(navigator, 'clipboard', {
+    get() { return { writeText: () => Promise.reject(new DOMException('x')) }; },
+  }));
+  const p2 = await nuevaPagina(b);
+  await p2.click('.tab[data-view="numero"]'); await p2.waitForTimeout(500);
+  await p2.click('#newNumeroBtn'); await p2.waitForTimeout(300);
+  await p2.fill('#numNumero', '300');
+  await p2.fill('#numGancho', 'No pretendas ser lo que no eres');
+  await p2.fill('#numEditorial', 'Los Medici y sus tres siglos.');
+  await p2.click('#numRevisionBtn'); await p2.waitForTimeout(1200);
+  const prompt = await p2.inputValue('#numRevisionPaste');
+  comprobar('el prompt lleva el recuento exacto', prompt.includes('Aparece 0 veces'), prompt.slice(0, 0));
+  comprobar('dice que el título no lo recoge', prompt.includes('no aparece en el título'));
+  comprobar('pide dónde reforzarlo', /volver a aparecer/i.test(prompt));
+  comprobar('pregunta si otra cifra aguanta mejor', /aguantaría mejor el peso/i.test(prompt));
+});
+
+prueba('La historia sale en 1080x1920 y con la marca', async (b) => {
+  const p = await nuevaPagina(b);
+  await p.click('.tab[data-view="numero"]'); await p.waitForTimeout(500);
+  await p.click('#newNumeroBtn'); await p.waitForTimeout(300);
+  await p.fill('#numNumero', '300');
+  await p.fill('#numGancho', 'No pretendas ser lo que no eres');
+  await p.fill('#numEditorial', 'Un texto.');
+  await p.fill('#numDestaque', 'El poder que se muestra, se gasta.');
+
+  await p.click('#historiaBtn');
+  await p.waitForTimeout(2500);
+  comprobar('abre el panel', !(await p.locator('#historiaPanel').isHidden()));
+  comprobar('ofrece las tres plantillas', await p.locator('#historiaTabs button').count() === 3);
+
+  const med = await p.evaluate(() => {
+    const c = document.querySelector('#historiaLienzo');
+    const d = c.getContext('2d').getImageData(4, 4, 1, 1).data;
+    return { w: c.width, h: c.height, esquina: [d[0], d[1], d[2]] };
+  });
+  comprobar('mide 1080×1920', med.w === 1080 && med.h === 1920, `${med.w}×${med.h}`);
+  // #12486c = 18,72,108. Si el fondo no es el navy de la marca, algo se rompió.
+  comprobar('el fondo es el navy de la marca',
+    JSON.stringify(med.esquina) === '[18,72,108]', String(med.esquina));
+
+  // Un numero larguisimo no puede desbordar el margen.
+  const cabe = await p.evaluate(async () => {
+    const m = await import('./js/historia.js');
+    const c = await m.dibujarHistoria({ numero: '1.000.000.000', gancho: 'T' }, 'numero');
+    const ctx = c.getContext('2d');
+    // Se mira si hay dorado pegado al borde izquierdo: eso seria desborde.
+    const franja = ctx.getImageData(0, 0, 40, 1920).data;
+    let tocaBorde = false;
+    for (let i = 0; i < franja.length; i += 4) {
+      if (franja[i] > 200 && franja[i + 1] > 180 && franja[i + 2] < 140) tocaBorde = true;
+    }
+    return !tocaBorde;
+  });
+  comprobar('un número larguísimo no se sale del margen', cabe);
+
+  // Sin destaque, la plantilla de la frase no se ofrece.
+  await p.fill('#numDestaque', '');
+  await p.click('#historiaBtn'); await p.waitForTimeout(1200);
+  comprobar('sin frase destacada solo ofrece dos plantillas',
+    await p.locator('#historiaTabs button').count() === 2);
+});
+
 prueba('Una fuente con enlace inválido no llega a la web', async (b) => {
   const p = await nuevaPagina(b);
   const problemas = await p.evaluate(async () => {
@@ -550,7 +637,7 @@ prueba('El PDF de un recuerdo abre y cierra sin atascar la app', async (b) => {
 });
 
 prueba('El código no tiene comillas tipográficas en atributos HTML', async () => {
-  const archivos = ['js/app.js', 'js/numero.js', 'js/db.js', 'js/claude-api.js', 'js/publicar.js', 'js/word.js', 'index.html'];
+  const archivos = ['js/app.js', 'js/numero.js', 'js/db.js', 'js/claude-api.js', 'js/publicar.js', 'js/word.js', 'js/historia.js', 'index.html'];
   for (const f of archivos) {
     const txt = fs.readFileSync(path.join(RAIZ, f), 'utf8');
     const malas = txt.match(/=\s*[“”]/g);
