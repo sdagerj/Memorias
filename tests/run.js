@@ -645,6 +645,55 @@ prueba('El código no tiene comillas tipográficas en atributos HTML', async () 
   }
 });
 
+prueba('Restaurar una copia hace aparecer las entregas sin recargar', async (b) => {
+  // Este caso existe por un fallo real: la copia se restauraba bien, los
+  // contadores de Ajustes decían que había entregas, y la pantalla de El Número
+  // seguía vacía. Se dibuja una sola vez al abrir la pestaña, y nadie le avisaba
+  // de que los datos habían cambiado por debajo. Quien lo sufrió creyó que había
+  // perdido sus editoriales.
+  const p = await nuevaPagina(b);
+
+  // Abrir la pestaña estando vacía es lo que congelaba la lista.
+  await p.click('.tab[data-view="numero"]');
+  await p.waitForTimeout(500);
+  comprobar('empieza vacía', await p.locator('.num-card').count() === 0);
+
+  const copia = JSON.stringify({
+    version: 3,
+    exportedAt: new Date().toISOString(),
+    settings: {},
+    entries: [],
+    books: [],
+    numbers: [{
+      id: 'num-restaurado-1',
+      numero: '30',
+      gancho: 'El editorial que volvió',
+      editorial: 'Texto recuperado desde la copia de seguridad.',
+      createdAt: Date.now(),
+    }],
+  });
+
+  await p.click('.tab[data-view="settings"]');
+  await p.waitForTimeout(350);
+  await p.setInputFiles('#importDataInput', {
+    name: 'memorias-backup-prueba.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(copia, 'utf8'),
+  });
+  await p.waitForTimeout(900);
+
+  comprobar('el contador de entregas la ve',
+    (await p.locator('#stNumbers').textContent()).trim() === '1');
+
+  // Sin recargar: es justo lo que fallaba.
+  await p.click('.tab[data-view="numero"]');
+  await p.waitForTimeout(600);
+  comprobar('la entrega aparece en la lista', await p.locator('.num-card').count() === 1);
+  comprobar('con su gancho',
+    (await p.locator('.num-card-gancho').first().textContent()).includes('El editorial que volvió'));
+  comprobar('restaurar no produjo errores', p.erroresJS.length === 0, p.erroresJS.join(' | '));
+});
+
 // ── ejecutar ─────────────────────────────────────────────────────────────────
 (async () => {
   const servidor = await servir();
