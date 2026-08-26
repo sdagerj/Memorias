@@ -7,6 +7,7 @@ import {
   nombreArchivo, getGithubToken, SITIO_WEB,
 } from './publicar.js';
 import { descargarDocx, FIRMA } from './word.js';
+import { dibujarHistoria, compartirHistoria, PLANTILLAS } from './historia.js';
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
@@ -502,8 +503,44 @@ ${data.editorial || '(vacío)'}`;
 // cifras contra fuente primaria y comenta el texto. Nada de lo que devuelve se
 // aplica solo — un dato que no se pudo verificar no se arregla con un boton,
 // se quita a mano.
+// Cuenta cuántas veces aparece el número dentro del texto, y en qué párrafos.
+// Se cuenta aquí y no se le pide a Claude que lo estime: contar es lo único
+// que una máquina hace mejor que un lector, y el dato exacto cambia el consejo.
+export function rastrearNumero(editorial, numero, titulo = '') {
+  const texto = String(editorial || '');
+  const n = String(numero || '').trim();
+  if (!n) return { veces: 0, parrafos: [], enTitulo: false, total: 0 };
+
+  // Se busca la cifra tal cual y también sin separadores de miles, porque
+  // «1.000» en la ficha puede estar escrito «1000» en el texto.
+  const variantes = new Set([n, n.replace(/[.,\s]/g, '')]);
+  const escapar = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const patron = new RegExp([...variantes].filter(Boolean).map(escapar).join('|'), 'g');
+
+  const parrafos = texto.split(/\n+/).filter((l) => l.trim());
+  const donde = [];
+  let veces = 0;
+  parrafos.forEach((p, i) => {
+    const m = p.match(patron);
+    if (m) { veces += m.length; donde.push(i + 1); }
+  });
+
+  return {
+    veces,
+    parrafos: donde,
+    enTitulo: patron.test(String(titulo || '')),
+    total: parrafos.length,
+  };
+}
+
 function buildRevisionPrompt(data) {
   const palabras = String(data.editorial || '').trim().split(/\s+/).filter(Boolean).length;
+  const r = rastrearNumero(data.editorial, data.numero, data.gancho);
+  const rastro = data.numero
+    ? `El número elegido es ${data.numero}. Aparece ${r.veces} ${r.veces === 1 ? 'vez' : 'veces'} ` +
+      `en el cuerpo${r.parrafos.length ? ` (párrafos ${r.parrafos.join(', ')} de ${r.total})` : ''}, ` +
+      `y ${r.enTitulo ? 'sí' : 'no'} aparece en el título.`
+    : 'No hay número elegido todavía.';
   return `${SYSTEM_PROMPT}
 
 ---
@@ -542,6 +579,22 @@ contra uno de 65, párame en seco y explícame por qué no se puede.
 Si un número mío sale de una serie distinta a la de su comparación
 (por ejemplo DANE contra ONU), adviértemelo aunque ambos sean correctos
 por separado.
+
+EL NÚMERO ELEGIDO — revísalo aparte
+Cada editorial se llama por un número. Ese número tiene que sostener el texto,
+no ser un adorno del titular. Dato exacto, ya contado: ${rastro}
+
+Dime:
+1. Si el número está de verdad trabajado o si solo lo menciono de pasada.
+2. En qué punto exacto del texto debería volver a aparecer para que el lector
+   no lo pierda —dame el párrafo y qué diría, sin reescribirme el resto—.
+3. Si el título alude al número o lo ignora. Si lo ignora, propónme dos o tres
+   títulos que sí lo recojan, con mis palabras y sin volverse ingeniosos.
+4. Si el cierre lo retoma. Un editorial que abre con un número y cierra sin él
+   deja al lector con la sensación de que el número sobraba.
+5. Si el número que elegí es el más fuerte del texto, o si hay otra cifra ahí
+   dentro que aguantaría mejor el peso. Dímelo aunque implique cambiar el
+   título.
 
 QUÉ MÁS QUIERO QUE ME DIGAS
 - Cuál es el párrafo más flojo del texto y por qué.
@@ -713,6 +766,8 @@ TEMA: ${data.editorial ? data.editorial.slice(0, 300) + '…' : '(sin editorial 
 function clearClaudePanels() {
   const avisos = $('#numRevisionAvisos');
   if (avisos) avisos.hidden = true;
+  const hist = $('#historiaPanel');
+  if (hist) hist.hidden = true;
   const panel = $('#numCambios');
   if (panel) panel.hidden = true;
   const undo = $('#numUndoCorreccion');
@@ -810,6 +865,76 @@ export async function initNumero() {
     showNumeroScreen();
     await renderNumerosList();
   });
+
+  // ── Historia para Instagram ──
+  // Se enseña la imagen antes de compartirla: es lo que va a ver su gente, y
+  // un título que se sale del margen no se arregla después de publicarlo.
+
+  let plantillaActual = 'numero';
+
+  async function pintarHistoria() {
+    const data = readEditor();
+    const lienzo = await dibujarHistoria(data, plantillaActual);
+    const destino = $('#historiaLienzo');
+    destino.width = lienzo.width;
+    destino.height = lienzo.height;
+    destino.getContext('2d').drawImage(lienzo, 0, 0);
+  }
+
+  function pintarPestanas() {
+    const cont = $('#historiaTabs');
+    if (!cont) return;
+    const data = readEditor();
+    cont.innerHTML = '';
+    for (const p of PLANTILLAS) {
+      // "La frase" solo tiene sentido si hay destaque escrito.
+      if (p.id === 'destaque' && !data.destaque) continue;
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = p.nombre;
+      b.setAttribute('aria-pressed', String(p.id === plantillaActual));
+      b.addEventListener('click', async () => {
+        plantillaActual = p.id;
+        pintarPestanas();
+        await pintarHistoria();
+      });
+      cont.appendChild(b);
+    }
+  }
+
+  $('#historiaBtn')?.addEventListener('click', async () => {
+    const data = readEditor();
+    if (!data.numero && !data.gancho) { showToast('Escribe el número y el título primero'); return; }
+    const panel = $('#historiaPanel');
+    panel.hidden = false;
+    if (plantillaActual === 'destaque' && !data.destaque) plantillaActual = 'numero';
+    pintarPestanas();
+    try {
+      await pintarHistoria();
+      $('#historiaNota').textContent = navigator.canShare
+        ? 'Al compartir, elige Instagram → Historia.'
+        : 'Tu navegador no comparte archivos: se descargará la imagen y la subes desde Instagram.';
+      panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch (e) {
+      showErrorPanel('No se pudo crear la historia: ' + e.message);
+    }
+  });
+
+  $('#historiaCompartir')?.addEventListener('click', async () => {
+    const btn = $('#historiaCompartir');
+    btn.disabled = true;
+    try {
+      const r = await compartirHistoria(readEditor(), plantillaActual);
+      if (r.cancelado) showToast('Cancelado');
+      else showToast(r.compartido ? 'Compartido ✨' : `Descargado: ${r.nombre}`);
+    } catch (e) {
+      showErrorPanel('No se pudo compartir: ' + e.message);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  $('#historiaCerrar')?.addEventListener('click', () => { $('#historiaPanel').hidden = true; });
 
   // Word, que es el formato en el que los periódicos piden la columna. Lleva la
   // firma al final, como la mandan ellos.
