@@ -856,6 +856,16 @@ export async function initRssSources() {
   });
 }
 
+// El archivo de entregas se dibuja una sola vez, al abrir la pestaña por primera
+// vez. Si los datos cambian por fuera de este módulo —restaurar o fusionar una
+// copia de seguridad—, la lista se queda mostrando lo que había antes: los
+// contadores de Ajustes dicen que hay entregas y la pantalla sigue vacía.
+// Esto deja que quien cambie los datos pida el redibujado.
+export async function refrescarNumeros() {
+  if (!document.getElementById('numerosGrid')) return;
+  await renderNumerosList();
+}
+
 // ── init ──────────────────────────────────────────────────────────────────────
 
 export async function initNumero() {

@@ -4,7 +4,7 @@ import { getCurrentPosition, reverseGeocode, formatCoords, mapLink } from './geo
 import { renderBook, formatLongDate } from './book.js';
 import { VoiceDictation, isVoiceSupported } from './voice.js';
 import { initEssence } from './essence.js';
-import { initNumero, initRssSources } from './numero.js';
+import { initNumero, initRssSources, refrescarNumeros } from './numero.js';
 import { normalizeApiKey, describeApiKeyProblem } from './claude-api.js';
 import { normalizeToken, describeTokenProblem, setGithubToken } from './publicar.js';
 
@@ -1148,6 +1148,9 @@ $('#importDataInput').addEventListener('change', async (e) => {
     await db.importBackup(data);
     await loadEntries();
     await loadSettings();
+    // Las entregas de El Número viven en otro módulo: sin este aviso la lista
+    // se queda vacía aunque la base de datos ya las tenga.
+    await refrescarNumeros().catch(() => {});
     await refreshStorageStatus();
     toast('Copia restaurada ✨');
   } catch (err) {
@@ -1172,6 +1175,7 @@ $('#mergeDataInput').addEventListener('change', async (e) => {
       r.numAdded ? plural(r.numAdded, 'editorial nuevo', 'editoriales nuevos') : '',
       r.numUpdated ? plural(r.numUpdated, 'editorial actualizado', 'editoriales actualizados') : '',
     ].filter(Boolean).join(', ');
+    await refrescarNumeros().catch(() => {});
     await refreshStorageStatus();
     toast(msg ? `Fusionado: ${msg} ✨` : 'Sin cambios nuevos');
   } catch (err) {

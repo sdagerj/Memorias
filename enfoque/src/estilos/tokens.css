@@ -1,0 +1,175 @@
+@import 'tailwindcss';
+
+/**
+ * Sistema visual.
+ *
+ * Reglas que no son estéticas sino clínicas, y que mandan sobre cualquier
+ * consideración de gusto:
+ *
+ * - No existe el rojo en esta aplicación. Ni en los errores, ni en las
+ *   gráficas, ni en las advertencias. El informe registra llanto e
+ *   irritabilidad ante los errores cognitivos, y el color de alarma es el
+ *   disparador más barato de esa reacción.
+ * - Un solo color de acento. Todo lo demás es neutro.
+ * - Durante los ejercicios hay un elemento en pantalla y nada más:
+ *   ni contadores, ni marcadores, ni bordes que compitan.
+ * - La letra es grande a propósito. Con fatiga cognitiva, descifrar una
+ *   instrucción pequeña consume atención que debería ir al ejercicio.
+ */
+
+/* La tipografía se aloja en la propia aplicación: debe funcionar sin
+   conexión, y ninguna petición debe salir del dispositivo, ni siquiera la
+   de una fuente. Es un archivo variable: un solo peso cubre de 400 a 600.
+   Licencia en public/tipografia/LICENCIA.txt */
+@font-face {
+  font-family: 'Serif Enfoque';
+  src: url('/tipografia/source-serif-4-latin.woff2') format('woff2-variations');
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
+    U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+    U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@theme {
+  /* Fondo cálido, no blanco puro: cansa menos en sesiones seguidas. */
+  --color-fondo: #f6f3ed;
+  --color-superficie: #fffdfa;
+  --color-velo: #fbf8f3;
+  --color-borde: #e5ded2;
+  --color-borde-suave: #efe9df;
+  --color-texto: #262320;
+  --color-texto-suave: #5d564d;
+  --color-texto-tenue: #8f877c;
+
+  /* Único acento. Verde apagado, sin saturación agresiva. */
+  --color-acento: #3d6a5c;
+  --color-acento-hondo: #315448;
+  --color-acento-suave: #e7efeb;
+  --color-acento-borde: #b4cec4;
+
+  /* Neutros para las gráficas. Ningún rojo, ningún verde de "correcto". */
+  --color-serie-1: #3d6a5c;
+  --color-serie-2: #877960;
+  --color-serie-3: #5f7288;
+  --color-serie-4: #9a8574;
+  --color-referencia: #b0a698;
+
+  /* Serif para títulos y cifras; la del sistema para el texto corrido,
+     que en iPhone es San Francisco y se lee mejor que cualquier importada. */
+  --font-serif: 'Serif Enfoque', ui-serif, Georgia, 'Times New Roman', serif;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'SF Pro Text',
+    'Segoe UI', Roboto, sans-serif;
+
+  --radius-suave: 1rem;
+  --radius-hondo: 1.375rem;
+
+  /* Sombras muy tenues: dan relieve sin añadir ruido visual. */
+  --shadow-tarjeta: 0 1px 2px rgb(38 35 32 / 0.03), 0 8px 20px -12px rgb(38 35 32 / 0.10);
+  --shadow-realce: 0 2px 5px rgb(38 35 32 / 0.07), 0 14px 30px -14px rgb(38 35 32 / 0.20);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    background-color: var(--color-fondo);
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--color-fondo);
+    color: var(--color-texto);
+    font-family: var(--font-sans);
+    font-size: 1.1875rem;
+    line-height: 1.6;
+    letter-spacing: -0.005em;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+
+  h1 {
+    font-size: 2.375rem;
+    line-height: 1.1;
+  }
+
+  h2 {
+    font-size: 1.625rem;
+    line-height: 1.22;
+  }
+
+  h3 {
+    font-size: 1.25rem;
+    line-height: 1.3;
+  }
+
+  /* Área táctil generosa en todo lo pulsable, requisito de uso en iPhone. */
+  button,
+  [role='button'] {
+    min-height: 3.5rem;
+    touch-action: manipulation;
+    font-family: inherit;
+  }
+
+  input,
+  textarea,
+  select {
+    font-family: inherit;
+    /* Nunca por debajo de 16 px: Safari hace zoom automático al enfocar un
+       campo más pequeño y descoloca la pantalla a media respuesta. */
+    font-size: 1.0625rem;
+  }
+
+  ::placeholder {
+    color: var(--color-texto-tenue);
+    opacity: 1;
+  }
+
+  :focus-visible {
+    outline: 2.5px solid var(--color-acento);
+    outline-offset: 3px;
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@utility cifra {
+  /* Cifras grandes: serif, tabulares y sin apretar. Se usa en el span, en
+     el cronómetro y en el resumen. */
+  font-family: var(--font-serif);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+@utility rotulo {
+  /* Rótulo de sección: pequeño, espaciado y en mayúsculas. Da jerarquía
+     sin recurrir a más tamaños de título. */
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--color-texto-tenue);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
