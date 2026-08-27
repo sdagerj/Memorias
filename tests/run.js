@@ -420,6 +420,31 @@ prueba('La historia sale en 1080x1920 y con la marca', async (b) => {
     return { w: c.width, h: c.height, esquina: [d[0], d[1], d[2]] };
   });
   comprobar('mide 1080×1920', med.w === 1080 && med.h === 1920, `${med.w}×${med.h}`);
+
+  // La dirección va SIEMPRE: una historia dura 24 horas y es lo único que
+  // queda cuando se acaba. Se comprueba en las tres plantillas.
+  const conDireccion = await p.evaluate(async () => {
+    const m = await import('./js/historia.js');
+    const e = { numero: '300', gancho: 'Un título', destaque: 'Una frase.' };
+    const out = {};
+    for (const pl of ['numero', 'destaque', 'titulo']) {
+      const c = await m.dibujarHistoria(e, pl);
+      // La dirección va en dorado sobre el navy, en la franja de abajo.
+      const d = c.getContext('2d').getImageData(0, 1920 - 150, 1080, 60).data;
+      let dorado = 0;
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i] > 200 && d[i + 1] > 180 && d[i + 2] < 140) dorado++;
+      }
+      out[pl] = dorado;
+    }
+    return { out, direccion: m.DIRECCION };
+  });
+  comprobar('la dirección es la del sitio', conDireccion.direccion === 'elnumero.pages.dev',
+    conDireccion.direccion);
+  for (const pl of ['numero', 'destaque', 'titulo']) {
+    comprobar(`«${pl}» lleva la dirección en dorado`, conDireccion.out[pl] > 300,
+      'píxeles: ' + conDireccion.out[pl]);
+  }
   // #12486c = 18,72,108. Si el fondo no es el navy de la marca, algo se rompió.
   comprobar('el fondo es el navy de la marca',
     JSON.stringify(med.esquina) === '[18,72,108]', String(med.esquina));
