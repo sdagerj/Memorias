@@ -112,6 +112,34 @@ prueba('Buscar sin resultados explica qué pasa', async (b) => {
   comprobar('el contador refleja la búsqueda', (await p.textContent('#memCount')).includes('/'));
 });
 
+prueba('Una búsqueda sin resultados no parece una pérdida', async (b) => {
+  // Quedó pegada una dirección larga en la caja de búsqueda y la pantalla se
+  // leyó como si los recuerdos se hubieran borrado.
+  const p = await nuevaPagina(b);
+  for (const [t, x] of [['Un día en Florencia', 'Caminé por el Ponte Vecchio.'],
+                        ['París', 'La torre de noche.']]) {
+    await p.click('#fab'); await p.waitForTimeout(250);
+    await p.fill('#entryTitle', t);
+    await p.fill('#entryText', x);
+    await p.click('#saveEntry'); await p.waitForTimeout(700);
+  }
+
+  await p.fill('#searchInput', 'https://memorias-proxy.sdagerj.workers.dev/');
+  await p.waitForTimeout(400);
+
+  comprobar('avisa de que es la búsqueda', !(await p.locator('#noResults').isHidden()));
+  const texto = await p.locator('#noResults').innerText();
+  comprobar('dice cuántos recuerdos hay', /2/.test(texto), texto.replace(/\n/g, ' '));
+  comprobar('dice que siguen ahí', /siguen ahí/i.test(texto));
+  comprobar('recorta la dirección larga', !texto.includes('workers.dev/'), texto.replace(/\n/g, ' '));
+
+  await p.click('#verTodosBtn');
+  await p.waitForTimeout(400);
+  comprobar('el botón limpia la búsqueda', (await p.inputValue('#searchInput')) === '');
+  comprobar('vuelven los recuerdos', await p.locator('.entry-card').count() === 2);
+  comprobar('se esconde el aviso', await p.locator('#noResults').isHidden());
+});
+
 prueba('Las fotos de la lista no se fugan al buscar', async (b) => {
   const p = await nuevaPagina(b);
   await p.evaluate(async () => {
