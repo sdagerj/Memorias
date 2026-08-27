@@ -144,18 +144,31 @@ function logo(ctx, x, y, tam) {
   ctx.restore();
 }
 
-function pie(ctx, texto) {
-  logo(ctx, ANCHO / 2 - 30, ALTO - 260, 60);
+// La direccion va SIEMPRE, en todas las plantillas, y legible: una historia
+// dura 24 horas y es lo unico que queda cuando se acaba. En gris tenue se
+// perdia contra el navy — ahora va en el dorado de la marca, sobre una linea
+// que la separa del resto.
+export const DIRECCION = 'elnumero.pages.dev';
+
+function pie(ctx) {
+  logo(ctx, ANCHO / 2 - 30, ALTO - 290, 60);
+
   ctx.font = tipo(34, 600);
   ctx.fillStyle = CREMA;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  ctx.fillText('El Número', ANCHO / 2, ALTO - 180);
-  if (texto) {
-    ctx.font = tipo(28, 400);
-    ctx.fillStyle = 'rgba(247,242,230,0.62)';
-    ctx.fillText(texto, ANCHO / 2, ALTO - 132);
-  }
+  ctx.fillText('El Número', ANCHO / 2, ALTO - 210);
+
+  ctx.strokeStyle = 'rgba(247,242,230,0.22)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(ANCHO / 2 - 150, ALTO - 152);
+  ctx.lineTo(ANCHO / 2 + 150, ALTO - 152);
+  ctx.stroke();
+
+  ctx.font = tipo(38, 600);
+  ctx.fillStyle = SOL;
+  ctx.fillText(DIRECCION, ANCHO / 2, ALTO - 128);
 }
 
 export async function dibujarHistoria(entrega, plantilla = 'numero') {
@@ -201,7 +214,7 @@ export async function dibujarHistoria(entrega, plantilla = 'numero') {
       ctx.textBaseline = 'top';
       ctx.fillText(numero, ANCHO / 2, fin + hueco);
     }
-    pie(ctx, 'elnumero.pages.dev');
+    pie(ctx);
     return lienzo;
   }
 
@@ -229,7 +242,7 @@ export async function dibujarHistoria(entrega, plantilla = 'numero') {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.fillText('Léelo completo →', ANCHO / 2, finTitulo + 90);
-    pie(ctx, 'elnumero.pages.dev');
+    pie(ctx);
     return lienzo;
   }
 
@@ -262,7 +275,7 @@ export async function dibujarHistoria(entrega, plantilla = 'numero') {
     color: CREMA, anchoMax, interlineado: 1.22, tamMin: 40,
   });
 
-  pie(ctx, 'elnumero.pages.dev');
+  pie(ctx);
   return lienzo;
 }
 
