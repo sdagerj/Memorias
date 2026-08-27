@@ -290,7 +290,11 @@ async function saveDraftNow() {
     await db.setSetting('numeroDraft', { ...d, savedAt: Date.now() });
     const av = $('#numDraftSaved');
     if (av) {
-      av.textContent = 'Borrador guardado ' + new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+      // Dice de qué guardado habla. Puesto justo debajo de los botones y sin
+      // sujeto, «Borrador guardado 20:55» se leía como la respuesta a lo que
+      // acababas de pulsar — y hacía creer que se había publicado.
+      av.textContent = 'Se guarda solo mientras escribes · última vez a las ' +
+        new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
       av.hidden = false;
     }
   } catch (err) {
@@ -1101,6 +1105,7 @@ function showNumPrintOverlay(contentHtml) {
   $('#numPublicarBtn')?.addEventListener('click', async () => {
     const btn = $('#numPublicarBtn');
     const entrega = { ...currentNumero, ...readEditor() };
+    $('#numPublicarEstado').textContent = '';
 
     const faltan = problemasParaPublicar(entrega);
     if (faltan.length) {
@@ -1494,7 +1499,7 @@ function showNumPrintOverlay(contentHtml) {
     if (!data.editorial) { showToast('Escribe el editorial primero'); return; }
     openPanel('numMontajePanel');
     await runWithClaude(
-      $('#numMontajeBtn'), '📲 Montar',
+      $('#numMontajeBtn'), '📲 Textos para redes',
       buildMontajePrompt(data),
       (result) => { $('#numMontajePaste').value = result; showToast('Formatos listos ✨'); },
       'Copiado ✨ Pégalo en claude.ai',
