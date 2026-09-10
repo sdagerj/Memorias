@@ -112,6 +112,34 @@ prueba('Buscar sin resultados explica qué pasa', async (b) => {
   comprobar('el contador refleja la búsqueda', (await p.textContent('#memCount')).includes('/'));
 });
 
+prueba('Una búsqueda sin resultados no parece una pérdida', async (b) => {
+  // Quedó pegada una dirección larga en la caja de búsqueda y la pantalla se
+  // leyó como si los recuerdos se hubieran borrado.
+  const p = await nuevaPagina(b);
+  for (const [t, x] of [['Un día en Florencia', 'Caminé por el Ponte Vecchio.'],
+                        ['París', 'La torre de noche.']]) {
+    await p.click('#fab'); await p.waitForTimeout(250);
+    await p.fill('#entryTitle', t);
+    await p.fill('#entryText', x);
+    await p.click('#saveEntry'); await p.waitForTimeout(700);
+  }
+
+  await p.fill('#searchInput', 'https://memorias-proxy.sdagerj.workers.dev/');
+  await p.waitForTimeout(400);
+
+  comprobar('avisa de que es la búsqueda', !(await p.locator('#noResults').isHidden()));
+  const texto = await p.locator('#noResults').innerText();
+  comprobar('dice cuántos recuerdos hay', /2/.test(texto), texto.replace(/\n/g, ' '));
+  comprobar('dice que siguen ahí', /siguen ahí/i.test(texto));
+  comprobar('recorta la dirección larga', !texto.includes('workers.dev/'), texto.replace(/\n/g, ' '));
+
+  await p.click('#verTodosBtn');
+  await p.waitForTimeout(400);
+  comprobar('el botón limpia la búsqueda', (await p.inputValue('#searchInput')) === '');
+  comprobar('vuelven los recuerdos', await p.locator('.entry-card').count() === 2);
+  comprobar('se esconde el aviso', await p.locator('#noResults').isHidden());
+});
+
 prueba('Las fotos de la lista no se fugan al buscar', async (b) => {
   const p = await nuevaPagina(b);
   await p.evaluate(async () => {
@@ -420,6 +448,31 @@ prueba('La historia sale en 1080x1920 y con la marca', async (b) => {
     return { w: c.width, h: c.height, esquina: [d[0], d[1], d[2]] };
   });
   comprobar('mide 1080×1920', med.w === 1080 && med.h === 1920, `${med.w}×${med.h}`);
+
+  // La dirección va SIEMPRE: una historia dura 24 horas y es lo único que
+  // queda cuando se acaba. Se comprueba en las tres plantillas.
+  const conDireccion = await p.evaluate(async () => {
+    const m = await import('./js/historia.js');
+    const e = { numero: '300', gancho: 'Un título', destaque: 'Una frase.' };
+    const out = {};
+    for (const pl of ['numero', 'destaque', 'titulo']) {
+      const c = await m.dibujarHistoria(e, pl);
+      // La dirección va en dorado sobre el navy, en la franja de abajo.
+      const d = c.getContext('2d').getImageData(0, 1920 - 150, 1080, 60).data;
+      let dorado = 0;
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i] > 200 && d[i + 1] > 180 && d[i + 2] < 140) dorado++;
+      }
+      out[pl] = dorado;
+    }
+    return { out, direccion: m.DIRECCION };
+  });
+  comprobar('la dirección es la del sitio', conDireccion.direccion === 'elnumero.pages.dev',
+    conDireccion.direccion);
+  for (const pl of ['numero', 'destaque', 'titulo']) {
+    comprobar(`«${pl}» lleva la dirección en dorado`, conDireccion.out[pl] > 300,
+      'píxeles: ' + conDireccion.out[pl]);
+  }
   // #12486c = 18,72,108. Si el fondo no es el navy de la marca, algo se rompió.
   comprobar('el fondo es el navy de la marca',
     JSON.stringify(med.esquina) === '[18,72,108]', String(med.esquina));

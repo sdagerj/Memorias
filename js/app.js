@@ -69,12 +69,17 @@ function renderTimeline() {
   $('#memCount').textContent = term ? `${list.length}/${allEntries.length}` : allEntries.length;
   $('#emptyState').style.display = allEntries.length ? 'none' : 'block';
 
-  // Buscar sin resultados dejaba la pantalla en blanco, sin explicación.
+  // Buscar sin resultados dejaba la pantalla en blanco, sin explicación. Y aun
+  // explicándolo, si lo que quedó en la caja fue un pegado accidental —una
+  // dirección larga, por ejemplo— la pantalla se lee como «se perdió todo».
+  // Por eso el aviso dice cuántos recuerdos hay y ofrece volver a verlos.
   const sinResultados = $('#noResults');
   if (sinResultados) {
     sinResultados.hidden = !(term && list.length === 0 && allEntries.length > 0);
     const q = $('#noResultsTerm');
-    if (q) q.textContent = term;
+    if (q) q.textContent = term.length > 40 ? term.slice(0, 40) + '…' : term;
+    const total = $('#noResultsTotal');
+    if (total) total.textContent = String(allEntries.length);
   }
 
   for (const e of list) {
@@ -109,6 +114,11 @@ function renderTimeline() {
 }
 
 $('#searchInput').addEventListener('input', renderTimeline);
+
+$('#verTodosBtn')?.addEventListener('click', () => {
+  $('#searchInput').value = '';
+  renderTimeline();
+});
 
 // =================== Editor ===================
 function resetDraft() {
