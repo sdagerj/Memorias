@@ -17,6 +17,7 @@ import type { VarianteAmplitud } from '../nucleo/digitos'
 export type PasoSesion =
   | { tipo: 'amplitud'; variante: VarianteAmplitud }
   | { tipo: 'alfabetico' }
+  | { tipo: 'parejas' }
   | { tipo: 'fluidez'; subtipo: 'semantica' | 'fonologica'; consigna: string }
 
 /**
@@ -24,9 +25,14 @@ export type PasoSesion =
  *
  * El orden no es casual: se abre con dígitos inversos, que es el déficit
  * principal y conviene medirlo con la cabeza descansada; se sigue con
- * fluidez semántica; se intercala ordenamiento alfabético; y se cierra con
- * fluidez fonológica, que es corta. Si el tiempo se agota antes, el motor
- * simplemente no llega a los últimos pasos.
+ * fluidez semántica; se intercala un ejercicio de manipulación; y se cierra
+ * con fluidez fonológica, que es corta. Si el tiempo se agota antes, el
+ * motor simplemente no llega a los últimos pasos.
+ *
+ * El tercer paso alterna entre ordenamiento alfabético y parejas al oído.
+ * Alterna en vez de sumarse porque la sesión no puede crecer: su tope de
+ * quince a dieciocho minutos es un requisito clínico, no un presupuesto
+ * negociable. Cada uno aparece, entonces, una sesión sí y otra no.
  */
 export function planDeSesion(numeroSesion: number): PasoSesion[] {
   const categoria = CATEGORIAS[numeroSesion % CATEGORIAS.length]?.id ?? 'animales'
@@ -37,10 +43,13 @@ export function planDeSesion(numeroSesion: number): PasoSesion[] {
   const rotacion: VarianteAmplitud[] = ['inversos', 'inversos', 'creciente', 'letras-numeros']
   const variante = rotacion[numeroSesion % rotacion.length] ?? 'inversos'
 
+  const manipulacion: PasoSesion =
+    numeroSesion % 2 === 0 ? { tipo: 'parejas' } : { tipo: 'alfabetico' }
+
   return [
     { tipo: 'amplitud', variante },
     { tipo: 'fluidez', subtipo: 'semantica', consigna: categoria },
-    { tipo: 'alfabetico' },
+    manipulacion,
     { tipo: 'fluidez', subtipo: 'fonologica', consigna: letra },
   ]
 }
@@ -56,6 +65,8 @@ export function nombreDePaso(paso: PasoSesion): string {
           : 'Números y letras'
     case 'alfabetico':
       return 'En orden alfabético'
+    case 'parejas':
+      return 'Parejas al oído'
     case 'fluidez':
       return paso.subtipo === 'semantica' ? 'Fluidez semántica' : 'Fluidez fonológica'
   }
@@ -72,6 +83,8 @@ export function ejercicioDePaso(paso: PasoSesion): string {
           : 'letras-numeros'
     case 'alfabetico':
       return 'ordenamiento-alfabetico'
+    case 'parejas':
+      return 'parejas-audio'
     case 'fluidez':
       return paso.subtipo === 'semantica' ? 'fluidez-semantica' : 'fluidez-fonologica'
   }

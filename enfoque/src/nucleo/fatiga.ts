@@ -23,6 +23,7 @@ export const TOPE_EJERCICIO_MS: Record<string, number> = {
   'digitos-creciente': 3 * 60 * 1000,
   'letras-numeros': 4 * 60 * 1000,
   'ordenamiento-alfabetico': 4 * 60 * 1000,
+  'parejas-audio': 3 * 60 * 1000,
   'fluidez-semantica': 2 * 60 * 1000,
   'fluidez-fonologica': 2 * 60 * 1000,
 }

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Amplitud } from '../ejercicios/Amplitud'
 import { Alfabetico } from '../ejercicios/Alfabetico'
+import { Parejas } from '../ejercicios/Parejas'
 import { Fluidez } from '../ejercicios/Fluidez'
 import { Boton } from '../ui/Boton'
 import { Tarjeta } from '../ui/Tarjeta'
@@ -186,6 +187,7 @@ export function MotorSesion({
         <Amplitud key={`amplitud-${indice}`} variante={paso.variante} {...comunes} />
       )}
       {paso.tipo === 'alfabetico' && <Alfabetico key={`alfabetico-${indice}`} {...comunes} />}
+      {paso.tipo === 'parejas' && <Parejas key={`parejas-${indice}`} {...comunes} />}
       {paso.tipo === 'fluidez' && (
         <Fluidez
           key={`fluidez-${indice}`}
@@ -219,6 +221,7 @@ export function MotorSesion({
 function resumirMetricas(resultado: ResultadoDeEjercicio): string {
   const m = resultado.metricas
   if (m.spanMaximo !== undefined) return `${m.spanMaximo} elementos`
+  if (m.parejasMaximas !== undefined) return `${m.parejasMaximas} parejas`
   if (m.longitudMaxima !== undefined) return `${m.longitudMaxima} palabras`
   if (m.validas !== undefined) return `${m.validas} palabras`
   return ''

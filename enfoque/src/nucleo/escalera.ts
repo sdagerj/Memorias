@@ -39,6 +39,21 @@ export const CONFIG_DIGITOS: ConfigEscalera = {
   fallosParaTerminar: 3,
 }
 
+/**
+ * Parejas al oído. El nivel es el número de parejas del tablero, y los
+ * topes son más estrechos que en los otros ejercicios: un tablero se juega
+ * en varios turnos, así que cinco tableros ya ocupan los tres minutos que
+ * tiene asignados.
+ */
+export const CONFIG_PAREJAS: ConfigEscalera = {
+  nivelInicial: 3,
+  nivelMinimo: 2,
+  nivelMaximo: 6,
+  aciertosParaSubir: 2,
+  maxEnsayos: 5,
+  fallosParaTerminar: 2,
+}
+
 export const CONFIG_ALFABETICO: ConfigEscalera = {
   nivelInicial: 4,
   nivelMinimo: 3,

@@ -157,6 +157,109 @@ while ((await pagina.getByRole('button', { name: 'Sí' }).count()) > 0) {
 await pagina.getByRole('button', { name: 'Continuar' }).click()
 await pagina.waitForTimeout(400)
 
+// El tercer paso de una sesión par es el juego de parejas al oído.
+const titulo3 = (await pagina.locator('h2').first().textContent())?.trim() ?? ''
+revisar(`el tercer ejercicio es el juego de parejas (${titulo3})`, titulo3 === 'Parejas al oído')
+
+await pagina.getByRole('button', { name: 'Empezar el tablero' }).click()
+await pagina.waitForTimeout(200)
+
+const casillas = () => pagina.getByRole('button', { name: /^Casilla/ })
+revisar('el tablero se reparte', (await casillas().count()) > 0)
+await pagina.screenshot({ path: 'capturas/06-parejas.png', fullPage: true })
+
+/** Estado de cada casilla, leído desde su nombre accesible. */
+const leerCasillas = async () =>
+  (await casillas().evaluateAll((nodos) =>
+    nodos.map((n) => n.getAttribute('aria-label') ?? ''),
+  )).map((etiqueta, i) => ({ i, resuelta: etiqueta.includes('pareja encontrada') }))
+
+// Texto fijo de la pantalla. Hay que descontarlo antes de buscar fugas: la
+// propia instrucción contiene «casillas», y dentro va «silla», que es una de
+// las palabras del corpus.
+const TITULO_TABLERO = 'Parejas al oído'
+const INSTRUCCION_TABLERO =
+  'Toca una casilla y escucha su palabra. Busca las dos casillas que dicen lo mismo.'
+
+let palabraFiltrada = ''
+let restoDelTablero = ''
+let turnos = 0
+let tableros = 0
+
+// Lo que la jugadora recuerda: qué palabra sonó en cada casilla.
+let porCasilla = new Map()
+
+/** Toca una casilla, comprueba la regla del audio y devuelve lo que sonó. */
+const tocarCasilla = async (indice) => {
+  await pagina.evaluate(() => { window.__dictado = [] })
+  await casillas().nth(indice).click()
+  await pagina.waitForTimeout(150)
+
+  // La comprobación que da sentido al ejercicio: la palabra se oyó, y no
+  // aparece escrita en ninguna parte del tablero.
+  const dicho = await pagina.evaluate(() => window.__dictado ?? [])
+  const enPantalla = await zona.innerText()
+  // El último toque de un ejercicio se resuelve cuando el motor ya montó el
+  // paso siguiente. Solo se mira la pantalla mientras siga siendo el tablero.
+  if (!enPantalla.includes(TITULO_TABLERO)) return dicho[0] ?? ''
+  const texto = enPantalla
+    .replace(TITULO_TABLERO, '')
+    .replace(INSTRUCCION_TABLERO, '')
+    .trim()
+  if (texto !== '') restoDelTablero = texto
+  for (const palabra of dicho) {
+    if (palabra !== '' && texto.toLowerCase().includes(palabra.toLowerCase())) {
+      palabraFiltrada = palabra
+    }
+  }
+
+  const palabra = dicho[0] ?? ''
+  porCasilla.set(indice, palabra)
+  return palabra
+}
+
+// Juega con memoria perfecta: aprende cada palabra que oye y empareja en
+// cuanto conoce las dos mitades. Así los tableros se completan y la escalera
+// llega hasta el final del ejercicio.
+for (let vuelta = 0; vuelta < 150; vuelta += 1) {
+  if ((await casillas().count()) === 0) break
+
+  const libres = (await leerCasillas()).filter((c) => !c.resuelta)
+  if (libres.length === 0) {
+    // Tablero completo. El siguiente se reparte tras una pausa.
+    tableros += 1
+    porCasilla = new Map()
+    await pagina.waitForTimeout(1100)
+    continue
+  }
+
+  // Un par ya conocido por completo: dos casillas libres con la misma palabra.
+  const parConocido = libres.find((a) =>
+    libres.some((b) => b.i !== a.i && porCasilla.get(a.i) === porCasilla.get(b.i) && porCasilla.has(a.i)),
+  )
+
+  const primera = parConocido?.i ?? (libres.find((c) => !porCasilla.has(c.i)) ?? libres[0]).i
+  const palabraA = await tocarCasilla(primera)
+
+  // Si esa palabra ya había sonado en otra casilla libre, esa es la gemela.
+  const gemela = libres.find((c) => c.i !== primera && porCasilla.get(c.i) === palabraA)
+  const desconocida = libres.find((c) => c.i !== primera && !porCasilla.has(c.i))
+  const segunda = (gemela ?? desconocida ?? libres.find((c) => c.i !== primera))?.i
+  if (segunda === undefined) break
+
+  const palabraB = await tocarCasilla(segunda)
+  turnos += 1
+
+  // Un par que no coincide se queda un momento a la vista antes de taparse.
+  if (palabraA !== palabraB) await pagina.waitForTimeout(950)
+}
+
+revisar('el estímulo del tablero nunca se muestra escrito', palabraFiltrada === '')
+revisar(`el tablero no escribe absolutamente nada${restoDelTablero ? `: «${restoDelTablero}»` : ''}`,
+  restoDelTablero === '')
+revisar(`el ejercicio de parejas termina solo (${turnos} turnos, ${tableros} tableros)`,
+  turnos > 0 && (await casillas().count()) === 0)
+
 // Sale de la sesión y comprueba lo guardado
 await pagina.evaluate(() => window.location.reload())
 await pagina.waitForSelector('text=Empezar sesión')
@@ -180,6 +283,16 @@ revisar('el diario quedó registrado', guardado.diario === 1)
 revisar('se guardó el resultado de los dígitos',
   guardado.resultados.some((r) => r.ejercicio === 'digitos-inversos'))
 
+const parejas = guardado.resultados.find((r) => r.ejercicio === 'parejas-audio')
+revisar('se guardó el resultado del juego de parejas', parejas !== undefined)
+if (parejas) {
+  revisar(`llegó a un tablero de ${parejas.metricas.parejasMaximas} parejas`,
+    parejas.metricas.parejasMaximas >= 2)
+  revisar('registró los turnos y las perseveraciones para el informe',
+    typeof parejas.metricas.intentos === 'number' &&
+    typeof parejas.metricas.perseveraciones === 'number')
+}
+
 const fluidez = guardado.resultados.find((r) => r.ejercicio === 'fluidez-semantica')
 revisar('se guardó el resultado de fluidez', fluidez !== undefined)
 if (fluidez) {
@@ -199,6 +312,8 @@ revisar('el progreso muestra la línea basal de septiembre de 2025',
   (await pagina.locator('text=/Basal sep\\. 2025/').count()) > 0)
 revisar('las perseveraciones tienen su propia gráfica',
   textoProgreso.includes('Perseveraciones'))
+revisar('el progreso muestra el juego de parejas',
+  textoProgreso.includes('Parejas al oído'))
 await pagina.screenshot({ path: 'capturas/05-progreso.png', fullPage: true })
 
 // Exportaciones: se comprueba el archivo, no solo que exista el botón.

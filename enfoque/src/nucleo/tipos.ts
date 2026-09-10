@@ -11,6 +11,7 @@ export type Ejercicio =
   | 'digitos-creciente'
   | 'letras-numeros'
   | 'ordenamiento-alfabetico'
+  | 'parejas-audio'
   | 'fluidez-semantica'
   | 'fluidez-fonologica'
 

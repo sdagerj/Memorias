@@ -78,6 +78,15 @@ export function Progreso({ alVolver }: Props) {
       color: 'var(--color-serie-4)',
     },
     {
+      id: 'g-parejas',
+      titulo: 'Parejas al oído',
+      ejercicio: 'parejas-audio',
+      metrica: 'parejasMaximas',
+      unidad: 'parejas del tablero resuelto',
+      basal: null,
+      color: 'var(--color-serie-2)',
+    },
+    {
       id: 'g-alfabetico',
       titulo: 'Ordenamiento alfabético',
       ejercicio: 'ordenamiento-alfabetico',

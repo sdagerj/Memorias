@@ -44,8 +44,29 @@ describe('plan de sesión', () => {
     expect(inversos).toBeGreaterThan(variantes.filter((v) => v === 'creciente').length)
   })
 
+  it('alterna parejas al oído con el ordenamiento alfabético', () => {
+    const terceroDe = (n: number) => planDeSesion(n)[2]?.tipo
+    for (let n = 0; n < 12; n += 2) {
+      expect(terceroDe(n)).toBe('parejas')
+      expect(terceroDe(n + 1)).toBe('alfabetico')
+    }
+  })
+
+  it('no mete los dos ejercicios de manipulación en la misma sesión', () => {
+    for (let n = 0; n < 12; n += 1) {
+      const tipos = planDeSesion(n).map((p) => p.tipo)
+      expect(tipos.filter((t) => t === 'parejas' || t === 'alfabetico').length).toBe(1)
+    }
+  })
+
+  it('mantiene la sesión en cuatro pasos', () => {
+    for (let n = 0; n < 12; n += 1) {
+      expect(planDeSesion(n).length).toBe(4)
+    }
+  })
+
   it('da nombre a todos los pasos', () => {
-    for (const paso of planDeSesion(0)) {
+    for (const paso of [...planDeSesion(0), ...planDeSesion(1)]) {
       expect(nombreDePaso(paso)).not.toBe('')
       expect(TOPE_EJERCICIO_MS[ejercicioDePaso(paso)]).toBeDefined()
     }

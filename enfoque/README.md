@@ -71,11 +71,39 @@ médico.
 | **De menor a mayor** | Manipulación mental de la secuencia | hasta 3 min |
 | **Números y letras** | Doble criterio de ordenamiento simultáneo | hasta 4 min |
 | **En orden alfabético** | Ordenamiento mental estilo BANFE-2 | hasta 4 min |
+| **Parejas al oído** | Retención de palabras escuchadas y su posición | hasta 3 min |
 | **Fluidez semántica** | Acceso léxico por categoría | 2 min |
 | **Fluidez fonológica** | Acceso léxico por letra inicial | 2 min |
 
-Las tres primeras y el ordenamiento alfabético se presentan **por audio**,
-con velocidad de dictado ajustable. Las respuestas van por voz o por teclado.
+Las tres primeras, el ordenamiento alfabético y las parejas se presentan **por
+audio**, con velocidad de dictado ajustable. Las respuestas van por voz o por
+teclado.
+
+Cada sesión son cuatro pasos y no crecen: **«En orden alfabético» y «Parejas al
+oído» se alternan**, una sesión sí y otra no. El tope de quince a dieciocho
+minutos manda sobre el catálogo.
+
+### Por qué las parejas no llevan dibujos
+
+Es el juego de siempre —destapar casillas y buscar las dos iguales— pero las
+casillas no muestran nada: **suenan**. Se toca una y se oye una palabra.
+
+El juego clásico, con dibujos a la vista, entrena memoria visual, que en la
+evaluación está preservada. Presentando la palabra por el oído, lo que hay que
+sostener mientras se busca es lo escuchado y dónde estaba: memoria de trabajo
+auditivo-verbal, que es el déficit.
+
+De cada tablero salen dos números. El **tamaño del tablero superado**, que
+gobierna la escalera igual que el span de dígitos. Y las **perseveraciones**:
+volver a probar un par de casillas que ya se había probado y ya había fallado,
+que es la misma conducta que la repetición en fluidez —insistir en una
+respuesta improductiva teniendo ya la información de que no sirve— medida en
+otra tarea. Tocar dos veces la misma casilla dentro de un turno no cuenta: en
+un teléfono eso es un dedo que resbala, y un falso positivo aquí sería un dato
+equivocado en un informe médico.
+
+Un tablero se levanta solo al doble de turnos del umbral aunque queden parejas
+sueltas, para que no exista la partida que no termina nunca.
 
 ### Lo que calcula la fluidez verbal
 
@@ -166,8 +194,10 @@ Cubren lo que produce los números que van al médico: el detector de
 perseveraciones (incluida la normalización de plurales, con sus excepciones:
 `jueves` no se convierte en `juev`), la escalera adaptativa, la calificación de
 las tres variantes de amplitud, el orden alfabético del español con `ñ` y
-tildes, los racimos semánticos, los bloques de quince segundos y las reglas de
-fatiga.
+tildes, los racimos semánticos, los bloques de quince segundos, las reglas de
+fatiga y el tablero de parejas: mecánica del turno, conteo de pares repetidos,
+umbral de turnos y la garantía de que ninguna partida se queda jugando para
+siempre.
 
 ### Recorrido completo en un navegador
 
@@ -181,7 +211,8 @@ npm run recorrido
 Abre un Chromium del tamaño de un iPhone 14 y recorre la aplicación entera:
 guarda el registro diario, completa el ejercicio de dígitos inversos, hace una
 prueba de fluidez con una repetición deliberada, clasifica las pendientes,
-comprueba lo que quedó en IndexedDB y descarga el informe en PDF y el CSV.
+juega los tableros de parejas guiándose solo por lo que oye, comprueba lo que
+quedó en IndexedDB y descarga el informe en PDF y el CSV.
 Verifica en particular que **el estímulo dictado no aparezca escrito en ninguna
 parte de la tarjeta del ejercicio**, que es el principio del que depende todo
 lo demás. Deja las capturas y el PDF en `capturas/`.
@@ -197,9 +228,13 @@ lo demás. Deja las capturas y el PDF en `capturas/`.
    una palabra dos veces (por ejemplo `perro` y después `perros`). No debe
    preguntar por ella en la revisión, y debe aparecer como una perseveración en
    el panel de progreso.
-4. **Corte por tiempo.** Dejar correr una sesión sin responder. A los quince
+4. **Parejas al oído.** Tocar una casilla: debe sonar una palabra y no debe
+   verse nada escrito. Buscar la que dice lo mismo. Volver a probar a
+   propósito dos casillas que ya se sabe que no casan debe aparecer como
+   perseveración en el panel de progreso.
+5. **Corte por tiempo.** Dejar correr una sesión sin responder. A los quince
    minutos aparece el aviso; a los dieciocho se cierra sola y guarda.
-5. **Respaldo.** Exportar el JSON desde **Ajustes**, borrar los datos del sitio
+6. **Respaldo.** Exportar el JSON desde **Ajustes**, borrar los datos del sitio
    en el navegador, y volver a importarlo.
 
 ---
@@ -281,7 +316,7 @@ src/
 ├─ contenido/    corpus en español de Colombia y reglas de las consignas
 ├─ datos/        Dexie, valores basales y respaldo
 ├─ audio/        síntesis de voz y reconocimiento de habla
-├─ ejercicios/   los tres ejercicios de la fase 1
+├─ ejercicios/   los ejercicios de la fase 1
 ├─ sesion/       plan de la sesión y motor que la conduce
 ├─ progreso/     series, gráficas y exportación a PDF y CSV
 ├─ rutas/        inicio, progreso y ajustes

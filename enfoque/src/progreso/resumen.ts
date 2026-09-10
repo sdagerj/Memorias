@@ -65,6 +65,13 @@ export const DOMINIOS: Definicion[] = [
     unidad: 'palabras',
   },
   {
+    dominio: 'parejas-audio',
+    etiqueta: 'Parejas al oído',
+    ejercicio: 'parejas-audio',
+    metrica: 'parejasMaximas',
+    unidad: 'parejas',
+  },
+  {
     dominio: 'fluidez-semantica',
     etiqueta: 'Fluidez semántica',
     ejercicio: 'fluidez-semantica',
@@ -93,6 +100,15 @@ export const DOMINIOS: Definicion[] = [
     ejercicio: 'fluidez-fonologica',
     metrica: 'perseveraciones',
     unidad: 'repeticiones',
+  },
+  {
+    // Perseveración fuera de la fluidez: volver a probar un par de casillas
+    // que ya se había probado y ya había fallado.
+    dominio: 'perseveraciones-parejas',
+    etiqueta: 'Perseveraciones (parejas)',
+    ejercicio: 'parejas-audio',
+    metrica: 'perseveraciones',
+    unidad: 'pares repetidos',
   },
 ]
 
