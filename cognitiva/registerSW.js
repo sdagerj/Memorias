@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/Memorias/cognitiva/sw.js', { scope: '/Memorias/cognitiva/' })})}
