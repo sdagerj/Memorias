@@ -8,6 +8,7 @@ import {
 } from './publicar.js';
 import { descargarDocx, FIRMA } from './word.js';
 import { dibujarHistoria, compartirHistoria, PLANTILLAS } from './historia.js';
+import { dibujarPublicacion, compartirPublicacion, PUBLICACIONES } from './publicacion.js';
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
@@ -884,11 +885,30 @@ export async function initNumero() {
   // Se enseña la imagen antes de compartirla: es lo que va a ver su gente, y
   // un título que se sale del margen no se arregla después de publicarlo.
 
-  let plantillaActual = 'numero';
+  // De una misma columna salen dos publicaciones para el feed —el numero y la
+  // frase, pensadas para dos dias distintos de la semana— y tres historias.
+  // Todas se eligen igual, solo cambia quien las dibuja.
+  const PIEZAS = [
+    ...PUBLICACIONES.map((p) => ({ ...p, grupo: 'pub' })),
+    ...PLANTILLAS.map((p) => ({ ...p, grupo: 'historia' })),
+  ];
+
+  // Las piezas que citan la frase destacada no existen si no hay frase escrita.
+  const piezaVale = (p, data) =>
+    !(p.necesita === 'destaque' || p.id === 'destaque') || Boolean(data.destaque);
+
+  let plantillaActual = 'pub-numero';
+
+  function piezaDe(id) {
+    return PIEZAS.find((p) => p.id === id) || PIEZAS[0];
+  }
 
   async function pintarHistoria() {
     const data = readEditor();
-    const lienzo = await dibujarHistoria(data, plantillaActual);
+    const pieza = piezaDe(plantillaActual);
+    const lienzo = pieza.grupo === 'pub'
+      ? await dibujarPublicacion(data, pieza.id)
+      : await dibujarHistoria(data, pieza.id);
     const destino = $('#historiaLienzo');
     destino.width = lienzo.width;
     destino.height = lienzo.height;
@@ -896,23 +916,25 @@ export async function initNumero() {
   }
 
   function pintarPestanas() {
-    const cont = $('#historiaTabs');
-    if (!cont) return;
     const data = readEditor();
-    cont.innerHTML = '';
-    for (const p of PLANTILLAS) {
-      // "La frase" solo tiene sentido si hay destaque escrito.
-      if (p.id === 'destaque' && !data.destaque) continue;
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.textContent = p.nombre;
-      b.setAttribute('aria-pressed', String(p.id === plantillaActual));
-      b.addEventListener('click', async () => {
-        plantillaActual = p.id;
-        pintarPestanas();
-        await pintarHistoria();
-      });
-      cont.appendChild(b);
+    for (const [grupo, sel] of [['pub', '#pubTabs'], ['historia', '#historiaTabs']]) {
+      const cont = $(sel);
+      if (!cont) continue;
+      cont.innerHTML = '';
+      for (const p of PIEZAS.filter((x) => x.grupo === grupo)) {
+        if (!piezaVale(p, data)) continue;
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = p.nombre;
+        if (p.dia) b.title = p.dia;
+        b.setAttribute('aria-pressed', String(p.id === plantillaActual));
+        b.addEventListener('click', async () => {
+          plantillaActual = p.id;
+          pintarPestanas();
+          await pintarHistoria();
+        });
+        cont.appendChild(b);
+      }
     }
   }
 
@@ -921,12 +943,14 @@ export async function initNumero() {
     if (!data.numero && !data.gancho) { showToast('Escribe el número y el título primero'); return; }
     const panel = $('#historiaPanel');
     panel.hidden = false;
-    if (plantillaActual === 'destaque' && !data.destaque) plantillaActual = 'numero';
+    // Si la pieza elegida la ultima vez cita una frase que ya no esta, se
+    // vuelve a la primera en lugar de dibujar una pieza a medias.
+    if (!piezaVale(piezaDe(plantillaActual), data)) plantillaActual = 'pub-numero';
     pintarPestanas();
     try {
       await pintarHistoria();
       $('#historiaNota').textContent = navigator.canShare
-        ? 'Al compartir, elige Instagram → Historia.'
+        ? 'Al compartir, elige Instagram. Las publicaciones van al perfil; las historias, a Historia.'
         : 'Tu navegador no comparte archivos: se descargará la imagen y la subes desde Instagram.';
       panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
     } catch (e) {
@@ -938,7 +962,10 @@ export async function initNumero() {
     const btn = $('#historiaCompartir');
     btn.disabled = true;
     try {
-      const r = await compartirHistoria(readEditor(), plantillaActual);
+      const pieza = piezaDe(plantillaActual);
+      const r = pieza.grupo === 'pub'
+        ? await compartirPublicacion(readEditor(), pieza.id)
+        : await compartirHistoria(readEditor(), pieza.id);
       if (r.cancelado) showToast('Cancelado');
       else showToast(r.compartido ? 'Compartido ✨' : `Descargado: ${r.nombre}`);
     } catch (e) {

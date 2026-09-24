@@ -442,6 +442,10 @@ prueba('La historia sale en 1080x1920 y con la marca', async (b) => {
   comprobar('abre el panel', !(await p.locator('#historiaPanel').isHidden()));
   comprobar('ofrece las tres plantillas', await p.locator('#historiaTabs button').count() === 3);
 
+  // El panel abre en una publicacion; esta prueba es de las historias.
+  await p.locator('#historiaTabs button').first().click();
+  await p.waitForTimeout(1200);
+
   const med = await p.evaluate(() => {
     const c = document.querySelector('#historiaLienzo');
     const d = c.getContext('2d').getImageData(4, 4, 1, 1).data;
@@ -497,6 +501,124 @@ prueba('La historia sale en 1080x1920 y con la marca', async (b) => {
   await p.click('#historiaBtn'); await p.waitForTimeout(1200);
   comprobar('sin frase destacada solo ofrece dos plantillas',
     await p.locator('#historiaTabs button').count() === 2);
+});
+
+prueba('De una columna salen dos publicaciones distintas para el feed', async (b) => {
+  const p = await nuevaPagina(b);
+  await p.click('.tab[data-view="numero"]'); await p.waitForTimeout(500);
+  await p.click('#newNumeroBtn'); await p.waitForTimeout(300);
+  await p.fill('#numNumero', '300');
+  await p.fill('#numGancho', 'No pretendas ser lo que no eres');
+  await p.fill('#numEditorial', 'Un texto.');
+  await p.fill('#numDestaque', 'El poder que se muestra, se gasta.');
+
+  await p.click('#historiaBtn');
+  await p.waitForTimeout(2500);
+  comprobar('ofrece las dos publicaciones', await p.locator('#pubTabs button').count() === 2);
+
+  // Abre por la publicacion, que es lo que se publica de verdad en el perfil;
+  // la historia dura un dia.
+  const inicio = await p.evaluate(() => {
+    const c = document.querySelector('#historiaLienzo');
+    return { w: c.width, h: c.height };
+  });
+  comprobar('abre en publicación, 1080×1350',
+    inicio.w === 1080 && inicio.h === 1350, `${inicio.w}×${inicio.h}`);
+
+  const r = await p.evaluate(async () => {
+    const m = await import('./js/publicacion.js');
+    const e = {
+      numero: '300', gancho: 'No pretendas ser lo que no eres',
+      destaque: 'El poder que se muestra, se gasta.', cantera: 'mujeres',
+    };
+    const mirar = async (id) => {
+      const c = await m.dibujarPublicacion(e, id);
+      const ctx = c.getContext('2d');
+      const esq = ctx.getImageData(4, 4, 1, 1).data;
+      // La direccion va en la franja de abajo; se cuenta cuanta tinta hay.
+      const pieData = ctx.getImageData(0, 1350 - 95, 1080, 40).data;
+      let tinta = 0;
+      for (let i = 0; i < pieData.length; i += 4) {
+        const dif = Math.abs(pieData[i] - esq[0]) + Math.abs(pieData[i + 1] - esq[1])
+          + Math.abs(pieData[i + 2] - esq[2]);
+        if (dif > 120) tinta++;
+      }
+      // Desborde: tinta pegada al borde izquierdo.
+      const borde = ctx.getImageData(0, 0, 30, 1350).data;
+      let toca = false;
+      for (let i = 0; i < borde.length; i += 4) {
+        const dif = Math.abs(borde[i] - esq[0]) + Math.abs(borde[i + 1] - esq[1])
+          + Math.abs(borde[i + 2] - esq[2]);
+        if (dif > 120) toca = true;
+      }
+      return { w: c.width, h: c.height, esquina: [esq[0], esq[1], esq[2]], tinta, toca };
+    };
+    const largo = await m.dibujarPublicacion({ numero: '1.000.000.000', gancho: 'T' }, 'pub-numero');
+    const lctx = largo.getContext('2d');
+    const lb = lctx.getImageData(0, 0, 30, 1350).data;
+    let ltoca = false;
+    for (let i = 0; i < lb.length; i += 4) {
+      if (lb[i] > 200 && lb[i + 1] > 180 && lb[i + 2] < 140) ltoca = true;
+    }
+    // Sin frase escrita, la pieza de la frase no debe salir en blanco: cae a
+    // la del numero.
+    const sinFrase = await m.dibujarPublicacion({ numero: '7', gancho: 'T' }, 'pub-frase');
+    const sfEsq = sinFrase.getContext('2d').getImageData(4, 4, 1, 1).data;
+
+    return {
+      numero: await mirar('pub-numero'),
+      frase: await mirar('pub-frase'),
+      nombres: [m.nombrePublicacion(e, 'pub-numero'), m.nombrePublicacion(e, 'pub-frase')],
+      numeroLargoDesborda: ltoca,
+      sinFraseEsquina: [sfEsq[0], sfEsq[1], sfEsq[2]],
+    };
+  });
+
+  comprobar('las dos miden 1080×1350',
+    r.numero.h === 1350 && r.frase.h === 1350 && r.numero.w === 1080 && r.frase.w === 1080);
+  // #12486c = 18,72,108 · #f7f2e6 = 247,242,230
+  comprobar('«el número» va sobre el navy',
+    JSON.stringify(r.numero.esquina) === '[18,72,108]', String(r.numero.esquina));
+  comprobar('«la frase» va sobre el crema',
+    JSON.stringify(r.frase.esquina) === '[247,242,230]', String(r.frase.esquina));
+  comprobar('no se parecen: los fondos son opuestos',
+    JSON.stringify(r.numero.esquina) !== JSON.stringify(r.frase.esquina));
+  comprobar('«el número» lleva la dirección abajo', r.numero.tinta > 300, 'píxeles: ' + r.numero.tinta);
+  comprobar('«la frase» lleva la dirección abajo', r.frase.tinta > 300, 'píxeles: ' + r.frase.tinta);
+  comprobar('«el número» no se sale del margen', !r.numero.toca);
+  comprobar('«la frase» no se sale del margen', !r.frase.toca);
+  comprobar('un número larguísimo tampoco se sale', !r.numeroLargoDesborda);
+  comprobar('sin frase escrita cae a la del número',
+    JSON.stringify(r.sinFraseEsquina) === '[18,72,108]', String(r.sinFraseEsquina));
+  comprobar('los archivos se llaman distinto', r.nombres[0] !== r.nombres[1], r.nombres.join(' · '));
+
+  // Sin frase destacada, la segunda publicacion no se ofrece.
+  await p.fill('#numDestaque', '');
+  await p.click('#historiaBtn'); await p.waitForTimeout(1200);
+  comprobar('sin frase solo ofrece una publicación',
+    await p.locator('#pubTabs button').count() === 1);
+});
+
+prueba('Una frase que ya trae comillas no sale con comillas dobladas', async (b) => {
+  const p = await nuevaPagina(b);
+  const r = await p.evaluate(async () => {
+    const m = await import('./js/historia.js');
+    return {
+      // El caso que se vio en pantalla: comillas dentro y punto al final.
+      dentro: m.entrecomillar('Hay diferencia entre decir «quiero dos» y decir «me alcanza para dos».'),
+      limpia: m.entrecomillar('El poder que se muestra, se gasta.'),
+      yaEntera: m.entrecomillar('«El poder que se muestra, se gasta.»'),
+      sinPunto: m.entrecomillar('Decidí vivir por el treinta'),
+      vacia: m.entrecomillar(''),
+    };
+  });
+  comprobar('las de dentro pasan a inglesas', r.dentro.includes('\u201cquiero dos\u201d'), r.dentro);
+  comprobar('no quedan comillas dobladas', !/»\.?»/.test(r.dentro) && !/««/.test(r.dentro), r.dentro);
+  comprobar('el punto va fuera del cierre', r.dentro.endsWith('».'), r.dentro);
+  comprobar('una frase limpia se entrecomilla', r.limpia === '«El poder que se muestra, se gasta».', r.limpia);
+  comprobar('una que ya venía entera no se dobla', r.yaEntera === '«El poder que se muestra, se gasta».', r.yaEntera);
+  comprobar('sin punto no se inventa uno', r.sinPunto === '«Decidí vivir por el treinta»', r.sinPunto);
+  comprobar('vacía se queda vacía', r.vacia === '', r.vacia);
 });
 
 prueba('Una fuente con enlace inválido no llega a la web', async (b) => {
@@ -690,7 +812,7 @@ prueba('El PDF de un recuerdo abre y cierra sin atascar la app', async (b) => {
 });
 
 prueba('El código no tiene comillas tipográficas en atributos HTML', async () => {
-  const archivos = ['js/app.js', 'js/numero.js', 'js/db.js', 'js/claude-api.js', 'js/publicar.js', 'js/word.js', 'js/historia.js', 'index.html'];
+  const archivos = ['js/app.js', 'js/numero.js', 'js/db.js', 'js/claude-api.js', 'js/publicar.js', 'js/word.js', 'js/historia.js', 'js/publicacion.js', 'index.html'];
   for (const f of archivos) {
     const txt = fs.readFileSync(path.join(RAIZ, f), 'utf8');
     const malas = txt.match(/=\s*[“”]/g);

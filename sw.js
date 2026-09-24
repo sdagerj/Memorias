@@ -16,6 +16,7 @@ const ASSETS = [
   './js/publicar.js',
   './js/word.js',
   './js/historia.js',
+  './js/publicacion.js',
   './fonts/cormorant-latin-400.ttf',
   './fonts/cormorant-latin-600.ttf',
   './manifest.webmanifest',

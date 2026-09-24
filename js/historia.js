@@ -12,11 +12,12 @@ const ANCHO = 1080;
 const ALTO = 1920;
 
 // Los colores de la marca, los mismos del LEEME.txt y de la web.
-const NAVY = '#12486c';
+export const NAVY = '#12486c';
 const NAVY_HONDO = '#0e3a58';
-const SOL = '#f4da55';
-const CREMA = '#f7f2e6';
-const MINT = '#8fd0c8';
+export const SOL = '#f4da55';
+export const CREMA = '#f7f2e6';
+export const MINT = '#8fd0c8';
+export const TEAL = '#2f8a85';
 
 // Contraste medido sobre el navy: crema 8.67:1 · sol 6.92:1 · mint 5.54:1.
 // El teal da 2.35:1, así que no se usa para texto sobre azul.
@@ -36,7 +37,7 @@ export const PLANTILLAS = [
 // eso desalinea la pieza entera — y en la web las cifras van alineadas, así que
 // la historia y la web tienen que enseñar el número igual.
 let fuenteLista = null;
-async function cargarFuente() {
+export async function cargarFuente() {
   if (fuenteLista) return fuenteLista;
   fuenteLista = (async () => {
     try {
@@ -52,12 +53,12 @@ async function cargarFuente() {
   return fuenteLista;
 }
 
-function tipo(tam, peso = 400) {
+export function tipo(tam, peso = 400) {
   return `${peso} ${tam}px CormorantHistoria, Georgia, "Times New Roman", serif`;
 }
 
 // Parte el texto en líneas que quepan en un ancho dado.
-function repartir(ctx, texto, anchoMax) {
+export function repartir(ctx, texto, anchoMax) {
   const palabras = String(texto || '').trim().split(/\s+/).filter(Boolean);
   const lineas = [];
   let actual = '';
@@ -126,12 +127,12 @@ function fondo(ctx) {
 }
 
 // La N del logo, dibujada como polígono para no depender de cargar un archivo.
-function logo(ctx, x, y, tam) {
+export function logo(ctx, x, y, tam, color = CREMA) {
   const e = tam / 100;
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(e, e);
-  ctx.fillStyle = CREMA;
+  ctx.fillStyle = color;
   const puntos = [[14, 85], [14, 15], [26, 15], [74, 72], [74, 15], [86, 15], [86, 85], [74, 85], [26, 28], [26, 85]];
   ctx.beginPath();
   puntos.forEach(([px, py], i) => (i ? ctx.lineTo(px, py) : ctx.moveTo(px, py)));
@@ -171,6 +172,26 @@ function pie(ctx) {
   ctx.fillText(DIRECCION, ANCHO / 2, ALTO - 128);
 }
 
+// La frase destacada suele venir ya con comillas dentro («quiero dos hijos»).
+// Meterla entera entre comillas otra vez daba «... «quiero dos hijos» ...».»:
+// comillas dobladas y un punto antes del cierre. En español las de dentro
+// pasan a ser inglesas, que es justo para lo que existen.
+export function entrecomillar(texto) {
+  let t = String(texto || '').trim();
+  if (!t) return '';
+  // Si ya viene entrecomillada entera, se le quitan las de fuera y se vuelven
+  // a poner al final, para no arrastrar el punto dentro del cierre.
+  const yaAbre = /^[«"\u201c]/.test(t);
+  const yaCierra = /[»"\u201d]\.?$/.test(t);
+  if (yaAbre && yaCierra) t = t.replace(/^[«"\u201c]/, '').replace(/[»"\u201d](\.?)$/, '$1');
+  // Las comillas que queden dentro pasan a inglesas.
+  t = t.replace(/«/g, '\u201c').replace(/»/g, '\u201d');
+  // El punto final va fuera del cierre, no dentro.
+  const punto = /\.$/.test(t) ? '.' : '';
+  if (punto) t = t.slice(0, -1);
+  return `«${t}»${punto}`;
+}
+
 export async function dibujarHistoria(entrega, plantilla = 'numero') {
   await cargarFuente();
   const lienzo = document.createElement('canvas');
@@ -188,7 +209,7 @@ export async function dibujarHistoria(entrega, plantilla = 'numero') {
   if (plantilla === 'destaque' && destaque) {
     etiqueta(ctx, 'El Número', 300);
 
-    const cita = `«${destaque}»`;
+    const cita = entrecomillar(destaque);
     const opciones = { tam: 92, peso: 400, color: CREMA, anchoMax, interlineado: 1.22, tamMin: 46 };
     const med = bloque(ctx, cita, { ...opciones, medir: true });
 
