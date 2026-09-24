@@ -1,5 +1,5 @@
 // Service worker: permite que la app funcione sin conexión (offline).
-const CACHE = 'memorias-v54';
+const CACHE = 'memorias-v55';
 const ASSETS = [
   './',
   './index.html',
@@ -16,6 +16,7 @@ const ASSETS = [
   './js/publicar.js',
   './js/word.js',
   './js/historia.js',
+  './js/publicacion.js',
   './fonts/cormorant-latin-400.ttf',
   './fonts/cormorant-latin-600.ttf',
   './manifest.webmanifest',

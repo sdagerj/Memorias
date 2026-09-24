@@ -857,7 +857,14 @@ h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; }
   font-size: 0.9rem; line-height: 1.5; color: #7a2020;
 }
 
-/* ── Historia para Instagram ─────────────────────────────────────────────── */
+/* ── Imagenes para Instagram ─────────────────────────────────────────────── */
+/* El titulillo que separa las publicaciones de las historias. Sin el, seis
+   botones seguidos parecen seis versiones de lo mismo. */
+.ig-grupo {
+  margin: 14px 0 8px; font-size: 0.78rem; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--muted);
+}
+.ig-grupo:first-of-type { margin-top: 4px; }
 .historia-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
 .historia-tabs button {
   flex: 1 1 auto; padding: 8px 14px; border-radius: 999px;
