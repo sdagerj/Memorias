@@ -471,7 +471,7 @@ prueba('La historia sale en 1080x1920 y con la marca', async (b) => {
     }
     return { out, direccion: m.DIRECCION };
   });
-  comprobar('la dirección es la del sitio', conDireccion.direccion === 'elnumero.pages.dev',
+  comprobar('la dirección es la del sitio', conDireccion.direccion === 'elnumero.com.co',
     conDireccion.direccion);
   for (const pl of ['numero', 'destaque', 'titulo']) {
     comprobar(`«${pl}» lleva la dirección en dorado`, conDireccion.out[pl] > 300,
