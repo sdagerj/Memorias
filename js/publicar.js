@@ -1,6 +1,6 @@
 // Publicar una entrega de El Número directamente en la web.
 //
-// La web (elnumero.pages.dev) se construye sola desde el repositorio
+// La web (elnumero.com.co) se construye sola desde el repositorio
 // sdagerj/el-numero: cada editorial es un archivo Markdown dentro de
 // src/content/editoriales/. Aquí se arma ese archivo y se escribe con la API
 // de GitHub. Cloudflare ve el cambio y reconstruye. No hay servidor de por medio.
@@ -15,8 +15,9 @@ const CARPETA = 'src/content/editoriales';
 const RAMA = 'main';
 
 // La direccion publica del sitio. En un solo sitio, para que cambiar de alojamiento
-// no obligue a buscarla por todo el codigo — ya paso una vez, al salir de Netlify.
-export const SITIO_WEB = 'https://elnumero.pages.dev';
+// no obligue a buscarla por todo el codigo — ya paso dos veces: al salir de
+// Netlify y al estrenar dominio propio. La vieja, elnumero.pages.dev, redirige.
+export const SITIO_WEB = 'https://elnumero.com.co';
 
 export const CANTERAS_WEB = [
   { id: 'mercados', nombre: 'Mercados' },

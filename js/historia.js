@@ -149,7 +149,7 @@ export function logo(ctx, x, y, tam, color = CREMA) {
 // dura 24 horas y es lo unico que queda cuando se acaba. En gris tenue se
 // perdia contra el navy — ahora va en el dorado de la marca, sobre una linea
 // que la separa del resto.
-export const DIRECCION = 'elnumero.pages.dev';
+export const DIRECCION = 'elnumero.com.co';
 
 function pie(ctx) {
   logo(ctx, ANCHO / 2 - 30, ALTO - 290, 60);
