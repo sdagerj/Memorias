@@ -599,6 +599,32 @@ prueba('De una columna salen dos publicaciones distintas para el feed', async (b
     await p.locator('#pubTabs button').count() === 1);
 });
 
+prueba('El prompt de ideas pide lo que hace una columna de Stefy', async (b) => {
+  // buildIdeaPrompt no se exporta y su texto vive en numero.js: se lee de
+  // ahi directamente, que es exactamente lo que le llega a Claude.
+  const fs = require('fs');
+  const src = fs.readFileSync(require('path').join(RAIZ, 'js/numero.js'), 'utf8');
+  const desde = src.indexOf('function buildIdeaPrompt');
+  const hasta = src.indexOf('function buildCorrectionPrompt');
+  const prompt = src.slice(desde, hasta);
+
+  // Los cinco patrones que aparecen en todas las columnas publicadas.
+  comprobar('pide un numero pequeño y humano', /PEQUEÑO Y HUMANO/.test(prompt));
+  comprobar('pide las dos lecturas', /DOS LECTURAS/.test(prompt) && /LAS DOS LECTURAS —/.test(prompt));
+  comprobar('pide una puerta personal, sin inventarle la vida', /PUERTA PERSONAL/.test(prompt) && /nunca una anécdota inventada/.test(prompt));
+  comprobar('pide el contraste en el tiempo', /CONTRASTE EN EL TIEMPO/.test(prompt));
+  comprobar('pide el dato colombiano con fuente', /DATO COLOMBIANO/.test(prompt) && /no lo inventes/.test(prompt));
+  comprobar('pide cerrar con pregunta o reto', /CIERRA CON UNA PREGUNTA O UN RETO/.test(prompt));
+  comprobar('fija el largo real de sus columnas', /480 Y 600 PALABRAS/.test(prompt));
+  comprobar('exige fuente con nombre o POR VERIFICAR', /POR VERIFICAR/.test(prompt));
+  comprobar('los ejemplos son sus columnas de verdad', /Medici/.test(prompt) && /1,63/.test(prompt) && /Friends/.test(prompt));
+  comprobar('prohibe los menus largos', /No me des menús largos/.test(prompt));
+
+  // Arte y efemerides van siempre en la tanda: en cinco columnas no salieron.
+  comprobar('arte y efemérides van siempre en la tanda',
+    /for \(const fija of \['arte, museos y mercado del arte', 'efemérides y aniversarios'\]\)/.test(src));
+});
+
 prueba('Una frase que ya trae comillas no sale con comillas dobladas', async (b) => {
   const p = await nuevaPagina(b);
   const r = await p.evaluate(async () => {

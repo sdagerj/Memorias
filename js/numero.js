@@ -386,6 +386,11 @@ function canterasDeLaSemana(cuantas = 6) {
     semilla = (semilla * 1103515245 + 12345) % 2147483648;
     elegidas.push(pool.splice(semilla % pool.length, 1)[0]);
   }
+  // Arte y efemérides son canteras de la web que todavía no ha tocado: van
+  // siempre, para que la tanda las ofrezca aunque la rotación no las saque.
+  for (const fija of ['arte, museos y mercado del arte', 'efemérides y aniversarios']) {
+    if (!elegidas.includes(fija)) { elegidas.push(fija); pool.splice(pool.indexOf(fija), 1); }
+  }
   // Una al azar de verdad, para que dos tandas seguidas no sean idénticas.
   const resto = CANTERAS.filter((c) => !elegidas.includes(c));
   if (resto.length) elegidas.push(resto[Math.floor(Math.random() * resto.length)]);
@@ -446,16 +451,36 @@ REGLAS DE VARIEDAD — importan tanto como el resto:
 
 IMPORTANTE: Los ganchos deben ser de esta semana o los últimos días — no uses noticias viejas o genéricas. Si los titulares de arriba no son suficientes, complementa con tu conocimiento actualizado.
 
-Para cada candidato da: la cifra exacta, la cantera, el gancho de actualidad de esta semana (real y verificable), y el ángulo propio (cómo lo leería Stefy con su lente de economista, inversora, madre, mujer que construye).
+CÓMO ES UNA COLUMNA DE STEFY — sacado de las que ya publicó, no de teoría. Un candidato que no pueda cumplir esto no sirve por muy buena que sea la cifra:
+
+- EL NÚMERO ES PEQUEÑO Y HUMANO. Sus columnas fueron 300 (años de los Medici), 2/3 (dólares), 11 (minutos), 18 (años), 1,63 (hijos por mujer). Nunca «5 billones» ni un titular de portada: una cifra que cabe en una frase de la vida de alguien. Si el dato grande es el importante, tradúcelo a su versión pequeña («de cada 3 dólares, 2»).
+- EL NÚMERO ADMITE DOS LECTURAS. Es su firma: «quiero dos hijos» contra «solo me alcanza para dos»; usar la ola contra ser dueña de ella; primero alivio, luego «el alivio dura poco». Si la cifra solo se puede leer de una manera, es una noticia, no una columna.
+- HAY UNA PUERTA PERSONAL. Todas arrancan o pasan por una escena real de ella: caminar por Florencia, el primer hijo a los 28, ver Friends con su hija, enseñarles a sus hijos a pagar la cuenta, la suegra con 13 hermanos. Propón por dónde podría entrar ELLA — una escena verosímil de su vida (madre de dos adolescentes, economista, family office, Barranquilla, viaja con la familia, el linfoma y «vivir por el treinta») — nunca una anécdota inventada que ella tenga que fingir.
+- CONTRASTE EN EL TIEMPO O ENTRE GENERACIONES. 1950 → 2024; 2004 → 2020; abuelos → hijos; Medici → Instagram. Casi siempre el número cobra fuerza al ponerlo al lado de lo que era antes.
+- EL DATO COLOMBIANO AL LADO DEL GLOBAL. DANE, Banco de la República, tasa de usura, La Guajira contra Bogotá, un proyecto de ley con número. Lo global abre, lo local aterriza. Si no hay dato colombiano, dilo — no lo inventes.
+- CIERRA CON UNA PREGUNTA O UN RETO, no con una moraleja: «¿tú o tu teléfono?», «¿cuántos hijos habrías querido tener?», «deja de ser solo consumidora».
+- MIDE ENTRE 480 Y 600 PALABRAS. Un candidato que necesite más para explicarse es demasiado grande.
+
+Para cada candidato da, en este orden y con estos rótulos:
+NÚMERO — la cifra exacta, en su versión pequeña y humana.
+FUENTE — institución y documento con nombre (no «estudios dicen»). Si no la tienes segura, escribe «POR VERIFICAR» delante: es preferible a una fuente inventada.
+GANCHO — qué pasó esta semana que lo hace oportuno.
+LAS DOS LECTURAS — la lectura obvia y la lectura de Stefy, en una frase cada una.
+LA PUERTA — la escena de su vida por la que podría entrar.
+EL CONTRASTE — el antes y el ahora, o el aquí y el allá.
+EL DATO COLOMBIANO — con fuente, o «no encontré uno».
+EL CIERRE — la pregunta o el reto con el que terminaría.
 
 Luego córrelo por el TEST y marca sí/no en cada una:
 1. ¿Tiene gancho de actualidad de esta semana?
-2. ¿Solo Stefy lo contaría así? (ángulo propio)
-3. ¿Sorprende o revela algo?
-4. ¿Le deja algo útil a la audiencia?
+2. ¿Admite dos lecturas, y la segunda solo se le ocurriría a Stefy?
+3. ¿Tiene una puerta personal verosímil, sin inventarle la vida?
+4. ¿Le deja algo útil a la audiencia — una decisión, no un consejo?
 5. ¿Hay alguien con esa historia para entrevistar más adelante?
 
-Un número se gana la semana con mínimo 3 de 5. En empate, gana el del ángulo más filoso. Recomienda uno y explica por qué en dos líneas.`);
+Un número se gana la semana con mínimo 3 de 5. En empate, gana el que tenga las dos lecturas más separadas entre sí. Recomienda uno y explica por qué en dos líneas.
+
+No me des menús largos ni variantes de cada candidato: cuatro candidatos, completos, y una recomendación.`);
   return lines.join('\n');
 }
 
