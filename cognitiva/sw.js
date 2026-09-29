@@ -1,1 +1,12 @@
-if(!self.define){let e,s={};const i=(i,r)=>(i=new URL(i+".js",r).href,s[i]||new Promise(s=>{if("document"in self){const e=document.createElement("script");e.src=i,e.onload=s,document.head.appendChild(e)}else e=i,importScripts(i),s()}).then(()=>{let e=s[i];if(!e)throw new Error(`Module ${i} didn’t register its module`);return e}));self.define=(r,n)=>{const o=e||("document"in self?document.currentScript.src:"")||location.href;if(s[o])return;let l={};const t=e=>i(e,o),u={module:{uri:o},exports:l,require:t};s[o]=Promise.all(r.map(e=>u[e]||t(e))).then(e=>(n(...e),l))}}define(["./workbox-9c191d2f"],function(e){"use strict";self.skipWaiting(),e.clientsClaim(),e.precacheAndRoute([{url:"registerSW.js",revision:"6263242bc502ca67e69bd4ee92ba976d"},{url:"index.html",revision:"b940e48248d9e3dd1dfc53a5c3df2f06"},{url:"tipografia/source-serif-4-latin.woff2",revision:"6a682eb0234e3dc8ebb67f4aff0abd31"},{url:"iconos/icono.svg",revision:"6531c7fc1a60470d75f8b0f6732fea8d"},{url:"iconos/icono-mascara.svg",revision:"210646676ba0e920d493f4df2481b776"},{url:"assets/rolldown-runtime-hePW80VL.js",revision:null},{url:"assets/purify.es-ChwZkWde.js",revision:null},{url:"assets/index.es-DkqMRNTV.js",revision:null},{url:"assets/index-ByvOfaTA.js",revision:null},{url:"assets/index-B79UPAYB.css",revision:null},{url:"assets/html2canvas-DCcDvdvP.js",revision:null},{url:"assets/exportarPDF-BxkCrDWV.js",revision:null},{url:"assets/Progreso-G_CfWeUY.js",revision:null},{url:"iconos/icono-mascara.svg",revision:"210646676ba0e920d493f4df2481b776"},{url:"iconos/icono.svg",revision:"6531c7fc1a60470d75f8b0f6732fea8d"},{url:"manifest.webmanifest",revision:"43b5e7754b91b8684a97d032b77eae55"}],{}),e.cleanupOutdatedCaches(),e.registerRoute(new e.NavigationRoute(e.createHandlerBoundToURL("index.html")))});
+// Enfoque se mudó a https://sdagerj.github.io/Enfoque/.
+// Este service worker reemplaza al anterior, borra su caché y se retira.
+self.addEventListener('install', () => self.skipWaiting())
+self.addEventListener('activate', (evento) => {
+  evento.waitUntil((async () => {
+    const nombres = await caches.keys()
+    await Promise.all(nombres.filter((n) => n.includes('/Memorias/cognitiva/')).map((n) => caches.delete(n)))
+    await self.registration.unregister()
+    const ventanas = await self.clients.matchAll({ type: 'window' })
+    ventanas.forEach((v) => v.navigate('https://sdagerj.github.io/Enfoque/'))
+  })())
+})
