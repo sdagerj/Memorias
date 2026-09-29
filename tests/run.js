@@ -659,6 +659,22 @@ prueba('Una fuente con enlace inválido no llega a la web', async (b) => {
     };
   });
   comprobar('rechaza un enlace sin http', problemas.urlMala.length === 1);
+
+  // El audio de Spotify: se escribe en la cabecera y se valida que sea un episodio.
+  const audio = await p.evaluate(async () => {
+    const m = await import('./js/publicar.js');
+    const base = { numero: '1', gancho: 'T', fecha: '2026-01-01', resumen: 'Resumen de prueba largo', cantera: 'vida', editorial: 'X', fuentes: [] };
+    return {
+      conAudio: m.construirMarkdown({ ...base, audio: 'https://open.spotify.com/episode/3HUspxeHwX3oy6X4n4ATYM?si=x' }),
+      sinAudio: m.construirMarkdown(base),
+      malo: m.problemasParaPublicar({ ...base, audio: 'https://youtube.com/watch?v=abc' }),
+      bueno: m.problemasParaPublicar({ ...base, audio: 'https://open.spotify.com/episode/3HUspxeHwX3oy6X4n4ATYM' }),
+    };
+  });
+  comprobar('el audio va a la cabecera del archivo', /^audio: "https:\/\/open\.spotify\.com\/episode\/3HUspxeHwX3oy6X4n4ATYM\?si=x"$/m.test(audio.conAudio), audio.conAudio.split('\n').find((l) => l.startsWith('audio')) || '(sin linea audio)');
+  comprobar('sin audio no se escribe la linea', !/^audio:/m.test(audio.sinAudio));
+  comprobar('rechaza un audio que no es de Spotify', audio.malo.length === 1, audio.malo.join(' '));
+  comprobar('acepta un episodio de Spotify', audio.bueno.length === 0, audio.bueno.join(' '));
   comprobar('rechaza una fuente sin institución', problemas.sinNombre.length === 1);
   comprobar('permite publicar sin fuentes', problemas.vacia.length === 0);
 });

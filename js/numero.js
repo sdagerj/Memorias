@@ -123,6 +123,7 @@ async function openNumero(id) {
       fuentes: [],
       medioNombre: '',
       medioUrl: '',
+      audio: '',
       borrador: false,
       createdAt: new Date().toISOString(),
     };
@@ -143,6 +144,7 @@ function populateEditor(n) {
   $('#numFecha').value = n.fecha || hoyISO();
   $('#numMedioNombre').value = n.medioNombre || '';
   $('#numMedioUrl').value = n.medioUrl || '';
+  $('#numAudio').value = n.audio || '';
   $('#numBorrador').checked = Boolean(n.borrador);
   renderFuentes(n.fuentes || []);
   actualizarCuentaResumen();
@@ -162,6 +164,7 @@ function readEditor() {
     fuentes: leerFuentes(),
     medioNombre: $('#numMedioNombre')?.value.trim() || '',
     medioUrl: $('#numMedioUrl')?.value.trim() || '',
+    audio: $('#numAudio')?.value.trim() || '',
     borrador: Boolean($('#numBorrador')?.checked),
   };
 }

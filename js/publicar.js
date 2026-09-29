@@ -137,6 +137,9 @@ export function construirMarkdown(entrega) {
     if ((entrega.medioUrl || '').trim()) l.push(`  url: ${yamlStr(entrega.medioUrl)}`);
   }
 
+  // El episodio de Spotify, si lo hay: la web pinta el reproductor bajo el titulo.
+  if ((entrega.audio || '').trim()) l.push(`audio: ${yamlStr(entrega.audio.trim())}`);
+
   if (entrega.borrador) l.push('borrador: true');
 
   l.push('---');
@@ -171,6 +174,11 @@ export function problemasParaPublicar(entrega) {
     if (!t(f.nombre) && (t(f.documento) || url)) {
       faltan.push('Hay una fuente sin nombre de institución.');
     }
+  }
+
+  const audio = t(entrega.audio);
+  if (audio && !/(?:open\.spotify\.com\/(?:embed\/)?episode\/|spotify:episode:)[A-Za-z0-9]{16,32}/.test(audio)) {
+    faltan.push('El enlace del audio tiene que ser de un episodio de Spotify (open.spotify.com/episode/…).');
   }
 
   const mUrl = t(entrega.medioUrl);
