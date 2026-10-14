@@ -647,6 +647,46 @@ prueba('Una frase que ya trae comillas no sale con comillas dobladas', async (b)
   comprobar('vacía se queda vacía', r.vacia === '', r.vacia);
 });
 
+prueba('Republicar no crea una copia aunque la web haya renombrado el archivo', async (b) => {
+  const p = await nuevaPagina(b);
+  // GitHub de mentira: la columna existe en la web como 2026-09-23-… (fecha
+  // corregida alli), pero la app recuerda 2026-08-22-… y tiene fecha vieja.
+  const escrituras = [];
+  await p.route('https://api.github.com/**', (route) => {
+    const u = new URL(route.request().url());
+    const m = route.request().method();
+    if (m === 'PUT') { escrituras.push({ ruta: u.pathname, cuerpo: JSON.parse(route.request().postData()) }); return route.fulfill({ status: 200, body: '{}' }); }
+    if (u.pathname.endsWith('/contents/src/content/editoriales')) {
+      return route.fulfill({ status: 200, body: JSON.stringify([
+        { name: '2026-09-23-cuantos-hijos-habrias-querido-tener.md' },
+        { name: '2026-09-16-18-anos-y-nadie-te-enseno.md' },
+      ]) });
+    }
+    if (u.pathname.endsWith('2026-09-23-cuantos-hijos-habrias-querido-tener.md')) return route.fulfill({ status: 200, body: '{"sha":"abc"}' });
+    return route.fulfill({ status: 404, body: '{}' });
+  });
+  const r = await p.evaluate(async () => {
+    const m = await import('./js/publicar.js');
+    const entrega = {
+      numero: '1.63', gancho: '¿Cuántos hijos habrías querido tener?', editorial: 'Texto.',
+      resumen: 'Un resumen de prueba suficientemente largo', cantera: 'mujeres',
+      fecha: '2026-08-22', fuentes: [], webArchivo: '2026-08-22-cuantos-hijos-habrias-querido-tener.md',
+    };
+    const out = await m.publicarEnLaWeb(entrega, 'github_pat_' + 'x'.repeat(30));
+    return { archivo: out.archivo, actualizado: out.actualizado, fechaWeb: out.fechaWeb, slug: m.slugDeArchivo('2026-09-23-cuantos-hijos.md') };
+  });
+  comprobar('encuentra la columna por el título aunque el nombre recordado no exista',
+    r.archivo === '2026-09-23-cuantos-hijos-habrias-querido-tener.md', r.archivo);
+  comprobar('la actualiza en vez de crear otra', r.actualizado === true);
+  comprobar('escribe UNA sola vez y sobre el archivo bueno',
+    escrituras.length === 1 && escrituras[0].ruta.endsWith('2026-09-23-cuantos-hijos-habrias-querido-tener.md'), escrituras.map((e) => e.ruta).join(' '));
+  comprobar('manda el sha: es una actualización, no un archivo nuevo', escrituras[0]?.cuerpo?.sha === 'abc');
+  const md = Buffer.from(escrituras[0]?.cuerpo?.content || '', 'base64').toString('utf8');
+  comprobar('conserva la fecha de la web, no la vieja de la app', /^fecha: 2026-09-23$/m.test(md) && !/2026-08-22/.test(md));
+  comprobar('devuelve la fecha de la web para que la app la adopte', r.fechaWeb === '2026-09-23', String(r.fechaWeb));
+  comprobar('slugDeArchivo quita la fecha y la extensión', r.slug === 'cuantos-hijos');
+});
+
 prueba('Una fuente con enlace inválido no llega a la web', async (b) => {
   const p = await nuevaPagina(b);
   const problemas = await p.evaluate(async () => {

@@ -114,7 +114,7 @@ export function construirMarkdown(entrega) {
   l.push('---');
   l.push(`numero: ${yamlStr(entrega.numero)}`);
   l.push(`titulo: ${yamlStr(entrega.gancho)}`);
-  l.push(`fecha: ${entrega.fecha}`);
+  l.push(`fecha: ${entrega.fechaWeb || entrega.fecha}`);
   l.push(`resumen: ${yamlStr(entrega.resumen)}`);
   l.push(`cantera: ${entrega.cantera}`);
 
@@ -243,7 +243,29 @@ async function shaExistente(archivo, token) {
   return json.sha || null;
 }
 
-// Devuelve { url, archivo, actualizado } o lanza un Error con texto en español.
+// La parte del nombre que no es la fecha: «2026-09-23-cuantos-hijos.md» → «cuantos-hijos».
+export function slugDeArchivo(archivo) {
+  return String(archivo || '').replace(/^\d{4}-\d{2}-\d{2}-/, '').replace(/\.md$/, '');
+}
+
+// Si la columna ya esta en la web con OTRO nombre —porque alli se le corrigio
+// la fecha, que va en el nombre del archivo—, se encuentra por el titulo. Sin
+// esto, republicar desde la app creaba una segunda copia de la misma columna;
+// paso con «¿Cuantos hijos habrias querido tener?».
+export async function buscarArchivoPorTitulo(titulo, token) {
+  const slug = slugify(titulo);
+  if (!slug) return null;
+  const res = await gh(`/repos/${REPO}/contents/${CARPETA}?ref=${RAMA}`, token);
+  if (!res.ok) return null;
+  const lista = await res.json();
+  const iguales = (Array.isArray(lista) ? lista : [])
+    .map((f) => f.name)
+    .filter((n) => n.endsWith('.md') && slugDeArchivo(n) === slug);
+  // Si hubiera dos con el mismo titulo no se adivina: se deja al nombre normal.
+  return iguales.length === 1 ? iguales[0] : null;
+}
+
+// Devuelve { url, archivo, actualizado, fechaWeb } o lanza un Error con texto en español.
 export async function publicarEnLaWeb(entrega, token) {
   const problema = describeTokenProblem(token);
   if (problema) throw new Error(problema);
@@ -251,9 +273,20 @@ export async function publicarEnLaWeb(entrega, token) {
   const faltan = problemasParaPublicar(entrega);
   if (faltan.length) throw new Error(faltan.join(' '));
 
-  const archivo = entrega.webArchivo || nombreArchivo(entrega.fecha, entrega.gancho);
-  const contenido = construirMarkdown(entrega);
-  const sha = await shaExistente(archivo, token);
+  let archivo = entrega.webArchivo || nombreArchivo(entrega.fecha, entrega.gancho);
+  let sha = await shaExistente(archivo, token);
+  if (!sha) {
+    // El nombre recordado (o el calculado) no existe: antes de crear uno nuevo,
+    // se mira si la misma columna ya esta con otra fecha en el nombre.
+    const otro = await buscarArchivoPorTitulo(entrega.gancho, token);
+    if (otro) { archivo = otro; sha = await shaExistente(otro, token); }
+  }
+  // La fecha va en el nombre del archivo. Si en la web se corrigio, manda la de
+  // la web: si no, la columna volveria a hundirse en el archivo con la fecha
+  // vieja de la app. Se devuelve para que la app se la guarde.
+  const fechaArchivo = (archivo.match(/^(\d{4}-\d{2}-\d{2})-/) || [])[1];
+  const fechaWeb = sha && fechaArchivo && fechaArchivo !== entrega.fecha ? fechaArchivo : null;
+  const contenido = construirMarkdown(fechaWeb ? { ...entrega, fechaWeb } : entrega);
 
   const res = await gh(`/repos/${REPO}/contents/${CARPETA}/${archivo}`, token, {
     method: 'PUT',
@@ -275,6 +308,7 @@ export async function publicarEnLaWeb(entrega, token) {
 
   return {
     archivo,
+    fechaWeb,
     actualizado: Boolean(sha),
     borrador: Boolean(entrega.borrador),
     // Un borrador no genera pagina: dar su direccion seria mandar a un 404.
