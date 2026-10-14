@@ -1200,7 +1200,15 @@ function showNumPrintOverlay(contentHtml) {
     btn.textContent = 'Publicando…';
     try {
       const r = await publicarEnLaWeb(entrega, token);
-      currentNumero = { ...currentNumero, webArchivo: r.archivo, webPublicadoEn: new Date().toISOString() };
+      currentNumero = {
+        ...currentNumero,
+        webArchivo: r.archivo,
+        // Si la web tenia otra fecha (corregida alli), la app la adopta: asi
+        // las dos dicen lo mismo y la proxima vez no hay nada que conciliar.
+        ...(r.fechaWeb ? { fecha: r.fechaWeb } : {}),
+        webPublicadoEn: new Date().toISOString(),
+      };
+      if (r.fechaWeb) { const f = $('#numFecha'); if (f) f.value = r.fechaWeb; }
       await db.saveNumber(currentNumero);
       mostrarEstadoPublicacion(currentNumero);
       await renderNumerosList();
@@ -1209,6 +1217,7 @@ function showNumPrintOverlay(contentHtml) {
         r.borrador
           ? 'Subido como BORRADOR.\n\nQueda guardado en la web pero no se ve, y todavía no tiene dirección propia.\n\nCuando lo quieras publicar de verdad: desmarca la casilla de borrador y vuelve a darle a Publicar.'
           : (r.actualizado ? 'Actualizado.' : '¡Publicado!') +
+            (r.fechaWeb ? `\n\nOjo: en la web esta columna tiene fecha ${r.fechaWeb}, distinta de la que tenía aquí. Se conservó la de la web y la app ya la adoptó.` : '') +
             '\n\nLa web tarda un par de minutos en reconstruirse. Después estará en:\n' + r.url
       );
     } catch (e) {
