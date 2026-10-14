@@ -275,17 +275,20 @@ export async function publicarEnLaWeb(entrega, token) {
 
   let archivo = entrega.webArchivo || nombreArchivo(entrega.fecha, entrega.gancho);
   let sha = await shaExistente(archivo, token);
+  let renombrado = false;
   if (!sha) {
     // El nombre recordado (o el calculado) no existe: antes de crear uno nuevo,
     // se mira si la misma columna ya esta con otra fecha en el nombre.
     const otro = await buscarArchivoPorTitulo(entrega.gancho, token);
-    if (otro) { archivo = otro; sha = await shaExistente(otro, token); }
+    if (otro) { archivo = otro; sha = await shaExistente(otro, token); renombrado = true; }
   }
-  // La fecha va en el nombre del archivo. Si en la web se corrigio, manda la de
-  // la web: si no, la columna volveria a hundirse en el archivo con la fecha
-  // vieja de la app. Se devuelve para que la app se la guarde.
+  // Si el archivo se renombro en la web fue para corregirle la fecha, y esa
+  // fecha manda: si no, la columna volveria a hundirse en el archivo con la
+  // vieja de la app. SOLO en ese caso. Un archivo que conserva su nombre puede
+  // tener la fecha cambiada por dentro (la 300 se llama 08-21 y es del 01-09),
+  // y ahi la fecha buena es la de la app, como siempre.
   const fechaArchivo = (archivo.match(/^(\d{4}-\d{2}-\d{2})-/) || [])[1];
-  const fechaWeb = sha && fechaArchivo && fechaArchivo !== entrega.fecha ? fechaArchivo : null;
+  const fechaWeb = renombrado && fechaArchivo && fechaArchivo !== entrega.fecha ? fechaArchivo : null;
   const contenido = construirMarkdown(fechaWeb ? { ...entrega, fechaWeb } : entrega);
 
   const res = await gh(`/repos/${REPO}/contents/${CARPETA}/${archivo}`, token, {

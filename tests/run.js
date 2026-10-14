@@ -685,6 +685,28 @@ prueba('Republicar no crea una copia aunque la web haya renombrado el archivo', 
   comprobar('conserva la fecha de la web, no la vieja de la app', /^fecha: 2026-09-23$/m.test(md) && !/2026-08-22/.test(md));
   comprobar('devuelve la fecha de la web para que la app la adopte', r.fechaWeb === '2026-09-23', String(r.fechaWeb));
   comprobar('slugDeArchivo quita la fecha y la extensión', r.slug === 'cuantos-hijos');
+
+  // El caso de la 300: el archivo conserva su nombre (08-21) pero la fecha
+  // buena es la de la app (01-09). Aqui NO debe mandar el nombre.
+  escrituras.length = 0;
+  await p.unroute('https://api.github.com/**');
+  await p.route('https://api.github.com/**', (route) => {
+    const u = new URL(route.request().url());
+    if (route.request().method() === 'PUT') { escrituras.push({ cuerpo: JSON.parse(route.request().postData()) }); return route.fulfill({ status: 200, body: '{}' }); }
+    if (u.pathname.endsWith('2026-08-21-no-pretendas-ser-lo-que-no-eres.md')) return route.fulfill({ status: 200, body: '{"sha":"s300"}' });
+    return route.fulfill({ status: 404, body: '{}' });
+  });
+  const r2 = await p.evaluate(async () => {
+    const m = await import('./js/publicar.js');
+    const out = await m.publicarEnLaWeb({
+      numero: '300', gancho: 'No pretendas ser lo que no eres', editorial: 'Texto.',
+      resumen: 'Un resumen de prueba suficientemente largo', cantera: 'vida',
+      fecha: '2026-09-01', fuentes: [], webArchivo: '2026-08-21-no-pretendas-ser-lo-que-no-eres.md',
+    }, 'github_pat_' + 'x'.repeat(30));
+    return { fechaWeb: out.fechaWeb, archivo: out.archivo };
+  });
+  const md2 = Buffer.from(escrituras[0]?.cuerpo?.content || '', 'base64').toString('utf8');
+  comprobar('si el archivo conserva su nombre, manda la fecha de la app', /^fecha: 2026-09-01$/m.test(md2) && r2.fechaWeb === null, `fechaWeb=${r2.fechaWeb}`);
 });
 
 prueba('Una fuente con enlace inválido no llega a la web', async (b) => {
