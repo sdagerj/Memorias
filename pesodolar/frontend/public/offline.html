@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PesoDólar — Sin conexión</title>
+  <style>
+    body { background: #0A0F18; color: #D8D2C6; font-family: monospace;
+           display: flex; flex-direction: column; align-items: center;
+           justify-content: center; min-height: 100vh; margin: 0; text-align: center; }
+    .logo { color: #C49B3C; font-size: 20px; font-weight: 700; margin-bottom: 16px; }
+    p { color: #7A8C9E; font-size: 13px; line-height: 1.6; max-width: 280px; }
+    button { margin-top: 24px; background: #C49B3C; border: none; border-radius: 6px;
+             padding: 10px 20px; color: #000; font-family: monospace; font-weight: 600;
+             font-size: 13px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="logo">💹 PesoDólar</div>
+  <p>Sin conexión a internet.<br>Los últimos datos se mostrarán cuando se restablezca la conexión.</p>
+  <button onclick="window.location.reload()">Reintentar</button>
+</body>
+</html>
