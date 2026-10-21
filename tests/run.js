@@ -647,6 +647,56 @@ prueba('Una frase que ya trae comillas no sale con comillas dobladas', async (b)
   comprobar('vacía se queda vacía', r.vacia === '', r.vacia);
 });
 
+prueba('Publicar con fecha vieja avisa y ofrece la fecha de hoy', async (b) => {
+  const p = await nuevaPagina(b);
+  // Llave de GitHub de mentira, para llegar a la ventana de confirmacion.
+  await p.evaluate(async () => {
+    const m = await import('./js/publicar.js');
+    await m.setGithubToken('github_pat_' + 'x'.repeat(30));
+  });
+  const escrituras = [];
+  await p.route('https://api.github.com/**', (route) => {
+    const u = new URL(route.request().url());
+    if (route.request().method() === 'PUT') { escrituras.push(u.pathname); return route.fulfill({ status: 200, body: '{}' }); }
+    if (u.pathname.endsWith('/contents/src/content/editoriales')) return route.fulfill({ status: 200, body: '[]' });
+    return route.fulfill({ status: 404, body: '{}' });
+  });
+  await p.click('.tab[data-view="numero"]'); await p.waitForTimeout(500);
+  await p.click('#newNumeroBtn'); await p.waitForTimeout(300);
+  await p.fill('#numNumero', '-4%');
+  await p.fill('#numGancho', 'Más restaurantes, menos consumo');
+  await p.fill('#numEditorial', 'Un texto de prueba.');
+  await p.fill('#numResumen', 'Un resumen suficientemente largo para pasar.');
+  await p.selectOption('#numCantera', 'mercados');
+  await p.fill('#numFecha', '2026-09-23');   // hace semanas
+
+  await p.click('#numPublicarBtn'); await p.waitForTimeout(800);
+  comprobar('abre la ventana de confirmar', await p.locator('#numPubOverlay').count() === 1);
+  comprobar('avisa de que la fecha es vieja', await p.locator('#numPubOverlay .pub-aviso').count() === 1);
+  comprobar('dice que no abrirá la portada', /no abrirá la portada/.test(await p.locator('.pub-aviso').innerText()));
+  comprobar('ofrece publicar con la fecha de hoy', await p.locator('#numPubHoy').count() === 1);
+
+  const hoy = await p.evaluate(() => {
+    const d = new Date(); const off = d.getTimezoneOffset() * 60000;
+    return new Date(d.getTime() - off).toISOString().slice(0, 10);
+  });
+  await p.click('#numPubHoy'); await p.waitForTimeout(1200);
+  comprobar('publica con el nombre de archivo de hoy', escrituras.length === 1 && escrituras[0].includes(`/${hoy}-mas-restaurantes`), escrituras.join(' '));
+  comprobar('la casilla de fecha queda en hoy', await p.inputValue('#numFecha') === hoy);
+
+  // Con fecha de hoy no hay aviso. Pagina nueva: la anterior se quedo en el
+  // editor y el boton de «Nueva entrega» no esta a la vista.
+  const q = await nuevaPagina(b);
+  await q.evaluate(async () => { const m = await import('./js/publicar.js'); await m.setGithubToken('github_pat_' + 'x'.repeat(30)); });
+  await q.click('.tab[data-view="numero"]'); await q.waitForTimeout(500);
+  await q.click('#newNumeroBtn'); await q.waitForTimeout(300);
+  await q.fill('#numNumero', '7'); await q.fill('#numGancho', 'Otra'); await q.fill('#numEditorial', 'Texto.');
+  await q.fill('#numResumen', 'Un resumen suficientemente largo para pasar.'); await q.selectOption('#numCantera', 'vida');
+  await q.click('#numPublicarBtn'); await q.waitForTimeout(800);
+  comprobar('con fecha de hoy no avisa', await q.locator('#numPubOverlay').count() === 1 && await q.locator('.pub-aviso').count() === 0);
+  await q.click('#numPubCancel');
+});
+
 prueba('Republicar no crea una copia aunque la web haya renombrado el archivo', async (b) => {
   const p = await nuevaPagina(b);
   // GitHub de mentira: la columna existe en la web como 2026-09-23-… (fecha

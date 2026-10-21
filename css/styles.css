@@ -835,6 +835,14 @@ h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; }
 }
 .overlay-card h3 { margin: 0 0 6px; }
 
+/* El aviso de fecha vieja dentro de la ventana de publicar. */
+.pub-aviso {
+  margin: 10px 0 12px; padding: 10px 12px; border-radius: 8px;
+  background: #fff4e5; border: 1px solid #f0c27a; color: #5a3b00;
+  font-size: 0.92rem; line-height: 1.45;
+}
+.pub-aviso .btn { display: block; width: 100%; }
+
 .pub-resumen {
   display: grid; grid-template-columns: auto 1fr; gap: 6px 14px;
   margin: 14px 0 0; font-size: 0.95rem;
