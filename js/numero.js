@@ -1087,9 +1087,22 @@ function showNumPrintOverlay(contentHtml) {
     document.getElementById('numPubOverlay')?.remove();
   }
 
+  // Dias entre la fecha de la entrega y hoy. Positivo = la fecha es del pasado.
+  function diasDesde(fechaISO) {
+    const f = new Date(`${fechaISO}T12:00:00`);
+    const hoy = new Date(`${hoyISO()}T12:00:00`);
+    return Math.round((hoy - f) / 86400000);
+  }
+
+  // Resuelve true (publicar), false (cancelar) o 'hoy' (publicar con la fecha
+  // de hoy). Lo tercero existe porque la portada enseña la columna mas reciente
+  // POR FECHA: una columna nueva con fecha vieja se hunde en el archivo sin
+  // que nadie la vea. Ya paso dos veces.
   function pedirConfirmacion(entrega, markdown, archivo, yaEstaba) {
     return new Promise((resolve) => {
       cerrarVistaPrevia();
+      const atras = diasDesde(entrega.fecha);
+      const fechaVieja = !yaEstaba && !entrega.borrador && atras > 7;
       const ov = document.createElement('div');
       ov.id = 'numPubOverlay';
       ov.className = 'overlay';
@@ -1097,6 +1110,13 @@ function showNumPrintOverlay(contentHtml) {
         <div class="overlay-card">
           <h3>${yaEstaba ? 'Actualizar en la web' : 'Publicar en la web'}</h3>
           <p class="muted">Esto queda ${entrega.borrador ? 'escrito en la web sin verse (borrador)' : 'a la vista de cualquiera'}. Revisa antes de confirmar.</p>
+          ${fechaVieja ? `
+          <div class="pub-aviso">
+            <strong>⚠️ La fecha es de hace ${atras} días.</strong>
+            La portada muestra la columna más reciente por fecha: con <strong>${escHtml(entrega.fecha)}</strong>
+            esta columna <strong>no abrirá la portada</strong> y quedará escondida en el archivo.
+            <button type="button" id="numPubHoy" class="btn num-btn-primary" style="margin-top:8px">Publicar con la fecha de hoy (${hoyISO()})</button>
+          </div>` : ''}
           <dl class="pub-resumen">
             <dt>Número</dt><dd>${escHtml(entrega.numero)}</dd>
             <dt>Título</dt><dd>${escHtml(entrega.gancho)}</dd>
@@ -1116,6 +1136,7 @@ function showNumPrintOverlay(contentHtml) {
         </div>`;
       document.body.appendChild(ov);
       const cerrar = (v) => { cerrarVistaPrevia(); resolve(v); };
+      ov.querySelector('#numPubHoy')?.addEventListener('click', () => cerrar('hoy'));
       ov.querySelector('#numPubOk').addEventListener('click', () => cerrar(true));
       ov.querySelector('#numPubCancel').addEventListener('click', () => cerrar(false));
       ov.addEventListener('click', (e) => { if (e.target === ov) cerrar(false); });
@@ -1159,7 +1180,7 @@ function showNumPrintOverlay(contentHtml) {
 
   $('#numPublicarBtn')?.addEventListener('click', async () => {
     const btn = $('#numPublicarBtn');
-    const entrega = { ...currentNumero, ...readEditor() };
+    let entrega = { ...currentNumero, ...readEditor() };
     $('#numPublicarEstado').textContent = '';
 
     const faltan = problemasParaPublicar(entrega);
@@ -1178,12 +1199,23 @@ function showNumPrintOverlay(contentHtml) {
     await db.saveNumber(currentNumero);
     await clearDraft();
 
-    const archivo = entrega.webArchivo || nombreArchivo(entrega.fecha, entrega.gancho);
-    const markdown = construirMarkdown(entrega);
+    let archivo = entrega.webArchivo || nombreArchivo(entrega.fecha, entrega.gancho);
+    let markdown = construirMarkdown(entrega);
     const token = await getGithubToken();
 
     if (!token) { ofrecerArchivoAMano(markdown, archivo); return; }
-    if (!(await pedirConfirmacion(entrega, markdown, archivo, Boolean(entrega.webArchivo)))) return;
+    const respuesta = await pedirConfirmacion(entrega, markdown, archivo, Boolean(entrega.webArchivo));
+    if (!respuesta) return;
+    if (respuesta === 'hoy') {
+      // Ella eligio la fecha de hoy: se cambia en la entrega, en la casilla y
+      // en lo guardado, y el archivo se vuelve a armar con el nombre nuevo.
+      entrega = { ...entrega, fecha: hoyISO() };
+      const f = $('#numFecha'); if (f) f.value = entrega.fecha;
+      currentNumero = entrega;
+      await db.saveNumber(currentNumero);
+      archivo = nombreArchivo(entrega.fecha, entrega.gancho);
+      markdown = construirMarkdown(entrega);
+    }
 
     btn.disabled = true;
     const etiqueta = btn.textContent;
