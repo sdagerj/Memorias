@@ -430,6 +430,66 @@ prueba('La revisión mide qué tan trabajado está el número elegido', async (b
   comprobar('pregunta si otra cifra aguanta mejor', /aguantaría mejor el peso/i.test(prompt));
 });
 
+prueba('Los otros cuatro botones hablan a las mismas lectoras que el de ideas', async (b) => {
+  // Sin API key, el prompt aparece en la casilla para copiarlo: eso es lo que se lee.
+  const p = await nuevaPagina(b);
+  await p.addInitScript(() => Object.defineProperty(navigator, 'clipboard', {
+    get() { return { writeText: () => Promise.reject(new DOMException('x')) }; },
+  }));
+  const p2 = await nuevaPagina(b);
+  await p2.click('.tab[data-view="numero"]'); await p2.waitForTimeout(500);
+  await p2.click('#newNumeroBtn'); await p2.waitForTimeout(300);
+  await p2.fill('#numNumero', '52,4%');
+  await p2.fill('#numGancho', 'Peleamos por llegar a las juntas');
+  await p2.fill('#numEditorial', 'Un texto con una cifra.');
+  const prompts = {};
+  for (const [btn, paste] of [
+    ['#numCorreccionBtn', '#numCorreccionPaste'],
+    ['#numRevisionBtn', '#numRevisionPaste'],
+    ['#numMontajeBtn', '#numMontajePaste'],
+    ['#numPodcastBtn', '#numPodcastPaste'],
+  ]) {
+    await p2.click(btn); await p2.waitForTimeout(1000);
+    prompts[btn] = await p2.inputValue(paste);
+  }
+
+  // La base comun: quien escribe, para quien y con que voz, igual que en Idear.
+  for (const [btn, texto] of Object.entries(prompts)) {
+    comprobar(`${btn} dice quién escribe`, texto.includes('Stephanie Dager Jassir, economista de Barranquilla'));
+    comprobar(`${btn} dice para quién`, texto.includes('30–65 años') && texto.includes('decidir sobre capital'));
+    comprobar(`${btn} pide que no suene a IA ni a coach`, texto.includes('no suene a IA ni a coach'));
+    comprobar(`${btn} no asume maternidad ni patrimonio`, /maternidad, el matrimonio o el patrimonio/.test(texto));
+    comprobar(`${btn} no lleva la descripción vieja`, !texto.includes('Mujeres que están construyendo algo'));
+  }
+
+  // Corregir: el formato de cifra del manual cuenta como correccion.
+  comprobar('Corregir pide coma decimal y punto de miles', /coma decimal \(52,4%\) y punto de miles \(1\.250\)/.test(prompts['#numCorreccionBtn']));
+  comprobar('Corregir tiene el motivo «formato de cifra»', prompts['#numCorreccionBtn'].includes('formato de cifra'));
+
+  // Revisar: avisa si suena a clase o a coach.
+  comprobar('Revisar pregunta si suena a clase, a coach o a IA', /suena a clase, a coach o a IA/.test(prompts['#numRevisionBtn']));
+  comprobar('Revisar pregunta si se quedó en educación financiera básica', /educación financiera básica/.test(prompts['#numRevisionBtn']));
+
+  // Textos para redes: las reglas de LinkedIn, el carrusel y el reel del manual.
+  const redes = prompts['#numMontajeBtn'];
+  comprobar('LinkedIn: primera línea = el número', /Primera línea = el número/.test(redes));
+  comprobar('LinkedIn: entre 120 y 250 palabras', /120 y 250 palabras/.test(redes));
+  comprobar('LinkedIn: #ElNúmero primero', /#ElNúmero primero/.test(redes));
+  comprobar('Sin emojis', /Sin emojis/.test(redes));
+  comprobar('Carrusel: 6 a 10 láminas de 25 palabras', /6 a 10 láminas/.test(redes) && /25 palabras/.test(redes));
+  comprobar('Carrusel cierra con Suscríbete en elnumero.com.co', /Suscríbete en elnumero\.com\.co/.test(redes));
+  comprobar('Reel: gancho de 0–3 s con la cifra sobreimpresa', /0–3 s · Gancho/.test(redes) && /sobreimpresa/.test(redes));
+  comprobar('Reel: la fuente va en la descripción', /La fuente va en la descripción, no en pantalla/.test(redes));
+  comprobar('Pie de Instagram con Léela en elnumero.com.co', /Léela en elnumero\.com\.co/.test(redes));
+  comprobar('Ya no pide la columna para periódico local', !/periódico local/.test(redes));
+  comprobar('Lleva el texto y el destaque', redes.includes('Un texto con una cifra.'));
+
+  // Podcast: la persona detras del numero, sin nombres inventados.
+  comprobar('Podcast busca a la persona detrás del número', /LA PERSONA DETRÁS DEL NÚMERO/.test(prompts['#numPodcastBtn']));
+  comprobar('Podcast prohíbe nombres inventados', /Nada de nombres inventados/.test(prompts['#numPodcastBtn']));
+  comprobar('Podcast pide la pregunta que solo ella haría', /qué pregunta le haría yo que nadie más/.test(prompts['#numPodcastBtn']));
+});
+
 prueba('La historia sale en 1080x1920 y con la marca', async (b) => {
   const p = await nuevaPagina(b);
   await p.click('.tab[data-view="numero"]'); await p.waitForTimeout(500);
