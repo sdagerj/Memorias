@@ -354,63 +354,93 @@ REGLAS
 - LinkedIn no es lo mismo que el carrusel: otro registro (insight en primera persona, no historia ilustrada).
 - Cuando corrijas, sugiere y mejora; no reescribas todo salvo que te lo pidan.`;
 
-// Las ideas salían repetitivas porque el prompt pedía siempre las mismas cinco
-// canteras. Con una lista más ancha y una rotación por semana, cada tanda parte
-// de terrenos distintos.
-const CANTERAS = [
-  'mercados y economía',
-  'arte, museos y mercado del arte',
-  'mujeres y liderazgo',
-  'vida cotidiana y observación propia',
-  'efemérides y aniversarios',
-  'ciencia, salud y longevidad',
-  'tecnología y su efecto en el trabajo',
-  'demografía: natalidad, migración, envejecimiento',
-  'consumo, precios y canasta familiar',
-  'deporte y alto rendimiento',
-  'música, cine y cultura popular',
-  'ciudad, vivienda y movilidad',
-  'educación y brecha de habilidades',
-  'medio ambiente y transición energética',
-  'historia con eco en el presente',
-  'gastronomía y agroindustria',
-  'moda y negocio de la imagen',
-  'psicología, tiempo y atención',
-];
+// El prompt de ideas es de Stefy, palabra por palabra: lo escribio ella
+// despues de diez columnas, con lo que ya sabe que funciona y lo que no.
+// Aqui no se le cambia nada; solo se le anade el contexto que la app tiene y
+// ella no tendria que pegar a mano: sus recuerdos recientes, las noticias y
+// las columnas ya publicadas.
+const PROMPT_IDEAS = `Eres mi editora de ideas para El Número ("un número · una historia"), mi columna semanal (El Universal, elnumero.com.co, YouTube @StephanieDagerElNumero, Instagram @yomevoyconel30, Spotify).
 
-// Rotación estable dentro de la misma semana (para que no cambie a cada toque)
-// pero distinta cada semana, con algo de azar para que no sea previsible.
-function canterasDeLaSemana(cuantas = 6) {
-  const semana = Math.floor(Date.now() / (7 * 86400000));
-  const pool = [...CANTERAS];
-  const elegidas = [];
-  let semilla = semana * 2654435761 % 4294967296;
-  while (elegidas.length < cuantas && pool.length) {
-    semilla = (semilla * 1103515245 + 12345) % 2147483648;
-    elegidas.push(pool.splice(semilla % pool.length, 1)[0]);
-  }
-  // Arte y efemérides son canteras de la web que todavía no ha tocado: van
-  // siempre, para que la tanda las ofrezca aunque la rotación no las saque.
-  for (const fija of ['arte, museos y mercado del arte', 'efemérides y aniversarios']) {
-    if (!elegidas.includes(fija)) { elegidas.push(fija); pool.splice(pool.indexOf(fija), 1); }
-  }
-  // Una al azar de verdad, para que dos tandas seguidas no sean idénticas.
-  const resto = CANTERAS.filter((c) => !elegidas.includes(c));
-  if (resto.length) elegidas.push(resto[Math.floor(Math.random() * resto.length)]);
-  return elegidas;
+QUIÉN SOY
+Stephanie Dager Jassir, economista de Barranquilla, 20+ años en finanzas e inversión, gerente de un family office, presidenta de junta de un fondo de capital privado, inversionista en arte, mamá de dos. Escribo en primera persona, directa, cálida, con datos.
+
+PARA QUIÉN ESCRIBO
+Mujeres profesionales de habla hispana, 30–65 años, que ya generan ingresos y están entrando a decidir sobre capital. "No están aprendiendo a ahorrar, están aprendiendo a decidir." No es educación financiera básica: las trato como mujeres integrales (dinero, poder, familia, cuerpo, propósito).
+
+LO QUE YA SÉ QUE FUNCIONA
+- Lo más visto: 52,4% "Peleamos por llegar a las juntas directivas y olvidamos a estas mujeres" y 7,7 terremoto "¿a quién debes llamar para agradecer?".
+- Patrón ganador: (a) una injusticia concreta con mujeres + un número duro, o (b) algo que YO viví en carne propia + una pregunta que interpela a quien ve.
+- Lo que la gente ve completo: lo vivido y emocional.
+- Lo más flojo: videos sobre la marca, temas técnicos de mercado sin persona (café) y títulos que suenan a clase ("Nadie te enseñó…").
+- Lo que más funciona es video de mí hablando. Métrica que importa: guardados y compartidos, no likes.
+
+TU TAREA
+Te doy memorias, notas, noticias o cosas que me pasaron. Con eso:
+1. Encuentra el NÚMERO que ancla la historia y la fuente primaria donde lo buscaría (DANE, Banco de la República, Banco Mundial, ONU/WPP, DIAN, Superfinanciera, registros legislativos; arte: Artprice/MutualArt). Nunca inventes una cifra: si no la sabes, escribe "POR VERIFICAR — buscar en [fuente]".
+2. Encuentra la HISTORIA que solo yo puedo contar. Filtro: "¿Solo yo lo contaría así?". Si cualquiera podría escribirla, descártala o dime qué le falta.
+3. Arma el arco MUNDO → YO → ELLAS.
+4. Hazme 3 PREGUNTAS concretas para sacar la memoria (qué sentí, qué decidí, qué haría distinto, qué cifra me sorprendió).
+
+ENTREGA POR CADA IDEA (máximo 3, de mejor a peor)
+- Número + qué mide + fuente primaria (o POR VERIFICAR)
+- Título YouTube: "número: frase que incomode o emocione" (nunca solo el número ni "| El Número")
+- Gancho de 3 segundos: la frase que digo a cámara
+- Mi historia (2 líneas) y el ángulo que solo yo tengo
+- Arco mundo → yo → ellas (una línea cada uno)
+- Pregunta de cierre abierta de verdad, no conclusión ni orden
+- Playlist: Mujeres y Dinero / Capital y Mercados / Vida y propósito
+- Calificación 1–10 con la razón, según el patrón ganador
+- Riesgo: cifra débil, comparación que no cuadra, tema repetido o suena a clase
+
+REGLAS
+- Recomendación directa, sin menús largos. Si una idea es floja, dímelo sin rodeos.
+- Revisa comparabilidad: mismo denominador, edad, unidad, año y serie. Si mezclo fuentes (DANE vs ONU), adviérteme.
+- No asumas que la maternidad, el matrimonio o el patrimonio fueron una elección o los tienen todas.
+- Nada de productos de inversión, rentabilidades ni tickers.
+- Si el tema es técnico, búscale la mujer o la decisión humana dentro.
+- No propongas videos sobre la marca; la marca se cuenta con cada número.
+- Español, en mi voz. Que no suene a IA ni a coach.`;
+
+// Las columnas que ya salieron, con el angulo en una frase, para que no se
+// repitan. Las que la app conoce se anaden solas; estas son las de antes de
+// que la app las registrara.
+const PUBLICADAS_FIJAS = '2/3 IA y capital de riesgo · 300 Medici y poder · 52,4% informalidad femenina · 18 años educación financiera · 1,63 fecundidad · 11 minutos atención · 96% pequeños cafeteros · 7,7 terremoto Panamá · -4% restaurantes · 16,6% péptidos';
+
+// Los recuerdos recientes, recortados: es el material del que salen las
+// historias que solo ella puede contar, y es lo que su prompt pide primero
+// («te doy memorias, notas…»). Se mandan los ultimos, no todos: el prompt
+// tiene que caber y lo de hace tres anos no es «esta semana».
+function resumirRecuerdos(recuerdos, maximo = 8, letras = 420) {
+  return (recuerdos || []).slice(0, maximo).map((r) => {
+    const texto = String(r.text || '').replace(/\s+/g, ' ').trim();
+    const corto = texto.length > letras ? texto.slice(0, letras).replace(/\s+\S*$/, '') + '…' : texto;
+    return `- [${r.date || 'sin fecha'}] ${String(r.title || '').trim() || '(sin título)'}${corto ? ': ' + corto : ''}`;
+  });
 }
 
-function buildIdeaPrompt(headlines, publicados = []) {
+function buildIdeaPrompt(headlines, publicados = [], recuerdos = [], notas = '') {
   const today = new Date().toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  const lines = [SYSTEM_PROMPT, ''];
-  lines.push('---');
-  lines.push('');
-  lines.push(`FECHA DE HOY: ${today}`);
-  lines.push('');
-  lines.push('CONTEXTO DE ACTUALIDAD:');
-  lines.push('');
+  const lines = [PROMPT_IDEAS, '', '---', '', `FECHA DE HOY: ${today}`, ''];
+
+  // Primero lo de ella: lo que escribio ahora y lo que vivio hace poco.
+  const n = String(notas || '').trim();
+  if (n) {
+    lines.push('LO QUE ME PASÓ / LO QUE TENGO EN LA CABEZA ESTA SEMANA:');
+    lines.push('');
+    lines.push(n);
+    lines.push('');
+  }
+  const rec = resumirRecuerdos(recuerdos);
+  if (rec.length) {
+    lines.push('MIS RECUERDOS RECIENTES (de mi diario; úsalos para encontrar la historia que solo yo puedo contar):');
+    lines.push('');
+    lines.push(...rec);
+    lines.push('');
+  }
+
+  // Luego el mundo: las noticias de esta semana.
   if (headlines.length) {
-    lines.push(`Se cargaron ${headlines.length} titulares de fuentes colombianas e internacionales. Úsalos como punto de partida, pero COMPLEMENTA con lo que tú sabes que ha pasado esta semana (${today}) — noticias de mercados, política económica, cifras recientes, eventos culturales, datos de actualidad. Lo importante es que los números y hechos sean de esta semana, no de meses atrás.`);
+    lines.push(`NOTICIAS DE ESTA SEMANA (${headlines.length} titulares de fuentes colombianas e internacionales; complementa con lo que sepas que pasó esta semana, ${today}):`);
     lines.push('');
     const byCat = {};
     for (const h of headlines) {
@@ -423,67 +453,20 @@ function buildIdeaPrompt(headlines, publicados = []) {
       lines.push('');
     }
   } else {
-    lines.push(`No se pudieron cargar titulares RSS. Usa tu conocimiento propio sobre lo que ha pasado esta semana (${today}) en Colombia y el mundo: economía, mercados, cultura, mujeres líderes, cifras relevantes. Los números deben ser de actualidad reciente, no de meses atrás.`);
+    lines.push(`NOTICIAS: no se pudieron cargar titulares. Usa lo que sepas que ha pasado esta semana (${today}) en Colombia y el mundo.`);
     lines.push('');
   }
+
+  // Y lo que ya se dijo, para no repetirlo.
+  const deLaApp = publicados
+    .filter((p) => (p.numero || p.gancho))
+    .map((p) => `${p.numero || '?'} ${p.gancho || ''}`.trim());
+  lines.push('COLUMNAS YA PUBLICADAS (no repetir ángulo):');
+  lines.push(PUBLICADAS_FIJAS + (deLaApp.length ? ' · ' + deLaApp.join(' · ') : ''));
+  lines.push('');
   lines.push('---');
   lines.push('');
-  // Lo ya publicado, para que no vuelva sobre lo mismo.
-  if (publicados.length) {
-    lines.push('YA PUBLICADO — no repitas estos números ni vuelvas sobre su mismo ángulo:');
-    lines.push('');
-    for (const n of publicados) {
-      lines.push(`- #${n.numero || '?'} — ${n.gancho || '(sin título)'}`);
-    }
-    lines.push('');
-    lines.push('---');
-    lines.push('');
-  }
-
-  const canteras = canterasDeLaSemana();
-  lines.push(`Propón 4 números candidatos para esta semana (${today}). Cada uno debe venir de una cantera DISTINTA de esta lista, y no puedes usar dos veces la misma:
-
-${canteras.map((c, i) => `(${i + 1}) ${c}`).join('\n')}
-
-REGLAS DE VARIEDAD — importan tanto como el resto:
-- Los cuatro candidatos deben ser de canteras distintas entre sí.
-- Al menos uno tiene que venir de un terreno que NO sea economía ni mercados.
-- Al menos uno debe salir de un sitio inesperado: una cifra pequeña, doméstica o rara, no un titular de portada.
-- Nada de cifras redondas manidas (el 80/20, el 10.000, el 1 %) salvo que traigas un giro nuevo de verdad.
-- Si un candidato se parece a algo ya publicado arriba, descártalo y busca otro.
-
-IMPORTANTE: Los ganchos deben ser de esta semana o los últimos días — no uses noticias viejas o genéricas. Si los titulares de arriba no son suficientes, complementa con tu conocimiento actualizado.
-
-CÓMO ES UNA COLUMNA DE STEFY — sacado de las que ya publicó, no de teoría. Un candidato que no pueda cumplir esto no sirve por muy buena que sea la cifra:
-
-- EL NÚMERO ES PEQUEÑO Y HUMANO. Sus columnas fueron 300 (años de los Medici), 2/3 (dólares), 11 (minutos), 18 (años), 1,63 (hijos por mujer). Nunca «5 billones» ni un titular de portada: una cifra que cabe en una frase de la vida de alguien. Si el dato grande es el importante, tradúcelo a su versión pequeña («de cada 3 dólares, 2»).
-- EL NÚMERO ADMITE DOS LECTURAS. Es su firma: «quiero dos hijos» contra «solo me alcanza para dos»; usar la ola contra ser dueña de ella; primero alivio, luego «el alivio dura poco». Si la cifra solo se puede leer de una manera, es una noticia, no una columna.
-- HAY UNA PUERTA PERSONAL. Todas arrancan o pasan por una escena real de ella: caminar por Florencia, el primer hijo a los 28, ver Friends con su hija, enseñarles a sus hijos a pagar la cuenta, la suegra con 13 hermanos. Propón por dónde podría entrar ELLA — una escena verosímil de su vida (madre de dos adolescentes, economista, family office, Barranquilla, viaja con la familia, el linfoma y «vivir por el treinta») — nunca una anécdota inventada que ella tenga que fingir.
-- CONTRASTE EN EL TIEMPO O ENTRE GENERACIONES. 1950 → 2024; 2004 → 2020; abuelos → hijos; Medici → Instagram. Casi siempre el número cobra fuerza al ponerlo al lado de lo que era antes.
-- EL DATO COLOMBIANO AL LADO DEL GLOBAL. DANE, Banco de la República, tasa de usura, La Guajira contra Bogotá, un proyecto de ley con número. Lo global abre, lo local aterriza. Si no hay dato colombiano, dilo — no lo inventes.
-- CIERRA CON UNA PREGUNTA O UN RETO, no con una moraleja: «¿tú o tu teléfono?», «¿cuántos hijos habrías querido tener?», «deja de ser solo consumidora».
-- MIDE ENTRE 480 Y 600 PALABRAS. Un candidato que necesite más para explicarse es demasiado grande.
-
-Para cada candidato da, en este orden y con estos rótulos:
-NÚMERO — la cifra exacta, en su versión pequeña y humana.
-FUENTE — institución y documento con nombre (no «estudios dicen»). Si no la tienes segura, escribe «POR VERIFICAR» delante: es preferible a una fuente inventada.
-GANCHO — qué pasó esta semana que lo hace oportuno.
-LAS DOS LECTURAS — la lectura obvia y la lectura de Stefy, en una frase cada una.
-LA PUERTA — la escena de su vida por la que podría entrar.
-EL CONTRASTE — el antes y el ahora, o el aquí y el allá.
-EL DATO COLOMBIANO — con fuente, o «no encontré uno».
-EL CIERRE — la pregunta o el reto con el que terminaría.
-
-Luego córrelo por el TEST y marca sí/no en cada una:
-1. ¿Tiene gancho de actualidad de esta semana?
-2. ¿Admite dos lecturas, y la segunda solo se le ocurriría a Stefy?
-3. ¿Tiene una puerta personal verosímil, sin inventarle la vida?
-4. ¿Le deja algo útil a la audiencia — una decisión, no un consejo?
-5. ¿Hay alguien con esa historia para entrevistar más adelante?
-
-Un número se gana la semana con mínimo 3 de 5. En empate, gana el que tenga las dos lecturas más separadas entre sí. Recomienda uno y explica por qué en dos líneas.
-
-No me des menús largos ni variantes de cada candidato: cuatro candidatos, completos, y una recomendación.`);
+  lines.push('Dame las ideas con la ENTREGA de arriba, máximo 3, de mejor a peor, y al final tus 3 PREGUNTAS para sacarme la memoria.');
   return lines.join('\n');
 }
 
@@ -1331,6 +1314,11 @@ function showNumPrintOverlay(contentHtml) {
   }
 
   // IDEAR
+  try {
+    const guardado = localStorage.getItem('ideasUsarRecuerdos');
+    const c = $('#numIdeaRecuerdos');
+    if (c && guardado !== null) c.checked = guardado === '1';
+  } catch { /* modo privado */ }
   $('#numIdeaBtn').addEventListener('click', async () => {
     const btn = $('#numIdeaBtn');
     btn.disabled = true;
@@ -1344,7 +1332,14 @@ function showNumPrintOverlay(contentHtml) {
     } catch { /* silencioso */ }
     let publicados = [];
     try { publicados = (await db.getAllNumbers()).slice(0, 15); } catch { /* sin archivo */ }
-    const prompt = buildIdeaPrompt(headlines, publicados);
+    // Sus recuerdos recientes, si quiere usarlos: es de donde salen las
+    // historias que solo ella puede contar. La casilla se recuerda.
+    let recuerdos = [];
+    const usarRecuerdos = $('#numIdeaRecuerdos')?.checked ?? true;
+    if (usarRecuerdos) { try { recuerdos = (await db.getAllEntries()).slice(0, 8); } catch { /* sin diario */ } }
+    try { localStorage.setItem('ideasUsarRecuerdos', usarRecuerdos ? '1' : '0'); } catch { /* modo privado */ }
+    const notas = $('#numIdeaNotas')?.value || '';
+    const prompt = buildIdeaPrompt(headlines, publicados, recuerdos, notas);
     const key = await getApiKey();
     if (hasApiKey(key)) {
       btn.textContent = 'Consultando a Claude…';
@@ -1378,7 +1373,7 @@ function showNumPrintOverlay(contentHtml) {
       $('#numIdeaHint').hidden = false;
       try {
         await navigator.clipboard.writeText(prompt);
-        showToast(`Copiado ✨ — ${headlines.length} titulares incluidos`);
+        showToast(`Copiado ✨ — ${headlines.length} titulares y ${recuerdos.length} recuerdos incluidos`);
       } catch {
         showToast('Copia el texto de la caja y pégalo en claude.ai');
       }
