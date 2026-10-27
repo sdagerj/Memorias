@@ -324,7 +324,16 @@
 
           <!-- Panel: Idear -->
           <div id="numIdeaPanel" class="num-claude-panel" hidden>
-            <p class="muted small">Claude analiza titulares de tus fuentes y propone 3 candidatos para el número con su test de relevancia.</p>
+            <p class="muted small">Tu editora de ideas: con lo que te pasó, tus recuerdos recientes y las noticias de la semana, propone hasta 3 números con su historia, su gancho y sus riesgos.</p>
+            <label class="field" style="margin-top:8px">
+              <span>¿Qué te pasó o qué tienes en la cabeza esta semana? <span class="muted" style="font-weight:400">— opcional</span></span>
+              <textarea id="numIdeaNotas" rows="3" placeholder="Una conversación, un dato que te sorprendió, algo que viviste…" style="width:100%;font-size:.95rem"></textarea>
+            </label>
+            <label class="field checkbox-field">
+              <input type="checkbox" id="numIdeaRecuerdos" checked />
+              <span>Usar mis 8 recuerdos más recientes como material</span>
+            </label>
+            <p class="muted small" style="margin:4px 0 0">Si vuelves a tocar «Idear número», se generan ideas nuevas con lo que haya escrito aquí.</p>
             <textarea id="numIdeaPaste" rows="10" placeholder="Las ideas aparecerán aquí…" readonly style="width:100%;margin-top:8px;font-size:.9rem"></textarea>
             <p id="numIdeaHint" class="muted small" hidden>Sin API key configurada: copia todo este texto y pégalo en <strong>claude.ai</strong>. Para que las ideas salgan aquí mismo, pon tu clave en Ajustes → Claude API.</p>
           </div>

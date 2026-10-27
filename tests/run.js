@@ -375,7 +375,9 @@ prueba('El Word no se rompe con comillas, acentos ni signos raros', async (b) =>
     return {
       escapado: crudo.includes('&quot;dobles&quot;') && crudo.includes('&amp;'),
       sinCrudos: !/<w:t[^>]*>[^<]*[<>]/.test(crudo.split('<w:body>')[1] || ''),
-      control: crudo.includes('\u0007'),
+      // Solo el XML del documento: el resto del .docx es ZIP binario y la hora
+      // o el CRC pueden contener un byte 7 por casualidad (y pasaba).
+      control: (crudo.match(/<w:document[\s\S]*<\/w:document>/) || [''])[0].includes('\u0007'),
       enie: crudo.includes('Ñandú'),
       nombre: m.nombreDocx({ gancho: 'Comillas "dobles" & <signos>', numero: '1' }),
     };
@@ -599,30 +601,64 @@ prueba('De una columna salen dos publicaciones distintas para el feed', async (b
     await p.locator('#pubTabs button').count() === 1);
 });
 
-prueba('El prompt de ideas pide lo que hace una columna de Stefy', async (b) => {
-  // buildIdeaPrompt no se exporta y su texto vive en numero.js: se lee de
-  // ahi directamente, que es exactamente lo que le llega a Claude.
-  const fs = require('fs');
-  const src = fs.readFileSync(require('path').join(RAIZ, 'js/numero.js'), 'utf8');
-  const desde = src.indexOf('function buildIdeaPrompt');
-  const hasta = src.indexOf('function buildCorrectionPrompt');
-  const prompt = src.slice(desde, hasta);
+prueba('El prompt de ideas es el de Stefy, y lleva sus recuerdos, sus notas y las noticias', async (b) => {
+  const p = await nuevaPagina(b);
+  // Dos recuerdos en el diario: el mas reciente primero. Y un numero publicado.
+  await p.evaluate(async () => {
+    const db = await import('./js/db.js');
+    await db.saveEntry({ id: 'r1', title: 'La junta del martes', text: 'Me di cuenta de que era la única mujer en la mesa. ' + 'x'.repeat(600), date: '2026-10-20', createdAt: 2, updatedAt: 2, photos: [] });
+    await db.saveEntry({ id: 'r2', title: 'Florencia', text: 'Caminé por los Uffizi.', date: '2026-06-10', createdAt: 1, updatedAt: 1, photos: [] });
+    await db.saveNumber({ id: 'n1', numero: '7,7', gancho: 'El día que escuché rugir la tierra', editorial: 'x', createdAt: new Date().toISOString() });
+  });
+  // Sin llave de Claude, el boton deja el prompt entero en la caja: es
+  // exactamente lo que le llegaria a Claude.
+  await p.route('**/*.xml', (r) => r.fulfill({ status: 404, body: '' }));
+  await p.route('**/rss**', (r) => r.fulfill({ status: 404, body: '' }));
+  await p.click('.tab[data-view="numero"]'); await p.waitForTimeout(500);
+  await p.click('#newNumeroBtn'); await p.waitForTimeout(300);
+  await p.click('#numIdeaBtn'); await p.waitForTimeout(400);
+  await p.fill('#numIdeaNotas', 'Mi hija me preguntó cuánto gano.');
+  await p.click('#numIdeaBtn');
+  await p.waitForFunction(() => (document.querySelector('#numIdeaPaste')?.value || '').length > 500, null, { timeout: 20000 });
+  const prompt = await p.inputValue('#numIdeaPaste');
 
-  // Los cinco patrones que aparecen en todas las columnas publicadas.
-  comprobar('pide un numero pequeño y humano', /PEQUEÑO Y HUMANO/.test(prompt));
-  comprobar('pide las dos lecturas', /DOS LECTURAS/.test(prompt) && /LAS DOS LECTURAS —/.test(prompt));
-  comprobar('pide una puerta personal, sin inventarle la vida', /PUERTA PERSONAL/.test(prompt) && /nunca una anécdota inventada/.test(prompt));
-  comprobar('pide el contraste en el tiempo', /CONTRASTE EN EL TIEMPO/.test(prompt));
-  comprobar('pide el dato colombiano con fuente', /DATO COLOMBIANO/.test(prompt) && /no lo inventes/.test(prompt));
-  comprobar('pide cerrar con pregunta o reto', /CIERRA CON UNA PREGUNTA O UN RETO/.test(prompt));
-  comprobar('fija el largo real de sus columnas', /480 Y 600 PALABRAS/.test(prompt));
-  comprobar('exige fuente con nombre o POR VERIFICAR', /POR VERIFICAR/.test(prompt));
-  comprobar('los ejemplos son sus columnas de verdad', /Medici/.test(prompt) && /1,63/.test(prompt) && /Friends/.test(prompt));
-  comprobar('prohibe los menus largos', /No me des menús largos/.test(prompt));
+  // Es SU prompt, tal cual.
+  comprobar('empieza como el suyo', prompt.startsWith('Eres mi editora de ideas para El Número'));
+  for (const frase of [
+    'No están aprendiendo a ahorrar, están aprendiendo a decidir.',
+    'Patrón ganador: (a) una injusticia concreta con mujeres + un número duro',
+    'Métrica que importa: guardados y compartidos, no likes.',
+    'POR VERIFICAR — buscar en [fuente]',
+    '¿Solo yo lo contaría así?',
+    'Arma el arco MUNDO → YO → ELLAS.',
+    'Hazme 3 PREGUNTAS concretas para sacar la memoria',
+    'Título YouTube: "número: frase que incomode o emocione"',
+    'Playlist: Mujeres y Dinero / Capital y Mercados / Vida y propósito',
+    'Calificación 1–10 con la razón',
+    'Revisa comparabilidad: mismo denominador, edad, unidad, año y serie.',
+    'No asumas que la maternidad, el matrimonio o el patrimonio fueron una elección',
+    'Nada de productos de inversión, rentabilidades ni tickers.',
+    'No propongas videos sobre la marca',
+    'Que no suene a IA ni a coach.',
+  ]) comprobar(`lleva: «${frase.slice(0, 48)}…»`, prompt.includes(frase));
 
-  // Arte y efemerides van siempre en la tanda: en cinco columnas no salieron.
-  comprobar('arte y efemérides van siempre en la tanda',
-    /for \(const fija of \['arte, museos y mercado del arte', 'efemérides y aniversarios'\]\)/.test(src));
+  // Y el contexto que la app le pone.
+  comprobar('lleva lo que escribió en la caja', prompt.includes('Mi hija me preguntó cuánto gano.'));
+  comprobar('lleva sus recuerdos recientes, el más nuevo primero',
+    prompt.indexOf('[2026-10-20] La junta del martes') > 0 && prompt.indexOf('La junta del martes') < prompt.indexOf('Florencia'));
+  comprobar('recorta los recuerdos largos', /La junta del martes: Me di cuenta[^\n]{0,500}…/.test(prompt) && !prompt.includes('x'.repeat(600)));
+  comprobar('las columnas publicadas incluyen las fijas y las de la app',
+    prompt.includes('16,6% péptidos') && prompt.includes('7,7 El día que escuché rugir la tierra'));
+  comprobar('sin titulares lo dice en vez de inventarlos', /NOTICIAS: no se pudieron cargar/.test(prompt));
+  comprobar('ya no pide las canteras viejas', !/cantera DISTINTA/.test(prompt) && !/TEST y marca sí\/no/.test(prompt));
+
+  // Sin la casilla, los recuerdos no viajan.
+  await p.uncheck('#numIdeaRecuerdos');
+  await p.click('#numIdeaBtn');
+  await p.waitForFunction(() => !(document.querySelector('#numIdeaPaste')?.value || '').includes('MIS RECUERDOS'), null, { timeout: 20000 });
+  const sin = await p.inputValue('#numIdeaPaste');
+  comprobar('con la casilla apagada no manda recuerdos', !sin.includes('La junta del martes') && !sin.includes('Florencia'));
+  comprobar('la casilla se recuerda', await p.evaluate(() => localStorage.getItem('ideasUsarRecuerdos')) === '0');
 });
 
 prueba('Una frase que ya trae comillas no sale con comillas dobladas', async (b) => {
@@ -826,7 +862,7 @@ prueba('El prompt de corrección no invita a reescribir', async (b) => {
   comprobar('ya no pide cuidar el arco ni el ritmo', !/claridad y ritmo|El arco:/i.test(prompt));
 });
 
-prueba('Las ideas rotan de cantera y evitan lo ya publicado', async (b) => {
+prueba('Las ideas evitan lo ya publicado y llegan aunque el portapapeles falle', async (b) => {
   const p = await nuevaPagina(b);
   await p.evaluate(async () => {
     const db = await import('/js/db.js');
@@ -840,14 +876,11 @@ prueba('Las ideas rotan de cantera y evitan lo ya publicado', async (b) => {
   await p.click('#newNumeroBtn'); await p.waitForTimeout(300);
   await p.click('#numIdeaBtn'); await p.waitForTimeout(9000);
   const prompt = await p.inputValue('#numIdeaPaste');
-  comprobar('incluye lo ya publicado', prompt.includes('YA PUBLICADO') && prompt.includes('Lo del arte'));
-  comprobar('exige canteras distintas', /canteras distintas entre s[íi]/i.test(prompt));
-  comprobar('exige algo fuera de economía', /NO sea econom[íi]a ni mercados/i.test(prompt));
-  comprobar('pide 4 candidatos, no 3', /Prop[óo]n 4 n[úu]meros/i.test(prompt));
-  const canteras = (prompt.match(/^\(\d+\) .+$/gm) || []).length;
-  comprobar('ofrece más de cinco canteras', canteras >= 6, `${canteras} canteras`);
+  comprobar('el prompt queda a la vista aunque copiar falle', prompt.length > 500);
+  comprobar('incluye lo ya publicado, lo fijo y lo de la app',
+    prompt.includes('COLUMNAS YA PUBLICADAS') && prompt.includes('600 Lo del arte') && prompt.includes('300 Medici y poder'));
+  comprobar('pide máximo 3 ideas, de mejor a peor', /máximo 3, de mejor a peor/.test(prompt));
 });
-
 prueba('Los botones de Claude siempre dan texto para copiar', async (b) => {
   const p = await nuevaPagina(b);
   // Safari: el portapapeles falla fuera del gesto del usuario.
