@@ -1206,6 +1206,72 @@ prueba('«Esta semana» explica qué pasa si no hay nada o falta la llave', asyn
   comprobar('volver deja el archivo a la vista', await p.isVisible('#numerosScreen'));
 });
 
+prueba('La mudanza pasa todo a la app nueva con un toque', async (b) => {
+  const PUERTO2 = PUERTO + 50;
+  const otro = await new Promise((listo) => {
+    const s = http.createServer((req, res) => {
+      const rel = decodeURIComponent(req.url.split('?')[0]).replace(/^\/+/, '') || 'index.html';
+      const abs = path.join(RAIZ, rel);
+      if (!abs.startsWith(RAIZ) || !fs.existsSync(abs) || fs.statSync(abs).isDirectory()) { res.writeHead(404); res.end('no'); return; }
+      res.writeHead(200, { 'Content-Type': TIPOS[path.extname(abs)] || 'application/octet-stream' });
+      res.end(fs.readFileSync(abs));
+    });
+    s.listen(PUERTO2, () => listo(s));
+  });
+  try {
+    const viejo = `http://localhost:${PUERTO}`, nuevo = `http://localhost:${PUERTO2}`;
+    const ctx = await b.newContext({ viewport: { width: 390, height: 844 } });
+    await ctx.addInitScript(([v, n]) => { window.__MUDANZA_ORIGENES = { viejo: v, nuevo: n, urlNueva: n + '/index.html?mudanza=1' }; }, [viejo, nuevo]);
+    const p = await ctx.newPage();
+    const errores = [];
+    p.on('pageerror', (e) => errores.push(e.message));
+    await p.goto(viejo + '/index.html');
+    await p.waitForTimeout(600);
+    await p.evaluate(async () => {
+      const db = await import('/js/db.js');
+      const foto = await (await fetch('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==')).blob();
+      await db.saveEntry({ id: 'm1', title: 'Florencia', text: 'Un recuerdo', date: '2026-07-01', photos: [{ name: 'f.png', blob: foto }], createdAt: 1 });
+      await db.saveBook({ id: 'mb1', title: 'Mi libro', entryIds: ['m1'], updatedAt: 1 });
+      await db.saveNumber({ id: 'mn1', numero: '3,9', gancho: 'Usura', editorial: 'Texto', createdAt: 1 });
+      await db.setSetting('claudeApiKey', 'sk-ant-api03-prueba');
+      await db.setSetting('githubToken', 'github_pat_prueba');
+      await db.setSetting('claudeProxyUrl', 'https://viejo.workers.dev');
+      await db.setSetting('authorName', 'Stefy');
+    });
+    await p.click('.tab[data-view="settings"]');
+    await p.waitForTimeout(300);
+    comprobar('la app vieja muestra el botón de mudanza', await p.isVisible('#mudanzaBtn'));
+    const [n] = await Promise.all([ctx.waitForEvent('page'), p.click('#mudanzaBtn')]);
+    n.on('pageerror', (e) => errores.push('nueva: ' + e.message));
+    await n.waitForFunction(() => /Listo/.test(document.querySelector('#mudanzaAviso')?.textContent || ''), null, { timeout: 15000 }).catch(() => {});
+    comprobar('la app nueva avisa que llegó todo', /Listo: llegaron 1 recuerdos, 1 libros y 1 entregas/.test(await n.textContent('#mudanzaAviso')), await n.textContent('#mudanzaAviso'));
+    const r = await n.evaluate(async () => {
+      const db = await import('/js/db.js');
+      const e = await db.getAllEntries();
+      return {
+        recuerdos: e.length, fotos: e[0] ? e[0].photos.length : 0, tamFoto: e[0] && e[0].photos[0] ? e[0].photos[0].blob.size : 0,
+        libros: (await db.getAllBooks()).length, entregas: (await db.getAllNumbers()).length,
+        key: await db.getSetting('claudeApiKey', ''), token: await db.getSetting('githubToken', ''),
+        proxy: await db.getSetting('claudeProxyUrl', ''), autor: await db.getSetting('authorName', ''),
+        url: location.search,
+      };
+    });
+    comprobar('el recuerdo llega con su foto', r.recuerdos === 1 && r.fotos === 1 && r.tamFoto > 0, JSON.stringify(r));
+    comprobar('llegan el libro y la entrega', r.libros === 1 && r.entregas === 1);
+    comprobar('llegan la clave de Claude, la llave de GitHub y el autor', r.key === 'sk-ant-api03-prueba' && r.token === 'github_pat_prueba' && r.autor === 'Stefy');
+    comprobar('el proxy viejo no viaja', r.proxy === '');
+    comprobar('la dirección queda limpia tras la mudanza', r.url === '');
+    await p.waitForFunction(() => /Mudanza lista/.test(document.querySelector('#mudanzaEstado')?.textContent || ''), null, { timeout: 5000 }).catch(() => {});
+    comprobar('la app vieja confirma la mudanza', /Mudanza lista: 1 recuerdos/.test(await p.textContent('#mudanzaEstado')));
+    const vieja = await p.evaluate(async () => (await (await import('/js/db.js')).getAllEntries()).length);
+    comprobar('la app vieja no pierde nada', vieja === 1);
+    await n.click('.tab[data-view="settings"]');
+    comprobar('la app nueva no ofrece mudarse otra vez', !(await n.isVisible('#mudanzaBtn')));
+    comprobar('la mudanza no produjo errores', errores.length === 0, errores.join(' | '));
+    await ctx.close();
+  } finally { otro.close(); }
+});
+
 // ── ejecutar ─────────────────────────────────────────────────────────────────
 (async () => {
   const servidor = await servir();

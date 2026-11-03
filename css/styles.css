@@ -910,3 +910,8 @@ h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; }
 .semana-estado.cambio { color: #8a5d12; font-weight: 600; }
 .semana-acciones { flex-wrap: wrap; }
 .semana-enviar { position: sticky; bottom: 76px; box-shadow: 0 4px 14px rgba(13,27,42,.25); }
+
+/* Mudanza a elnumero.com.co/memorias */
+.mudanza { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); display: grid; gap: 8px; }
+.mudanza h4 { margin: 0; font-size: 1rem; }
+.mudanza-aviso { border-left: 4px solid var(--accent, #2f8a85); font-weight: 600; }
