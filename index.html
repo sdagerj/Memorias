@@ -30,6 +30,8 @@
   </header>
 
   <main id="app">
+    <!-- Solo en la app nueva, cuando llega la mudanza desde la vieja. -->
+    <div id="mudanzaAviso" class="card mudanza-aviso" role="status" hidden></div>
     <!-- Vista: Línea de tiempo -->
     <section id="view-timeline" class="view active">
       <div class="view-head">
@@ -494,6 +496,14 @@
           <label class="btn file-btn secondary">Fusionar copia
             <input type="file" id="mergeDataInput" accept="application/json" hidden />
           </label>
+        </div>
+
+        <!-- Solo en la dirección vieja (sdagerj.github.io): pasa todo a la nueva. -->
+        <div id="mudanzaBloque" class="mudanza" hidden>
+          <h4>🚚 La app se muda a elnumero.com.co/memorias</h4>
+          <p class="muted small">Un toque y la app nueva recibe tus recuerdos con fotos, tus libros, tus entregas de El Número y tus llaves. Aquí no se borra nada.</p>
+          <button type="button" id="mudanzaBtn" class="btn primary">Mudarme a elnumero.com.co/memorias</button>
+          <p id="mudanzaEstado" class="muted small" role="status"></p>
         </div>
       </div>
       <div class="card">

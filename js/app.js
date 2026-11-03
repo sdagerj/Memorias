@@ -7,6 +7,7 @@ import { initEssence } from './essence.js';
 import { initNumero, initRssSources, refrescarNumeros } from './numero.js';
 import { normalizeApiKey, describeApiKeyProblem } from './claude-api.js';
 import { normalizeToken, describeTokenProblem, setGithubToken } from './publicar.js';
+import { soyLaAppVieja, mudarme, esperarMudanza } from './mudanza.js';
 
 // --- Estado del editor en curso ---
 let draftPhotos = [];      // [{ name, blob }]
@@ -1298,5 +1299,36 @@ async function init() {
   try { await refreshBackupNudge(); } catch { /* informativo */ }
   try { await renderSnapshots(); } catch { /* informativo */ }
   showAppVersion();
+  try { iniciarMudanza(); } catch (err) { console.error('[Memorias] mudanza:', err); }
+}
+
+// =================== Mudanza a elnumero.com.co/memorias ===================
+function iniciarMudanza() {
+  if (soyLaAppVieja()) {
+    $('#mudanzaBloque').hidden = false;
+    $('#mudanzaBtn').addEventListener('click', async () => {
+      const btn = $('#mudanzaBtn');
+      const estado = $('#mudanzaEstado');
+      btn.disabled = true;
+      const r = await mudarme((t) => { estado.textContent = t; });
+      if (r.descargado) {
+        estado.textContent = 'Se descargó «memorias-mudanza…json». En la app nueva: Ajustes → Restaurar copia → elige ese archivo.';
+      } else {
+        estado.textContent = `✓ Mudanza lista: ${r.recuerdos} recuerdos, ${r.libros} libros y ${r.entregas} entregas ya están en elnumero.com.co/memorias. Ábrela desde ahí de ahora en adelante.`;
+        toast('Mudanza lista ✨');
+      }
+      btn.disabled = false;
+    });
+  }
+  const aviso = $('#mudanzaAviso');
+  esperarMudanza((texto) => {
+    aviso.hidden = false;
+    aviso.textContent = texto;
+  }, async () => {
+    await loadSettings();
+    await loadEntries();
+    await refrescarNumeros().catch(() => {});
+    await refreshStorageStatus().catch(() => {});
+  });
 }
 init();
