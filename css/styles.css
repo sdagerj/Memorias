@@ -226,6 +226,9 @@ h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; }
   align-items: center;
   gap: 2px;
   font-size: 0.72rem;
+  white-space: nowrap;   /* seis pestañas: «El Número» en una sola línea */
+  padding-left: 2px; padding-right: 2px;
+  min-width: 0;
   color: var(--muted);
   cursor: pointer;
 }

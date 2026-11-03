@@ -8,12 +8,14 @@ import { initNumero, initRssSources, refrescarNumeros } from './numero.js';
 import { normalizeApiKey, describeApiKeyProblem } from './claude-api.js';
 import { normalizeToken, describeTokenProblem, setGithubToken } from './publicar.js';
 import { soyLaAppVieja, mudarme, esperarMudanza } from './mudanza.js';
+import { initSemana, abrirSemana } from './semana.js';
 
 // --- Estado del editor en curso ---
 let draftPhotos = [];      // [{ name, blob }]
 let draftLocation = null;  // { lat, lng, place }
 let draftMood = '';
 let editingId = null;
+let semanaIniciada = false;  // la pestaña «Aprobar» se prepara la primera vez que se abre
 let voice = null;
 let voiceBaseText = '';    // texto antes de empezar a dictar
 
@@ -30,6 +32,10 @@ function showView(name) {
   if (name === 'book') showBooksScreen();
   if (name === 'essence') essenceReady.then((init) => init());
   if (name === 'numero') numeroReady.then((init) => init());
+  if (name === 'aprobar') {
+    if (!semanaIniciada) { semanaIniciada = true; initSemana(); }
+    abrirSemana();
+  }
   // Ajustes muestra datos que cambian solos (copias, conteos): hay que
   // refrescarlos al entrar, no solo al arrancar la app.
   if (name === 'settings') {

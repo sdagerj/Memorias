@@ -65,7 +65,7 @@ prueba('La app arranca sin errores de JavaScript', async (b) => {
   const p = await nuevaPagina(b);
   comprobar('sin errores al cargar', p.erroresJS.length === 0, p.erroresJS.join(' | '));
   comprobar('la barra de pestañas se ve', await p.isVisible('.tabbar'));
-  for (const v of ['timeline', 'book', 'numero', 'essence', 'settings']) {
+  for (const v of ['timeline', 'book', 'numero', 'aprobar', 'essence', 'settings']) {
     await p.click(`.tab[data-view="${v}"]`);
     await p.waitForTimeout(350);
     comprobar(`la pestaña ${v} se abre`, await p.isVisible(`#view-${v}.active`));
@@ -1149,9 +1149,10 @@ prueba('«Esta semana» muestra lo de Claude y envía las decisiones de una vez'
   await p.evaluate(async () => { const db = await import('./js/db.js'); await db.setSetting('githubToken', 'github_pat_' + 'x'.repeat(30)); });
   await p.click('.tab[data-view="numero"]');
   await p.waitForTimeout(400);
-  await p.click('#semanaBtn');
+  await p.click('.tab[data-view="aprobar"]');
   await p.waitForTimeout(600);
-  comprobar('abre la pantalla y esconde el archivo', await p.isVisible('#semanaScreen') && !(await p.isVisible('#numerosScreen')));
+  comprobar('tiene su propia pestaña «Aprobar», aparte de El Número', await p.isVisible('#view-aprobar.active #semanaScreen') && !(await p.isVisible('#numerosScreen')));
+  comprobar('El Número ya no muestra el botón de «Esta semana»', await p.locator('#view-numero #semanaBtn').count() === 0);
   comprobar('muestra la columna en el título', (await p.textContent('#semanaTitulo')).includes('3,9 · Usura'));
   comprobar('muestra la revisión semanal', (await p.textContent('#semanaResumen')).includes('de 63 a 71'));
   comprobar('pinta todas las piezas válidas', await p.locator('.semana-pieza').count() === 5);
@@ -1177,7 +1178,7 @@ prueba('«Esta semana» muestra lo de Claude y envía las decisiones de una vez'
   // Las decisiones sobreviven a recargar la página sin haber enviado.
   await p.reload(); await p.waitForTimeout(900);
   await p.click('.tab[data-view="numero"]'); await p.waitForTimeout(300);
-  await p.click('#semanaBtn'); await p.waitForTimeout(600);
+  await p.click('.tab[data-view="aprobar"]'); await p.waitForTimeout(600);
   comprobar('las decisiones no enviadas siguen tras recargar', (await p.textContent('#semanaEnviar')).includes('3'));
 
   await p.click('#semanaEnviar');
@@ -1197,13 +1198,13 @@ prueba('«Esta semana» explica qué pasa si no hay nada o falta la llave', asyn
   const p = await nuevaPagina(b);
   await p.route('https://api.github.com/**', (route) => route.fulfill({ status: 404, body: '{}' }));
   await p.click('.tab[data-view="numero"]'); await p.waitForTimeout(300);
-  await p.click('#semanaBtn'); await p.waitForTimeout(500);
+  await p.click('.tab[data-view="aprobar"]'); await p.waitForTimeout(500);
   comprobar('sin llave pide ponerla en Ajustes', (await p.textContent('#semanaEstado')).includes('Ajustes'), await p.textContent('#semanaEstado'));
   await p.evaluate(async () => { const db = await import('./js/db.js'); await db.setSetting('githubToken', 'github_pat_' + 'x'.repeat(30)); });
   await p.click('#semanaRecargar'); await p.waitForTimeout(500);
   comprobar('sin semana subida lo dice claro', (await p.textContent('#semanaEstado')).includes('aún no ha subido'));
-  await p.click('#semanaVolver');
-  comprobar('volver deja el archivo a la vista', await p.isVisible('#numerosScreen'));
+  await p.click('.tab[data-view="numero"]'); await p.waitForTimeout(300);
+  comprobar('El Número muestra su archivo, sin lo de aprobar', await p.isVisible('#numerosScreen') && !(await p.isVisible('#semanaScreen')));
 });
 
 prueba('La mudanza pasa todo a la app nueva con un toque', async (b) => {
