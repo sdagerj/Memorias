@@ -179,7 +179,6 @@
             <button type="button" id="numDraftDiscard" class="btn ghost">Descartar</button>
           </div>
         </div>
-        <button id="semanaBtn" type="button" class="btn full semana-entrada">📋 Esta semana <span class="muted small">— lo que Claude preparó para que lo apruebes</span></button>
         <button id="newNumeroBtn" class="btn num-btn-primary full">＋ Nueva entrega</button>
         <div id="numerosGrid" class="numeros-grid"></div>
         <div id="numerosEmpty" class="empty" hidden>
@@ -187,21 +186,6 @@
           <h3>Aún sin entregas</h3>
           <p>Toca <strong>"Nueva entrega"</strong> para escribir tu primer número.</p>
         </div>
-      </div>
-
-      <!-- Sub-vista: esta semana (aprobar lo que preparó Claude) -->
-      <div id="semanaScreen" hidden>
-        <div class="editor-topbar">
-          <button id="semanaVolver" type="button" class="link-btn">‹ El Número</button>
-          <button id="semanaRecargar" type="button" class="link-btn">↻ Actualizar</button>
-        </div>
-        <h2 id="semanaTitulo" class="num-title-head">Esta semana</h2>
-        <p class="muted small">Aprueba o pide cambios pieza por pieza. Lo que apruebas, Claude lo publica en su día; lo que dice «Lo haces tú» es tuyo, con el texto listo para copiar.</p>
-        <p id="semanaEstado" class="semana-aviso" role="status"></p>
-        <div id="semanaResumen" class="card semana-resumen" hidden></div>
-        <div id="semanaLista"></div>
-        <button id="semanaEnviar" type="button" class="btn num-btn-primary full semana-enviar" hidden>Enviar mis decisiones a Claude</button>
-        <div style="padding-bottom:32px"></div>
       </div>
 
       <!-- Sub-vista: editor + previsualización -->
@@ -427,6 +411,23 @@
       </div>
     </section>
 
+    <!-- Vista: Aprobar (lo que Claude preparó para la semana) -->
+    <section id="view-aprobar" class="view">
+      <div id="semanaScreen">
+        <div class="view-head">
+          <h2 id="semanaTitulo" class="num-title-head">Esta semana</h2>
+          <button id="semanaRecargar" type="button" class="link-btn">↻ Actualizar</button>
+        </div>
+        <p class="muted small">Aprueba o pide cambios pieza por pieza. Lo que apruebas, Claude lo publica en su día; lo que dice «Lo haces tú» es tuyo, con el texto listo para copiar.</p>
+        <p id="semanaEstado" class="semana-aviso" role="status"></p>
+        <div id="semanaResumen" class="card semana-resumen" hidden></div>
+        <div id="semanaLista"></div>
+        <button id="semanaEnviar" type="button" class="btn num-btn-primary full semana-enviar" hidden>Enviar mis decisiones a Claude</button>
+        <div style="padding-bottom:32px"></div>
+      </div>
+
+    </section>
+
     <!-- Vista: Mi esencia -->
     <section id="view-essence" class="view">
       <div class="view-head">
@@ -605,6 +606,7 @@
     <button class="tab active" data-view="timeline"><span>📚</span>Recuerdos</button>
     <button class="tab" data-view="book"><span>📖</span>Libro</button>
     <button class="tab" data-view="numero"><span>#️⃣</span>El Número</button>
+    <button class="tab" data-view="aprobar"><span>✅</span>Aprobar</button>
     <button class="tab" data-view="essence"><span>🔮</span>Esencia</button>
     <button class="tab" data-view="settings"><span>⚙️</span>Ajustes</button>
   </nav>

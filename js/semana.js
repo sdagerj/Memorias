@@ -329,19 +329,12 @@ async function alEnviar() {
   }
 }
 
+// Tiene su propia pestaña («Aprobar»): abrirla es cargar lo de la semana.
 export function abrirSemana() {
-  $('#numerosScreen').hidden = true;
-  $('#numeroEditor').hidden = true;
-  $('#semanaScreen').hidden = false;
   return cargar();
 }
 
 export function initSemana() {
-  $('#semanaBtn')?.addEventListener('click', abrirSemana);
-  $('#semanaVolver')?.addEventListener('click', () => {
-    $('#semanaScreen').hidden = true;
-    $('#numerosScreen').hidden = false;
-  });
   $('#semanaRecargar')?.addEventListener('click', cargar);
   $('#semanaLista')?.addEventListener('click', alClic);
   $('#semanaLista')?.addEventListener('input', alEscribirNota);
