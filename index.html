@@ -158,6 +158,257 @@
       </div>
     </section>
 
+    <!-- Vista: El Número -->
+    <section id="view-numero" class="view">
+
+      <!-- Sub-vista: archivo -->
+      <div id="numerosScreen">
+        <div class="view-head">
+          <h2 class="num-title-head"># El Número</h2>
+        </div>
+        <p class="muted">Tu archivo semanal. Cada entrega parte de un número que abre una historia.</p>
+
+        <div id="numDraftBanner" class="draft-banner" hidden>
+          <strong>📝 Tienes un editorial sin guardar</strong>
+          <p class="draft-when">Guardado automáticamente el <span id="numDraftWhen"></span></p>
+          <p class="draft-preview" id="numDraftPreview"></p>
+          <div class="settings-row">
+            <button type="button" id="numDraftRestore" class="btn num-btn-primary">Recuperarlo</button>
+            <button type="button" id="numDraftDiscard" class="btn ghost">Descartar</button>
+          </div>
+        </div>
+        <button id="newNumeroBtn" class="btn num-btn-primary full">＋ Nueva entrega</button>
+        <div id="numerosGrid" class="numeros-grid"></div>
+        <div id="numerosEmpty" class="empty" hidden>
+          <p class="empty-emoji">#️⃣</p>
+          <h3>Aún sin entregas</h3>
+          <p>Toca <strong>"Nueva entrega"</strong> para escribir tu primer número.</p>
+        </div>
+      </div>
+
+      <!-- Sub-vista: editor + previsualización -->
+      <div id="numeroEditor" hidden>
+        <div class="editor-topbar">
+          <button id="backToNumeros" class="link-btn">‹ El Número</button>
+          <button id="deleteNumeroBtn" class="link-btn danger">Eliminar</button>
+        </div>
+
+        <!-- Portada (previsualización) -->
+        <div class="num-carousel-wrap">
+          <div id="numCarousel" class="num-carousel"></div>
+          <span id="numSlideLabel" class="num-slide-label" style="color:#8ba7c4;font-size:0.8rem"></span>
+          <div id="numDots"></div>
+        </div>
+
+        <!-- Formulario editorial -->
+        <div class="card num-editor-card">
+          <h3>Portada</h3>
+          <label class="field">
+            <span>El número</span>
+            <input type="text" id="numNumero" placeholder="Ej: 600, 0.7, 1.000.000" />
+          </label>
+          <label class="field">
+            <span>Título</span>
+            <input type="text" id="numGancho" placeholder="La frase que abre todo…" />
+          </label>
+        </div>
+
+        <div class="card num-editor-card">
+          <h3>Editorial</h3>
+          <label class="field">
+            <textarea id="numEditorial" rows="14" placeholder="Escribe tu editorial aquí…"></textarea>
+          </label>
+        </div>
+
+        <div class="card num-editor-card">
+          <h3>Destaque <span class="muted" style="font-weight:400;font-size:0.85rem">— opcional</span></h3>
+          <p class="muted">Una frase clave que quieras resaltar.</p>
+          <label class="field">
+            <textarea id="numDestaque" rows="3" placeholder="La frase que más te movió…"></textarea>
+          </label>
+        </div>
+
+        <div class="card num-editor-card">
+          <h3>Para mi página <span class="muted" style="font-weight:400;font-size:0.85rem">— elnumero.com.co</span></h3>
+          <p class="muted">Esto es lo que la web necesita y el cuaderno no pide. Sin llenarlo, la entrega se guarda igual aquí — solo no se puede publicar.</p>
+          <label class="field">
+            <span>Resumen <span class="muted">— lo que se ve en WhatsApp y en Google</span></span>
+            <textarea id="numResumen" rows="2" placeholder="Una o dos frases…" maxlength="200"></textarea>
+          </label>
+          <p id="numResumenCuenta" class="muted small" style="margin:-4px 0 10px">0 / 200</p>
+          <label class="field">
+            <span>Cantera</span>
+            <select id="numCantera">
+              <option value="">Elige una…</option>
+              <option value="mercados">Mercados</option>
+              <option value="arte">Arte</option>
+              <option value="mujeres">Mujeres</option>
+              <option value="vida">Vida</option>
+              <option value="efemerides">Efemérides</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Fecha de publicación</span>
+            <input type="date" id="numFecha" />
+          </label>
+
+          <h4 style="margin:16px 0 4px">Las fuentes</h4>
+          <p class="muted small">Escríbelas siempre reales: van con tu nombre encima. Si todavía no las tienes, déjalo vacío.</p>
+          <div id="numFuentesLista"></div>
+          <button type="button" id="numAddFuente" class="btn ghost" style="margin-top:6px">＋ Añadir fuente</button>
+
+          <h4 style="margin:16px 0 4px">¿Salió antes en un periódico? <span class="muted" style="font-weight:400;font-size:0.85rem">— opcional</span></h4>
+          <label class="field">
+            <span>Nombre del medio</span>
+            <input type="text" id="numMedioNombre" placeholder="Ej: El Heraldo" />
+          </label>
+          <label class="field">
+            <span>Enlace al artículo</span>
+            <input type="url" id="numMedioUrl" placeholder="https://…" inputmode="url" autocapitalize="off" spellcheck="false" />
+          </label>
+
+          <h4 style="margin:16px 0 4px">¿La grabaste? <span class="muted" style="font-weight:400;font-size:0.85rem">— opcional</span></h4>
+          <label class="field">
+            <span>Audio en Spotify</span>
+            <input type="url" id="numAudio" placeholder="https://open.spotify.com/episode/…" inputmode="url" autocapitalize="off" spellcheck="false" />
+            <small class="muted">Spotify → el episodio → Compartir → Copiar enlace. El reproductor sale bajo el título con «Léela o escúchala con mi voz».</small>
+          </label>
+
+          <label class="field checkbox-field" style="margin-top:12px">
+            <input type="checkbox" id="numBorrador" />
+            <span>Subirlo como borrador — queda escrito en la web pero no se ve</span>
+          </label>
+
+          <div class="settings-row" style="margin-top:12px">
+            <button type="button" id="numPublicarBtn" class="btn num-btn-primary">🌐 Publicar en elnumero.com.co</button>
+          </div>
+          <p id="numPublicarEstado" class="muted small" style="margin-top:6px"></p>
+        </div>
+
+        <div class="settings-row" style="padding-bottom:8px">
+          <button id="saveNumeroBtn" class="btn num-btn-primary">Guardar entrega</button>
+          <button id="exportNumeroPdfBtn" class="btn ghost">📄 Exportar PDF</button>
+          <button id="exportNumeroWordBtn" class="btn ghost">📝 Exportar Word</button>
+          <button id="historiaBtn" class="btn ghost">📱 Imagen para Instagram</button>
+        </div>
+        <p id="numDraftSaved" class="muted small draft-saved" hidden></p>
+
+        <div id="historiaPanel" class="card num-editor-card" hidden>
+          <h3>📱 Imágenes para Instagram</h3>
+          <p class="muted">Salen con tu marca. Se comparten a Instagram y allí les pones el enlace, las encuestas y lo que quieras.</p>
+
+          <p class="ig-grupo">Publicaciones · quedan en tu perfil · 1080×1350</p>
+          <div class="historia-tabs" id="pubTabs"></div>
+
+          <p class="ig-grupo">Historias · duran 24 horas · 1080×1920</p>
+          <div class="historia-tabs" id="historiaTabs"></div>
+          <div class="historia-vista"><canvas id="historiaLienzo"></canvas></div>
+          <div class="settings-row" style="margin-top:12px">
+            <button type="button" id="historiaCompartir" class="btn num-btn-primary">Compartir</button>
+            <button type="button" id="historiaCerrar" class="btn ghost">Cerrar</button>
+          </div>
+          <p class="muted small" id="historiaNota" style="margin-top:6px"></p>
+        </div>
+
+        <!-- Asistente Claude -->
+        <div class="card num-editor-card">
+          <h3>✨ Asistente Claude</h3>
+          <p class="muted">Cada botón copia el prompt listo para pegar en claude.ai.</p>
+          <div class="num-claude-btns">
+            <button type="button" id="numIdeaBtn" class="btn num-claude-btn">💡 Idear número</button>
+            <button type="button" id="numCorreccionBtn" class="btn num-claude-btn">✏️ Corregir</button>
+            <button type="button" id="numRevisionBtn" class="btn num-claude-btn">🔎 Revisar a fondo</button>
+            <button type="button" id="numMontajeBtn" class="btn num-claude-btn">📲 Textos para redes</button>
+            <button type="button" id="numPodcastBtn" class="btn num-claude-btn">🎙️ Podcast</button>
+          </div>
+
+          <!-- Panel: Idear -->
+          <div id="numIdeaPanel" class="num-claude-panel" hidden>
+            <p class="muted small">Tu editora de ideas: con lo que te pasó, tus recuerdos recientes y las noticias de la semana, propone hasta 3 números con su historia, su gancho y sus riesgos.</p>
+            <label class="field" style="margin-top:8px">
+              <span>¿Qué te pasó o qué tienes en la cabeza esta semana? <span class="muted" style="font-weight:400">— opcional</span></span>
+              <textarea id="numIdeaNotas" rows="3" placeholder="Una conversación, un dato que te sorprendió, algo que viviste…" style="width:100%;font-size:.95rem"></textarea>
+            </label>
+            <label class="field checkbox-field">
+              <input type="checkbox" id="numIdeaRecuerdos" checked />
+              <span>Usar mis 8 recuerdos más recientes como material</span>
+            </label>
+            <p class="muted small" style="margin:4px 0 0">Si vuelves a tocar «Idear número», se generan ideas nuevas con lo que haya escrito aquí.</p>
+            <textarea id="numIdeaPaste" rows="10" placeholder="Las ideas aparecerán aquí…" readonly style="width:100%;margin-top:8px;font-size:.9rem"></textarea>
+            <p id="numIdeaHint" class="muted small" hidden>Sin API key configurada: copia todo este texto y pégalo en <strong>claude.ai</strong>. Para que las ideas salgan aquí mismo, pon tu clave en Ajustes → Claude API.</p>
+          </div>
+
+          <!-- Panel: Corrección -->
+          <div id="numCorreccionPanel" class="num-claude-panel" hidden>
+            <p class="muted small">Pega aquí la corrección de Claude y toca "Aplicar" para actualizar el editorial.</p>
+            <label class="field">
+              <textarea id="numCorreccionPaste" rows="6" placeholder="Pega la corrección de Claude…"></textarea>
+            </label>
+            <p id="numCorreccionHint" class="muted small paste-hint" hidden>Sin API key: <strong>copia todo este texto</strong> y pégalo en <strong>claude.ai</strong>. Después borra la caja, pega ahí la respuesta de Claude y toca «Aplicar corrección».</p>
+            <!-- Cambios propuestos, uno a uno, para aprobar antes de aplicar -->
+            <div id="numCambios" class="cambios" hidden>
+              <div class="cambios-head">
+                <strong id="numCambiosTitulo"></strong>
+                <span>
+                  <button type="button" id="numCambiosTodos" class="link-btn">Todos</button>
+                  <button type="button" id="numCambiosNinguno" class="link-btn">Ninguno</button>
+                </span>
+              </div>
+              <div id="numCambiosLista"></div>
+              <div class="settings-row">
+                <button type="button" id="numAplicarSeleccion" class="btn num-btn-primary">Aplicar los marcados</button>
+                <button type="button" id="numUndoCorreccion" class="btn" hidden>↩︎ Deshacer</button>
+              </div>
+            </div>
+
+            <div class="settings-row">
+              <button type="button" id="numAplicarCorreccion" class="btn">Aplicar todo el texto de golpe</button>
+              <button type="button" id="numLimpiarCorreccion" class="btn ghost">Limpiar</button>
+            </div>
+          </div>
+
+          <!-- Panel: Montaje -->
+          <div id="numRevisionPanel" class="num-claude-panel" hidden>
+            <p class="muted">Verifica cada cifra contra fuente primaria y comenta el texto: el párrafo más flojo, si el arco está completo, si el cierre se te volvió conclusión, en cuántas palabras vas.</p>
+            <p class="muted small"><strong>Aquí no se aplica nada solo.</strong> Lo lees, decides, y corriges tú. Un dato que no se pudo verificar no se arregla con un botón: se quita.</p>
+            <label class="field">
+              <textarea id="numRevisionPaste" rows="14" placeholder="El informe aparecerá aquí…"></textarea>
+            </label>
+            <p id="numRevisionHint" class="muted small paste-hint" hidden>Sin API key: <strong>copia todo este texto</strong> y pégalo en <strong>claude.ai</strong>. Después pega aquí lo que te devuelva.</p>
+            <div id="numRevisionAvisos" class="revision-avisos" hidden></div>
+            <div class="settings-row">
+              <button type="button" id="numLimpiarRevision" class="btn ghost">Limpiar</button>
+            </div>
+          </div>
+
+          <div id="numMontajePanel" class="num-claude-panel" hidden>
+            <p class="muted small">Claude te devuelve las 4 piezas con las reglas del manual: texto de LinkedIn, pie de Instagram, carrusel del viernes y guion del reel.</p>
+            <label class="field">
+              <textarea id="numMontajePaste" rows="8" placeholder="Pega aquí las 4 piezas de Claude…"></textarea>
+            </label>
+            <p id="numMontajeHint" class="muted small paste-hint" hidden>Sin API key: <strong>copia todo este texto</strong> y pégalo en <strong>claude.ai</strong>. Después pega aquí lo que te devuelva.</p>
+            <div class="settings-row">
+              <button type="button" id="numLimpiarMontaje" class="btn ghost">Limpiar</button>
+            </div>
+          </div>
+
+          <!-- Panel: Podcast -->
+          <div id="numPodcastPanel" class="num-claude-panel" hidden>
+            <p class="muted small">La persona detrás del número: Claude sugiere 3–5 personas cuya vida gira en torno a la cifra de esta semana, con la pregunta que solo tú le harías y cómo contactarlas.</p>
+            <label class="field">
+              <textarea id="numPodcastPaste" rows="6" placeholder="Pega aquí las candidatas de Claude…"></textarea>
+            </label>
+            <p id="numPodcastHint" class="muted small paste-hint" hidden>Sin API key: <strong>copia todo este texto</strong> y pégalo en <strong>claude.ai</strong>. Después pega aquí lo que te devuelva.</p>
+            <div class="settings-row">
+              <button type="button" id="numLimpiarPodcast" class="btn ghost">Limpiar</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding-bottom:32px"></div>
+      </div>
+    </section>
+
     <!-- Vista: Mi esencia -->
     <section id="view-essence" class="view">
       <div class="view-head">
@@ -241,11 +492,63 @@
           <input type="text" id="bookTitle" placeholder="Mis Memorias" />
         </label>
       </div>
-      <!-- El Número se mudó a la web -->
+      <!-- API Key de Claude -->
       <div class="card">
-        <h3>#️⃣ El Número se mudó</h3>
-        <p class="muted">El taller de El Número ya no vive en Memorias: ahora está junto a tu página, en <a href="https://elnumero.com.co/taller/" target="_blank" rel="noopener"><strong>elnumero.com.co/taller</strong></a>.</p>
-        <p class="muted small">Tus entregas siguen guardadas aquí y viajan en la copia de seguridad. Para pasarlas: <strong>Exportar copia de seguridad</strong> aquí arriba, y en el taller <strong>Ajustes → Traer mis entregas de Memorias</strong>.</p>
+        <h3>🤖 Claude API</h3>
+        <p class="muted">Con tu API key, los botones de El Número consultan a Claude directamente — sin salir de la app ni copiar nada.</p>
+        <label class="field">
+          <span>API Key de Anthropic</span>
+          <input type="password" id="claudeApiKeyInput" placeholder="sk-ant-api03-…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+        </label>
+        <div class="settings-row" style="margin-top:8px">
+          <button id="saveApiKeyBtn" class="btn primary">Guardar key</button>
+          <button id="clearApiKeyBtn" class="btn ghost">Borrar key</button>
+        </div>
+        <p id="apiKeyStatus" class="muted small" style="margin-top:6px"></p>
+        <p class="muted small">La key se guarda solo en tu dispositivo. Nunca sale de aquí. Obtén la tuya en <strong>console.anthropic.com</strong></p>
+        <hr style="margin:12px 0;border:none;border-top:1px solid var(--border)" />
+        <label class="field">
+          <span>URL del proxy (Cloudflare Worker)</span>
+          <input type="url" id="claudeProxyInput" placeholder="https://tu-worker.workers.dev" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+        </label>
+        <div class="settings-row" style="margin-top:8px">
+          <button id="saveProxyBtn" class="btn primary">Guardar proxy</button>
+          <button id="clearProxyBtn" class="btn ghost">Borrar proxy</button>
+        </div>
+        <p id="proxyStatus" class="muted small" style="margin-top:6px"></p>
+        <p class="muted small">Necesario para que la app pueda llamar a Claude. Despliega tu propio worker gratuito en <strong>cloudflare.com/workers</strong></p>
+      </div>
+
+      <!-- Llave de GitHub para publicar en la web -->
+      <div class="card">
+        <h3>🌐 Publicar en mi página</h3>
+        <p class="muted">Con esta llave, el botón «Publicar» de El Número sube el editorial directo a tu página, <strong>elnumero.com.co</strong>. Sin ella, el botón te da el archivo para que lo subas a mano.</p>
+        <label class="field">
+          <span>Llave de GitHub</span>
+          <input type="password" id="githubTokenInput" placeholder="github_pat_…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+        </label>
+        <div class="settings-row" style="margin-top:8px">
+          <button id="saveGithubTokenBtn" class="btn primary">Guardar llave</button>
+          <button id="clearGithubTokenBtn" class="btn ghost">Borrar llave</button>
+        </div>
+        <p id="githubTokenStatus" class="muted small" style="margin-top:6px"></p>
+        <p class="muted small">La llave se guarda solo en este dispositivo y solo se manda a GitHub. Se saca en <strong>github.com → Settings → Developer settings → Fine-grained tokens</strong>, dándole acceso únicamente al repositorio <strong>el-numero</strong> con permiso de <strong>Contents: Read and write</strong>.</p>
+      </div>
+
+      <!-- Fuentes RSS de El Número -->
+      <div class="card">
+        <h3>📰 Fuentes de El Número</h3>
+        <p class="muted">La app jala titulares de estas fuentes al usar "Idear número". Activa o desactiva cada una, o agrega las tuyas.</p>
+        <div id="rssSourcesList" class="rss-list"></div>
+        <div class="rss-add-form">
+          <input type="text" id="rssNewName" class="rss-input" placeholder="Nombre (ej: Semana)" />
+          <input type="url"  id="rssNewUrl"  class="rss-input" placeholder="URL del RSS" />
+          <input type="text" id="rssNewCat"  class="rss-input" placeholder="Categoría (ej: economía)" />
+          <div class="settings-row" style="margin-top:8px">
+            <button type="button" id="rssAddBtn" class="btn">Agregar fuente</button>
+            <button type="button" id="rssResetBtn" class="btn ghost">Restaurar originales</button>
+          </div>
+        </div>
       </div>
 
       <!-- Copias automáticas dentro del dispositivo -->
@@ -275,6 +578,7 @@
   <nav class="tabbar">
     <button class="tab active" data-view="timeline"><span>📚</span>Recuerdos</button>
     <button class="tab" data-view="book"><span>📖</span>Libro</button>
+    <button class="tab" data-view="numero"><span>#️⃣</span>El Número</button>
     <button class="tab" data-view="essence"><span>🔮</span>Esencia</button>
     <button class="tab" data-view="settings"><span>⚙️</span>Ajustes</button>
   </nav>
