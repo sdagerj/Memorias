@@ -9,6 +9,7 @@ import {
 import { descargarDocx, FIRMA } from './word.js';
 import { dibujarHistoria, compartirHistoria, PLANTILLAS } from './historia.js';
 import { dibujarPublicacion, compartirPublicacion, PUBLICACIONES } from './publicacion.js';
+import { initSemana } from './semana.js';
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
@@ -99,11 +100,13 @@ async function renderNumerosList() {
 // ── editor ────────────────────────────────────────────────────────────────────
 
 function showNumeroScreen() {
+  $('#semanaScreen').hidden = true;
   $('#numerosScreen').hidden = false;
   $('#numeroEditor').hidden = true;
 }
 
 function showEditorScreen() {
+  $('#semanaScreen').hidden = true;
   $('#numerosScreen').hidden = true;
   $('#numeroEditor').hidden = false;
 }
@@ -915,6 +918,7 @@ export async function refrescarNumeros() {
 // ── init ──────────────────────────────────────────────────────────────────────
 
 export async function initNumero() {
+  initSemana();
   $('#newNumeroBtn').addEventListener('click', () => openNumero(null));
 
   $('#backToNumeros').addEventListener('click', async () => {
