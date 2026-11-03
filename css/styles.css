@@ -888,3 +888,25 @@ h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; }
   width: auto; height: min(58vh, 420px);
   border-radius: 12px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
 }
+
+/* ── Esta semana ─────────────────────────────────────────────────────────── */
+.semana-entrada { margin-bottom: 10px; text-align: left; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; border-color: var(--num-navy); color: var(--num-navy); font-weight: 600; }
+.semana-aviso { margin: 8px 0 12px; color: var(--num-navy); font-weight: 600; }
+.semana-resumen h3 { color: var(--num-navy); margin-top: 0; }
+.semana-resumen p, .semana-texto p { white-space: pre-wrap; line-height: 1.45; }
+.semana-dia { color: var(--num-navy); text-transform: capitalize; margin: 18px 0 8px; font-size: 1rem; }
+.semana-pieza { margin-bottom: 10px; border-left: 4px solid #d8d2c4; }
+.semana-pieza.semana-aprobado, .semana-pieza.semana-hecho, .semana-pieza.semana-publicado { border-left-color: #2F8A85; }
+.semana-pieza.semana-cambiar { border-left-color: #c9963a; }
+.semana-pieza-head { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: .85rem; }
+.semana-canal { font-weight: 600; }
+.semana-quien { padding: 1px 8px; border-radius: 999px; background: #eef4f6; color: var(--num-navy); }
+.semana-quien.tu { background: #fbf1d0; }
+.semana-titulo { margin: 8px 0 6px; color: var(--num-navy); }
+.semana-portada { width: 100%; max-height: 320px; object-fit: contain; border-radius: 8px; background: #f3efe6; margin: 6px 0; }
+.semana-texto summary { cursor: pointer; color: var(--num-navy); font-size: .9rem; }
+.semana-linea { margin: 6px 0; font-size: .9rem; }
+.semana-estado.ok { color: #2F8A85; font-weight: 600; }
+.semana-estado.cambio { color: #8a5d12; font-weight: 600; }
+.semana-acciones { flex-wrap: wrap; }
+.semana-enviar { position: sticky; bottom: 76px; box-shadow: 0 4px 14px rgba(13,27,42,.25); }

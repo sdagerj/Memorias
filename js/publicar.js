@@ -321,4 +321,4 @@ export async function publicarEnLaWeb(entrega, token) {
   };
 }
 
-export { REPO, CARPETA };
+export { REPO, CARPETA, gh, b64 };

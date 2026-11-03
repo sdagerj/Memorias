@@ -1059,7 +1059,7 @@ prueba('El PDF de un recuerdo abre y cierra sin atascar la app', async (b) => {
 });
 
 prueba('El código no tiene comillas tipográficas en atributos HTML', async () => {
-  const archivos = ['js/app.js', 'js/numero.js', 'js/db.js', 'js/claude-api.js', 'js/publicar.js', 'js/word.js', 'js/historia.js', 'js/publicacion.js', 'index.html'];
+  const archivos = ['js/app.js', 'js/numero.js', 'js/db.js', 'js/claude-api.js', 'js/publicar.js', 'js/word.js', 'js/historia.js', 'js/publicacion.js', 'js/semana.js', 'index.html'];
   for (const f of archivos) {
     const txt = fs.readFileSync(path.join(RAIZ, f), 'utf8');
     const malas = txt.match(/=\s*[“”]/g);
@@ -1114,6 +1114,96 @@ prueba('Restaurar una copia hace aparecer las entregas sin recargar', async (b) 
   comprobar('con su gancho',
     (await p.locator('.num-card-gancho').first().textContent()).includes('El editorial que volvió'));
   comprobar('restaurar no produjo errores', p.erroresJS.length === 0, p.erroresJS.join(' | '));
+});
+
+prueba('«Esta semana» muestra lo de Claude y envía las decisiones de una vez', async (b) => {
+  const p = await nuevaPagina(b);
+  const semana = {
+    semana: '2026-11-08', columna: '3,9 · Usura',
+    resumen: 'Revisión del domingo: la lista subió de 63 a 71.',
+    piezas: [
+      { id: 'yt-largo', fecha: '2026-11-04', canal: 'youtube', tipo: 'Video largo', quien: 'claude', titulo: '3,9%: lo que <b>nadie</b> te cuenta', texto: 'Descripción del video', estado: 'pendiente' },
+      { id: 'ig-reel4', fecha: '2026-11-04', canal: 'instagram', tipo: 'Reel 4', quien: 'claude', titulo: 'Búscala en Spotify', estado: 'pendiente' },
+      { id: 'spotify', fecha: '2026-11-04', canal: 'spotify', tipo: 'Episodio', quien: 'tu', texto: 'Título y descripción', estado: 'pendiente' },
+      { id: 'short1', fecha: '2026-11-05', canal: 'youtube', tipo: 'Short 1', quien: 'claude', estado: 'publicado', url: 'https://youtube.com/shorts/x' },
+      { id: 'raro', canal: 'tiktok', tipo: 'Otra cosa', estado: 'inventado' },
+    ],
+  };
+  let actual = JSON.parse(JSON.stringify(semana));
+  let shaActual = 's1';
+  const escrituras = [];
+  await p.route('https://api.github.com/**', (route) => {
+    const u = new URL(route.request().url());
+    if (!u.pathname.endsWith('/contents/operacion/semana/actual.json')) return route.fulfill({ status: 404, body: '{}' });
+    if (route.request().method() === 'PUT') {
+      const cuerpo = JSON.parse(route.request().postData());
+      escrituras.push(cuerpo);
+      // La primera vez, alguien (Claude) escribió en medio: GitHub responde 409.
+      if (escrituras.length === 1) { shaActual = 's2'; return route.fulfill({ status: 409, body: '{}' }); }
+      actual = JSON.parse(Buffer.from(cuerpo.content, 'base64').toString('utf8'));
+      return route.fulfill({ status: 200, body: '{}' });
+    }
+    const content = Buffer.from(JSON.stringify(actual), 'utf8').toString('base64');
+    return route.fulfill({ status: 200, body: JSON.stringify({ sha: shaActual, content }) });
+  });
+  await p.evaluate(async () => { const db = await import('./js/db.js'); await db.setSetting('githubToken', 'github_pat_' + 'x'.repeat(30)); });
+  await p.click('.tab[data-view="numero"]');
+  await p.waitForTimeout(400);
+  await p.click('#semanaBtn');
+  await p.waitForTimeout(600);
+  comprobar('abre la pantalla y esconde el archivo', await p.isVisible('#semanaScreen') && !(await p.isVisible('#numerosScreen')));
+  comprobar('muestra la columna en el título', (await p.textContent('#semanaTitulo')).includes('3,9 · Usura'));
+  comprobar('muestra la revisión semanal', (await p.textContent('#semanaResumen')).includes('de 63 a 71'));
+  comprobar('pinta todas las piezas válidas', await p.locator('.semana-pieza').count() === 5);
+  comprobar('el texto de Claude no se interpreta como HTML', (await p.locator('.semana-titulo').first().innerHTML()).includes('&lt;b&gt;'));
+  comprobar('agrupa por día', (await p.locator('.semana-dia').allTextContents()).some((t) => /miércoles/i.test(t)));
+  comprobar('cuenta las pendientes', (await p.textContent('#semanaEstado')).includes('4'), await p.textContent('#semanaEstado'));
+  comprobar('lo publicado no tiene botones', await p.locator('[data-pieza="short1"] button[data-accion="aprobado"]').count() === 0);
+  comprobar('lo tuyo dice «Hecho», no «Aprobar»', await p.locator('[data-pieza="spotify"] button[data-accion="hecho"]').count() === 1
+    && await p.locator('[data-pieza="spotify"] button[data-accion="aprobado"]').count() === 0);
+
+  await p.click('[data-pieza="yt-largo"] button[data-accion="aprobado"]');
+  await p.click('[data-pieza="ig-reel4"] button[data-accion="cambiar"]');
+  comprobar('aprobar no escribe en GitHub todavía', escrituras.length === 0);
+  await p.click('#semanaEnviar');
+  await p.waitForTimeout(300);
+  comprobar('un cambio sin nota no se envía', escrituras.length === 0 && (await p.textContent('#semanaEstado')).includes('Escribe qué cambio'));
+  await p.fill('textarea[data-nota="ig-reel4"]', 'Más corto el título');
+  await p.click('[data-pieza="spotify"] button[data-accion="hecho"]');
+  await p.waitForTimeout(300);
+  comprobar('la nota sobrevive a volver a pintar', (await p.inputValue('textarea[data-nota="ig-reel4"]')) === 'Más corto el título');
+  comprobar('el botón cuenta las decisiones', (await p.textContent('#semanaEnviar')).includes('3'), await p.textContent('#semanaEnviar'));
+
+  // Las decisiones sobreviven a recargar la página sin haber enviado.
+  await p.reload(); await p.waitForTimeout(900);
+  await p.click('.tab[data-view="numero"]'); await p.waitForTimeout(300);
+  await p.click('#semanaBtn'); await p.waitForTimeout(600);
+  comprobar('las decisiones no enviadas siguen tras recargar', (await p.textContent('#semanaEnviar')).includes('3'));
+
+  await p.click('#semanaEnviar');
+  await p.waitForTimeout(800);
+  comprobar('si alguien escribió en medio, relee y reintenta', escrituras.length === 2 && escrituras[1].sha === 's2', escrituras.map((e) => e.sha).join(','));
+  comprobar('el envío no reconstruye la web', /\[skip ci\]/.test(escrituras[1]?.message || ''));
+  const porId = Object.fromEntries((actual.piezas || []).map((x) => [x.id, x]));
+  comprobar('queda aprobado el video largo', porId['yt-largo']?.estado === 'aprobado');
+  comprobar('queda el cambio con su nota', porId['ig-reel4']?.estado === 'cambiar' && porId['ig-reel4']?.nota === 'Más corto el título');
+  comprobar('queda hecha la tarea suya', porId.spotify?.estado === 'hecho');
+  comprobar('lo publicado sigue intacto', porId.short1?.estado === 'publicado' && porId.short1?.url === 'https://youtube.com/shorts/x');
+  comprobar('después de enviar no quedan decisiones pendientes', await p.isHidden('#semanaEnviar'));
+  comprobar('sin errores de JavaScript', p.erroresJS.length === 0, p.erroresJS.join(' | '));
+});
+
+prueba('«Esta semana» explica qué pasa si no hay nada o falta la llave', async (b) => {
+  const p = await nuevaPagina(b);
+  await p.route('https://api.github.com/**', (route) => route.fulfill({ status: 404, body: '{}' }));
+  await p.click('.tab[data-view="numero"]'); await p.waitForTimeout(300);
+  await p.click('#semanaBtn'); await p.waitForTimeout(500);
+  comprobar('sin llave pide ponerla en Ajustes', (await p.textContent('#semanaEstado')).includes('Ajustes'), await p.textContent('#semanaEstado'));
+  await p.evaluate(async () => { const db = await import('./js/db.js'); await db.setSetting('githubToken', 'github_pat_' + 'x'.repeat(30)); });
+  await p.click('#semanaRecargar'); await p.waitForTimeout(500);
+  comprobar('sin semana subida lo dice claro', (await p.textContent('#semanaEstado')).includes('aún no ha subido'));
+  await p.click('#semanaVolver');
+  comprobar('volver deja el archivo a la vista', await p.isVisible('#numerosScreen'));
 });
 
 // ── ejecutar ─────────────────────────────────────────────────────────────────
