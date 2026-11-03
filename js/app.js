@@ -4,9 +4,6 @@ import { getCurrentPosition, reverseGeocode, formatCoords, mapLink } from './geo
 import { renderBook, formatLongDate } from './book.js';
 import { VoiceDictation, isVoiceSupported } from './voice.js';
 import { initEssence } from './essence.js';
-import { initNumero, initRssSources, refrescarNumeros } from './numero.js';
-import { normalizeApiKey, describeApiKeyProblem } from './claude-api.js';
-import { normalizeToken, describeTokenProblem, setGithubToken } from './publicar.js';
 
 // --- Estado del editor en curso ---
 let draftPhotos = [];      // [{ name, blob }]
@@ -24,11 +21,10 @@ function showView(name) {
   $$('.view').forEach((v) => v.classList.remove('active'));
   $(`#view-${name}`).classList.add('active');
   $$('.tab').forEach((t) => t.classList.toggle('active', t.dataset.view === name));
-  // El FAB solo tiene sentido en la línea de tiempo; en El Número tiene su propio botón.
+  // El FAB solo tiene sentido en la línea de tiempo.
   $('#fab').hidden = !['timeline'].includes(name);
   if (name === 'book') showBooksScreen();
   if (name === 'essence') essenceReady.then((init) => init());
-  if (name === 'numero') numeroReady.then((init) => init());
   // Ajustes muestra datos que cambian solos (copias, conteos): hay que
   // refrescarlos al entrar, no solo al arrancar la app.
   if (name === 'settings') {
@@ -869,95 +865,7 @@ $('#clearCorrectionBtn').addEventListener('click', () => {
 async function loadSettings() {
   $('#authorName').value = await db.getSetting('authorName', '');
   $('#bookTitle').value = await db.getSetting('bookTitle', '');
-  const guardada = await db.getSetting('claudeApiKey', '');
-  if (guardada) {
-    // Se comprueba de verdad, no solo que exista: una clave con un guion
-    // cambiado por el teclado se veía como "✓ guardada" y luego fallaba.
-    const key = normalizeApiKey(guardada);
-    const problema = describeApiKeyProblem(key);
-    $('#claudeApiKeyInput').value = key;
-    $('#apiKeyStatus').textContent = problema ? '⚠️ ' + problema : '✓ Key guardada y válida.';
-    if (!problema && key !== guardada) await db.setSetting('claudeApiKey', key);
-  } else {
-    $('#apiKeyStatus').textContent = 'Sin key: los botones de Claude te darán el texto para pegarlo en claude.ai.';
-  }
-  const token = await db.getSetting('githubToken', '');
-  if (token) {
-    const t = normalizeToken(token);
-    const problema = describeTokenProblem(t);
-    $('#githubTokenInput').value = t;
-    $('#githubTokenStatus').textContent = problema ? '⚠️ ' + problema : '✓ Llave guardada. Puedes publicar desde El Número.';
-    if (!problema && t !== token) await db.setSetting('githubToken', t);
-  } else {
-    $('#githubTokenStatus').textContent = 'Sin llave: el botón «Publicar» te dará el archivo para subirlo a mano.';
-  }
-  const proxy = await db.getSetting('claudeProxyUrl', '');
-  if (proxy) {
-    $('#claudeProxyInput').value = proxy;
-    $('#proxyStatus').textContent = '✓ Proxy configurado — ' + proxy;
-  } else {
-    $('#proxyStatus').textContent = 'Sin proxy: la app no podrá llamar a Claude aunque tengas key.';
-  }
 }
-
-$('#saveGithubTokenBtn')?.addEventListener('click', async () => {
-  const original = $('#githubTokenInput').value;
-  const val = normalizeToken(original);
-  const problema = describeTokenProblem(val);
-  if (problema) { $('#githubTokenStatus').textContent = problema; return; }
-  await setGithubToken(val);
-  $('#githubTokenInput').value = val;
-  $('#githubTokenStatus').textContent = '✓ Llave guardada ✨ Ya puedes publicar desde El Número.';
-  toast('Llave de GitHub guardada ✨');
-});
-
-$('#clearGithubTokenBtn')?.addEventListener('click', async () => {
-  await db.setSetting('githubToken', '');
-  $('#githubTokenInput').value = '';
-  $('#githubTokenStatus').textContent = 'Llave borrada. El botón «Publicar» te dará el archivo para subirlo a mano.';
-});
-
-$('#saveApiKeyBtn').addEventListener('click', async () => {
-  const original = $('#claudeApiKeyInput').value;
-  // Deshace la "corrección" del teclado (guiones largos, comillas curvas,
-  // espacios invisibles) antes de validar: si no, fetch falla más tarde con un
-  // error sobre ISO-8859-1 que no le dice nada a nadie.
-  const val = normalizeApiKey(original);
-  const problema = describeApiKeyProblem(val);
-  if (problema) {
-    $('#apiKeyStatus').textContent = problema;
-    return;
-  }
-  await db.setSetting('claudeApiKey', val);
-  $('#claudeApiKeyInput').value = val;
-  $('#apiKeyStatus').textContent = val !== original.trim()
-    ? '✓ Key guardada ✨ (se corrigieron caracteres que había cambiado el teclado)'
-    : '✓ Key guardada ✨';
-  toast('API key guardada ✨');
-});
-
-$('#clearApiKeyBtn').addEventListener('click', async () => {
-  await db.setSetting('claudeApiKey', '');
-  $('#claudeApiKeyInput').value = '';
-  $('#apiKeyStatus').textContent = 'Key borrada.';
-});
-
-$('#saveProxyBtn').addEventListener('click', async () => {
-  const val = $('#claudeProxyInput').value.trim();
-  if (!val.startsWith('https://')) {
-    $('#proxyStatus').textContent = 'La URL debe empezar con https://';
-    return;
-  }
-  await db.setSetting('claudeProxyUrl', val);
-  $('#proxyStatus').textContent = '✓ Proxy guardado ✨ — ' + val;
-  toast('Proxy guardado ✨');
-});
-
-$('#clearProxyBtn').addEventListener('click', async () => {
-  await db.setSetting('claudeProxyUrl', '');
-  $('#claudeProxyInput').value = '';
-  $('#proxyStatus').textContent = 'Proxy borrado.';
-});
 
 $('#authorName').addEventListener('change', (e) => db.setSetting('authorName', e.target.value.trim()));
 $('#bookTitle').addEventListener('change', (e) => db.setSetting('bookTitle', e.target.value.trim()));
@@ -1158,9 +1066,6 @@ $('#importDataInput').addEventListener('change', async (e) => {
     await db.importBackup(data);
     await loadEntries();
     await loadSettings();
-    // Las entregas de El Número viven en otro módulo: sin este aviso la lista
-    // se queda vacía aunque la base de datos ya las tenga.
-    await refrescarNumeros().catch(() => {});
     await refreshStorageStatus();
     toast('Copia restaurada ✨');
   } catch (err) {
@@ -1185,7 +1090,6 @@ $('#mergeDataInput').addEventListener('change', async (e) => {
       r.numAdded ? plural(r.numAdded, 'editorial nuevo', 'editoriales nuevos') : '',
       r.numUpdated ? plural(r.numUpdated, 'editorial actualizado', 'editoriales actualizados') : '',
     ].filter(Boolean).join(', ');
-    await refrescarNumeros().catch(() => {});
     await refreshStorageStatus();
     toast(msg ? `Fusionado: ${msg} ✨` : 'Sin cambios nuevos');
   } catch (err) {
@@ -1242,22 +1146,13 @@ $('#installBtn').addEventListener('click', async () => {
 
 // =================== Arranque ===================
 
-// initEssence / initNumero se llaman una sola vez (la primera vez que se abre cada pestaña).
+// initEssence se llama una sola vez (la primera vez que se abre cada pestaña).
 let essenceInitialized = false;
 const essenceReady = (async () => {
   return () => {
     if (essenceInitialized) return;
     essenceInitialized = true;
     initEssence();
-  };
-})();
-
-let numeroInitialized = false;
-const numeroReady = (async () => {
-  return () => {
-    if (numeroInitialized) return;
-    numeroInitialized = true;
-    initNumero();
   };
 })();
 
@@ -1288,7 +1183,6 @@ async function init() {
     showStartupError(err);
   }
   // Lo de abajo no debe impedir que la app funcione si falla.
-  try { await initRssSources(); } catch (err) { console.error('[Memorias] RSS:', err); }
   // El service worker se registra ANTES de mirar el caché, si no la versión
   // saldría siempre vacía en la primera visita.
   if ('serviceWorker' in navigator) {

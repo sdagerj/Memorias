@@ -1,5 +1,5 @@
 // Service worker: permite que la app funcione sin conexión (offline).
-const CACHE = 'memorias-v63';
+const CACHE = 'memorias-v64';
 const ASSETS = [
   './',
   './index.html',
@@ -10,19 +10,9 @@ const ASSETS = [
   './js/book.js',
   './js/voice.js',
   './js/essence.js',
-  './js/numero.js',
-  './js/rss.js',
-  './js/claude-api.js',
-  './js/publicar.js',
-  './js/word.js',
-  './js/historia.js',
-  './js/publicacion.js',
-  './fonts/cormorant-latin-400.ttf',
-  './fonts/cormorant-latin-600.ttf',
   './manifest.webmanifest',
   './icons/icon.svg',
   './icons/icon-maskable.svg',
-  './icons/elnumero-logo.svg',
 ];
 
 self.addEventListener('install', (e) => {
