@@ -23,6 +23,11 @@ fecha, su lugar y, si quieres, una foto.
 - 💾 **Copia de seguridad**: exporta e importa todos tus datos en un archivo.
 - 📴 **Funciona sin conexión** una vez instalada.
 
+> **El Número ya no está aquí.** El taller del podcast (escribir la entrega,
+> los botones de Claude y publicar) se mudó a **elnumero.com.co/taller**, en el
+> repositorio `sdagerj/el-numero`. Tus entregas viejas siguen guardadas en
+> Memorias y viajan en la copia de seguridad para que las lleves allá.
+
 > Tus recuerdos se guardan **solo en tu dispositivo** (no hay servidor ni
 > nube). Por eso conviene hacer copias de seguridad de vez en cuando, desde
 > **Ajustes → Exportar copia de seguridad**.
