@@ -918,3 +918,10 @@ h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; }
 .mudanza { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); display: grid; gap: 8px; }
 .mudanza h4 { margin: 0; font-size: 1rem; }
 .mudanza-aviso { border-left: 4px solid var(--accent, #2f8a85); font-weight: 600; }
+
+/* ── Ideas ───────────────────────────────────────────────────────────────── */
+.tab[data-view="ideas"].active { color: var(--num-gold); }
+.idea-guardada { border-top: 1px solid #eee6d6; padding: 10px 0; }
+.idea-guardada:first-child { border-top: 0; }
+.idea-guardada summary { cursor: pointer; color: var(--num-navy); font-weight: 600; }
+.idea-texto { white-space: pre-wrap; line-height: 1.45; font-size: .92rem; }
