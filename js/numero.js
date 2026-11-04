@@ -348,7 +348,7 @@ LA VOZ
 - Si cualquiera pudo haberlo escrito, no sirve.
 
 PARA QUIÉN ESCRIBE
-Mujeres profesionales de habla hispana, 30–65 años, que ya generan ingresos y están entrando a decidir sobre capital. «No están aprendiendo a ahorrar, están aprendiendo a decidir.» No es educación financiera básica: se las trata como mujeres integrales (dinero, poder, familia, cuerpo, propósito). No asumas que la maternidad, el matrimonio o el patrimonio fueron una elección o los tienen todas.
+Personas de habla hispana, 30–65 años, que ya generan ingresos y están entrando a decidir sobre capital. «No están aprendiendo a ahorrar, están aprendiendo a decidir.» No es educación financiera básica. La mirada es de mujer y muchas historias son de mujeres, pero nada se anuncia «para mujeres»: lo que une a quien lee es el momento, no el género. Se trata a quien lee como persona integral (dinero, poder, familia, cuerpo, propósito). No asumas que la maternidad, el matrimonio o el patrimonio fueron una elección o los tienen todas.
 
 EL ARCO DE CADA PIEZA
 Del mundo → a mí → a ellas: arranca en algo de actualidad, pasa por el lente propio —economista, inversionista, madre, mirada de arte— y aterriza en algo útil para quien está construyendo algo.
@@ -370,7 +370,7 @@ QUIÉN SOY
 Stephanie Dager Jassir, economista de Barranquilla, 20+ años en finanzas e inversión, gerente de un family office, presidenta de junta de un fondo de capital privado, inversionista en arte, mamá de dos. Escribo en primera persona, directa, cálida, con datos.
 
 PARA QUIÉN ESCRIBO
-Mujeres profesionales de habla hispana, 30–65 años, que ya generan ingresos y están entrando a decidir sobre capital. "No están aprendiendo a ahorrar, están aprendiendo a decidir." No es educación financiera básica: las trato como mujeres integrales (dinero, poder, familia, cuerpo, propósito).
+Personas de habla hispana, 30–65 años, que ya generan ingresos y están entrando a decidir sobre capital. "No están aprendiendo a ahorrar, están aprendiendo a decidir." No es educación financiera básica. Miro desde ser mujer y muchas historias son de mujeres, pero no escribo «para mujeres»: lo que une a quien me lee es el momento, no el género. Trato a quien lee como persona integral (dinero, poder, familia, cuerpo, propósito).
 
 LO QUE YA SÉ QUE FUNCIONA
 - Lo más visto: 52,4% "Peleamos por llegar a las juntas directivas y olvidamos a estas mujeres" y 7,7 terremoto "¿a quién debes llamar para agradecer?".
@@ -570,9 +570,9 @@ function buildRevisionPrompt(data) {
 PROMPT: REVISIÓN A FONDO ANTES DE PUBLICAR
 
 Vas a ayudarme a pulir un editorial de El Número antes de publicarlo.
-Escribo en primera persona para mujeres de 30–65 años que ya generan
-ingresos y están entrando a decidir sobre capital: no están aprendiendo
-a ahorrar, están aprendiendo a decidir.
+Escribo en primera persona, desde mi mirada de mujer, para quien tiene
+30–65 años, ya genera ingresos y está entrando a decidir sobre capital:
+no está aprendiendo a ahorrar, está aprendiendo a decidir.
 
 REGLA INNEGOCIABLE SOBRE MI VOZ
 No reescribas mi texto. Corrige solo ortografía, puntuación, concordancia
