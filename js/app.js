@@ -9,12 +9,14 @@ import { normalizeApiKey, describeApiKeyProblem } from './claude-api.js';
 import { normalizeToken, describeTokenProblem, setGithubToken } from './publicar.js';
 import { soyLaAppVieja, mudarme, esperarMudanza } from './mudanza.js';
 import { initSemana, abrirSemana } from './semana.js';
+import { initIdeas } from './ideas.js';
 
 // --- Estado del editor en curso ---
 let draftPhotos = [];      // [{ name, blob }]
 let draftLocation = null;  // { lat, lng, place }
 let draftMood = '';
 let editingId = null;
+let ideasIniciada = false;    // la pestaña «Ideas» también se prepara al abrirla
 let semanaIniciada = false;  // la pestaña «Aprobar» se prepara la primera vez que se abre
 let voice = null;
 let voiceBaseText = '';    // texto antes de empezar a dictar
@@ -32,6 +34,7 @@ function showView(name) {
   if (name === 'book') showBooksScreen();
   if (name === 'essence') essenceReady.then((init) => init());
   if (name === 'numero') numeroReady.then((init) => init());
+  if (name === 'ideas' && !ideasIniciada) { ideasIniciada = true; initIdeas(); }
   if (name === 'aprobar') {
     if (!semanaIniciada) { semanaIniciada = true; initSemana(); }
     abrirSemana();

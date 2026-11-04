@@ -1,6 +1,6 @@
 // Módulo "El Número": editor, archivo y asistente editorial con Claude.
 import * as db from './db.js';
-import { fetchHeadlines, DEFAULT_SOURCES } from './rss.js';
+import { DEFAULT_SOURCES } from './rss.js';
 import { callClaude, getApiKey, hasApiKey, describeApiKeyProblem } from './claude-api.js';
 import {
   publicarEnLaWeb, construirMarkdown, problemasParaPublicar,
@@ -423,7 +423,7 @@ function resumirRecuerdos(recuerdos, maximo = 8, letras = 420) {
   });
 }
 
-function buildIdeaPrompt(headlines, publicados = [], recuerdos = [], notas = '') {
+export function buildIdeaPrompt(headlines, publicados = [], recuerdos = [], notas = '') {
   const today = new Date().toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const lines = [PROMPT_IDEAS, '', '---', '', `FECHA DE HOY: ${today}`, ''];
 
@@ -818,18 +818,18 @@ function clearClaudePanels() {
   if (panel) panel.hidden = true;
   const undo = $('#numUndoCorreccion');
   if (undo) undo.hidden = true;
-  ['numIdeaPaste', 'numCorreccionPaste', 'numRevisionPaste', 'numMontajePaste', 'numPodcastPaste'].forEach((id) => {
+  ['numCorreccionPaste', 'numRevisionPaste', 'numMontajePaste', 'numPodcastPaste'].forEach((id) => {
     const el = $(`#${id}`);
     if (el) el.value = '';
   });
-  ['numIdeaPanel', 'numCorreccionPanel', 'numRevisionPanel', 'numMontajePanel', 'numPodcastPanel'].forEach((id) => {
+  ['numCorreccionPanel', 'numRevisionPanel', 'numMontajePanel', 'numPodcastPanel'].forEach((id) => {
     const el = $(`#${id}`);
     if (el) el.hidden = true;
   });
 }
 
 function openPanel(panelId) {
-  ['numIdeaPanel', 'numCorreccionPanel', 'numRevisionPanel', 'numMontajePanel', 'numPodcastPanel'].forEach((id) => {
+  ['numCorreccionPanel', 'numRevisionPanel', 'numMontajePanel', 'numPodcastPanel'].forEach((id) => {
     const el = $(`#${id}`);
     if (el) el.hidden = id !== panelId;
   });
@@ -1342,76 +1342,6 @@ function showNumPrintOverlay(contentHtml) {
       }
     }
   }
-
-  // IDEAR
-  try {
-    const guardado = localStorage.getItem('ideasUsarRecuerdos');
-    const c = $('#numIdeaRecuerdos');
-    if (c && guardado !== null) c.checked = guardado === '1';
-  } catch { /* modo privado */ }
-  $('#numIdeaBtn').addEventListener('click', async () => {
-    const btn = $('#numIdeaBtn');
-    btn.disabled = true;
-    btn.textContent = 'Buscando noticias…';
-    openPanel('numIdeaPanel');
-    let headlines = [];
-    try {
-      const saved = await db.getRssSources();
-      const sources = saved || DEFAULT_SOURCES;
-      headlines = await fetchHeadlines(sources);
-    } catch { /* silencioso */ }
-    let publicados = [];
-    try { publicados = (await db.getAllNumbers()).slice(0, 15); } catch { /* sin archivo */ }
-    // Sus recuerdos recientes, si quiere usarlos: es de donde salen las
-    // historias que solo ella puede contar. La casilla se recuerda.
-    let recuerdos = [];
-    const usarRecuerdos = $('#numIdeaRecuerdos')?.checked ?? true;
-    if (usarRecuerdos) { try { recuerdos = (await db.getAllEntries()).slice(0, 8); } catch { /* sin diario */ } }
-    try { localStorage.setItem('ideasUsarRecuerdos', usarRecuerdos ? '1' : '0'); } catch { /* modo privado */ }
-    const notas = $('#numIdeaNotas')?.value || '';
-    const prompt = buildIdeaPrompt(headlines, publicados, recuerdos, notas);
-    const key = await getApiKey();
-    if (hasApiKey(key)) {
-      btn.textContent = 'Consultando a Claude…';
-      try {
-        const result = await callClaude(prompt);
-        $('#numIdeaPaste').value = result;
-        showToast('Ideas listas ✨');
-      } catch (err) {
-        console.error('[Claude Idear]', err);
-        if (err.message === 'NO_KEY') {
-          showErrorPanel('No hay API key configurada. Ve a Ajustes → Claude API.');
-        } else if (err.message === 'KEY_INVALID') {
-          showErrorPanel('La API key no es válida. Ve a Ajustes → Claude API y verifica tu clave.');
-        } else if (err.message === 'RATE_LIMIT') {
-          showErrorPanel('Límite de solicitudes alcanzado. Espera un momento e intenta de nuevo.');
-        } else {
-          showErrorPanel('Error al conectar con Claude:\n' + err.message);
-        }
-      }
-    } else {
-      // Si hay una clave guardada pero no sirve, hay que decirlo: pasar al modo
-      // "cópialo a mano" sin avisar parece que el botón hace algo raro.
-      if (key) showErrorPanel('No se pudo usar tu API key.\n' + describeApiKeyProblem(key) +
-        '\n\nMientras tanto, abajo tienes el texto para pegarlo en claude.ai.');
-      // Sin API key el texto se copia al portapapeles, pero en Safari ese
-      // copiado falla porque la espera de los titulares rompe el permiso del
-      // toque. Antes no se escribía nada en la caja y la pantalla quedaba
-      // vacía: ahora el texto siempre queda a la vista para copiarlo a mano.
-      $('#numIdeaPaste').value = prompt;
-      $('#numIdeaPaste').readOnly = false;
-      $('#numIdeaHint').hidden = false;
-      try {
-        await navigator.clipboard.writeText(prompt);
-        showToast(`Copiado ✨ — ${headlines.length} titulares y ${recuerdos.length} recuerdos incluidos`);
-      } catch {
-        showToast('Copia el texto de la caja y pégalo en claude.ai');
-      }
-      $('#numIdeaPaste').scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-    btn.disabled = false;
-    btn.textContent = '💡 Idear número';
-  });
 
   // CORREGIR
   $('#numCorreccionBtn').addEventListener('click', async () => {

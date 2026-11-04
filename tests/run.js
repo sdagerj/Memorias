@@ -674,9 +674,7 @@ prueba('El prompt de ideas es el de Stefy, y lleva sus recuerdos, sus notas y la
   // exactamente lo que le llegaria a Claude.
   await p.route('**/*.xml', (r) => r.fulfill({ status: 404, body: '' }));
   await p.route('**/rss**', (r) => r.fulfill({ status: 404, body: '' }));
-  await p.click('.tab[data-view="numero"]'); await p.waitForTimeout(500);
-  await p.click('#newNumeroBtn'); await p.waitForTimeout(300);
-  await p.click('#numIdeaBtn'); await p.waitForTimeout(400);
+  await p.click('.tab[data-view="ideas"]'); await p.waitForTimeout(500);
   await p.fill('#numIdeaNotas', 'Mi hija me preguntó cuánto gano.');
   await p.click('#numIdeaBtn');
   await p.waitForFunction(() => (document.querySelector('#numIdeaPaste')?.value || '').length > 500, null, { timeout: 20000 });
@@ -932,8 +930,7 @@ prueba('Las ideas evitan lo ya publicado y llegan aunque el portapapeles falle',
     get() { return { writeText: () => Promise.reject(new DOMException('x')) }; },
   }));
   await p.reload(); await p.waitForTimeout(900);
-  await p.click('.tab[data-view="numero"]'); await p.waitForTimeout(500);
-  await p.click('#newNumeroBtn'); await p.waitForTimeout(300);
+  await p.click('.tab[data-view="ideas"]'); await p.waitForTimeout(500);
   await p.click('#numIdeaBtn'); await p.waitForTimeout(9000);
   const prompt = await p.inputValue('#numIdeaPaste');
   comprobar('el prompt queda a la vista aunque copiar falle', prompt.length > 500);
@@ -1059,7 +1056,7 @@ prueba('El PDF de un recuerdo abre y cierra sin atascar la app', async (b) => {
 });
 
 prueba('El código no tiene comillas tipográficas en atributos HTML', async () => {
-  const archivos = ['js/app.js', 'js/numero.js', 'js/db.js', 'js/claude-api.js', 'js/publicar.js', 'js/word.js', 'js/historia.js', 'js/publicacion.js', 'js/semana.js', 'index.html'];
+  const archivos = ['js/app.js', 'js/numero.js', 'js/db.js', 'js/claude-api.js', 'js/publicar.js', 'js/word.js', 'js/historia.js', 'js/publicacion.js', 'js/semana.js', 'js/ideas.js', 'index.html'];
   for (const f of archivos) {
     const txt = fs.readFileSync(path.join(RAIZ, f), 'utf8');
     const malas = txt.match(/=\s*[“”]/g);
@@ -1271,6 +1268,47 @@ prueba('La mudanza pasa todo a la app nueva con un toque', async (b) => {
     comprobar('la mudanza no produjo errores', errores.length === 0, errores.join(' | '));
     await ctx.close();
   } finally { otro.close(); }
+});
+
+prueba('Las ideas tienen su propia pestaña: se guardan y se investigan', async (b) => {
+  const p = await nuevaPagina(b);
+  await p.route('**/*.xml', (r) => r.fulfill({ status: 404, body: '' }));
+  await p.route('**/rss**', (r) => r.fulfill({ status: 404, body: '' }));
+  // El editor de una entrega ya no tiene el botón de idear.
+  await p.click('.tab[data-view="numero"]'); await p.waitForTimeout(400);
+  await p.click('#newNumeroBtn'); await p.waitForTimeout(300);
+  comprobar('el editor ya no tiene «Idear número»', await p.locator('#numeroEditor #numIdeaBtn').count() === 0);
+  await p.click('.tab[data-view="ideas"]'); await p.waitForTimeout(500);
+  comprobar('existe la pestaña Ideas', await p.isVisible('#view-ideas'));
+  // Guardar sin haber generado nada no guarda.
+  await p.click('#ideaGuardarBtn'); await p.waitForTimeout(200);
+  comprobar('no guarda una caja vacía', await p.locator('.idea-guardada').count() === 0);
+  // Sin llave, la caja muestra el prompt; tampoco eso se guarda como idea.
+  await p.click('#numIdeaBtn');
+  await p.waitForFunction(() => (document.querySelector('#numIdeaPaste')?.value || '').length > 500, null, { timeout: 20000 });
+  await p.click('#ideaGuardarBtn'); await p.waitForTimeout(200);
+  comprobar('el prompt no se guarda como idea', await p.locator('.idea-guardada').count() === 0);
+  // Ella pega la respuesta de Claude y la guarda.
+  await p.fill('#numIdeaPaste', '1. 3,9 · Les cobran más a las que mejor pagan\nFuente: Banco de la República');
+  await p.click('#ideaGuardarBtn'); await p.waitForTimeout(300);
+  comprobar('guarda la idea', await p.locator('.idea-guardada').count() === 1);
+  await p.reload(); await p.waitForTimeout(900);
+  await p.click('.tab[data-view="ideas"]'); await p.waitForTimeout(500);
+  comprobar('la idea sigue tras recargar', await p.locator('.idea-guardada').count() === 1);
+  // Investigar esta: pasa la idea a la caja y arma la ficha con las reglas.
+  await p.click('.idea-guardada button[data-accion="investigar"]'); await p.waitForTimeout(300);
+  comprobar('la idea pasa a la caja de investigar', (await p.inputValue('#ideaElegida')).includes('3,9 · Les cobran más'));
+  await p.click('#ideaInvestigarBtn'); await p.waitForTimeout(500);
+  const inv = await p.inputValue('#ideaInvestigacion');
+  comprobar('la investigación lleva la idea', inv.includes('3,9 · Les cobran más a las que mejor pagan'));
+  comprobar('pide solo fuente primaria', inv.includes('Solo fuente primaria'));
+  comprobar('marca lo no verificado', inv.includes('POR VERIFICAR'));
+  comprobar('revisa comparabilidad', inv.includes('COMPARABILIDAD'));
+  comprobar('no escribe la columna por ella', inv.includes('No escribas la columna'));
+  // Borrar.
+  await p.click('.idea-guardada button[data-accion="borrar"]'); await p.waitForTimeout(300);
+  comprobar('borra la idea', await p.locator('.idea-guardada').count() === 0);
+  comprobar('sin errores de JavaScript', p.erroresJS.length === 0, p.erroresJS.join(' | '));
 });
 
 // ── ejecutar ─────────────────────────────────────────────────────────────────

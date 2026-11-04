@@ -315,29 +315,12 @@
         <!-- Asistente Claude -->
         <div class="card num-editor-card">
           <h3>✨ Asistente Claude</h3>
-          <p class="muted">Cada botón copia el prompt listo para pegar en claude.ai.</p>
+          <p class="muted">Cada botón copia el prompt listo para pegar en claude.ai. Las ideas para nuevas columnas están en la pestaña 💡 Ideas.</p>
           <div class="num-claude-btns">
-            <button type="button" id="numIdeaBtn" class="btn num-claude-btn">💡 Idear número</button>
             <button type="button" id="numCorreccionBtn" class="btn num-claude-btn">✏️ Corregir</button>
             <button type="button" id="numRevisionBtn" class="btn num-claude-btn">🔎 Revisar a fondo</button>
             <button type="button" id="numMontajeBtn" class="btn num-claude-btn">📲 Textos para redes</button>
             <button type="button" id="numPodcastBtn" class="btn num-claude-btn">🎙️ Podcast</button>
-          </div>
-
-          <!-- Panel: Idear -->
-          <div id="numIdeaPanel" class="num-claude-panel" hidden>
-            <p class="muted small">Tu editora de ideas: con lo que te pasó, tus recuerdos recientes y las noticias de la semana, propone hasta 3 números con su historia, su gancho y sus riesgos.</p>
-            <label class="field" style="margin-top:8px">
-              <span>¿Qué te pasó o qué tienes en la cabeza esta semana? <span class="muted" style="font-weight:400">— opcional</span></span>
-              <textarea id="numIdeaNotas" rows="3" placeholder="Una conversación, un dato que te sorprendió, algo que viviste…" style="width:100%;font-size:.95rem"></textarea>
-            </label>
-            <label class="field checkbox-field">
-              <input type="checkbox" id="numIdeaRecuerdos" checked />
-              <span>Usar mis 8 recuerdos más recientes como material</span>
-            </label>
-            <p class="muted small" style="margin:4px 0 0">Si vuelves a tocar «Idear número», se generan ideas nuevas con lo que haya escrito aquí.</p>
-            <textarea id="numIdeaPaste" rows="10" placeholder="Las ideas aparecerán aquí…" readonly style="width:100%;margin-top:8px;font-size:.9rem"></textarea>
-            <p id="numIdeaHint" class="muted small" hidden>Sin API key configurada: copia todo este texto y pégalo en <strong>claude.ai</strong>. Para que las ideas salgan aquí mismo, pon tu clave en Ajustes → Claude API.</p>
           </div>
 
           <!-- Panel: Corrección -->
@@ -412,6 +395,54 @@
     </section>
 
     <!-- Vista: Aprobar (lo que Claude preparó para la semana) -->
+    <section id="view-ideas" class="view">
+      <div class="view-head">
+        <h2 class="num-title-head">💡 Ideas</h2>
+      </div>
+      <p class="muted">Genera ideas cuando quieras, guarda las que te gusten y, cuando una te enamore, pide la investigación para arrancar a escribir.</p>
+
+      <div class="card num-editor-card">
+        <h3>1 · Generar ideas</h3>
+        <label class="field">
+          <span>¿Qué te pasó o qué tienes en la cabeza? <span class="muted" style="font-weight:400">— opcional</span></span>
+          <textarea id="numIdeaNotas" rows="3" placeholder="Una conversación, un dato que te sorprendió, algo que viviste…"></textarea>
+        </label>
+        <label class="field checkbox-field">
+          <input type="checkbox" id="numIdeaRecuerdos" checked />
+          <span>Usar mis 8 recuerdos más recientes como material</span>
+        </label>
+        <button type="button" id="numIdeaBtn" class="btn num-btn-primary full">💡 Generar ideas</button>
+        <textarea id="numIdeaPaste" rows="12" placeholder="Las ideas aparecerán aquí…" readonly style="width:100%;margin-top:10px;font-size:.9rem"></textarea>
+        <p id="numIdeaHint" class="muted small" hidden>Sin API key configurada: copia todo este texto y pégalo en <strong>claude.ai</strong>. Después pega aquí la respuesta para guardarla.</p>
+        <div class="settings-row" style="margin-top:8px">
+          <button type="button" id="ideaGuardarBtn" class="btn">⭐ Guardar estas ideas</button>
+        </div>
+      </div>
+
+      <div class="card num-editor-card">
+        <h3>2 · Investigar la que te gusta</h3>
+        <p class="muted small">Pega el número y el título de la idea (o toca «Investigar esta» en una idea guardada). Sale la ficha con las cifras, la fuente primaria de cada una y lo que falta verificar.</p>
+        <label class="field">
+          <span>La idea</span>
+          <textarea id="ideaElegida" rows="3" placeholder="Ej: 3,9 · Les cobran más a las que mejor pagan"></textarea>
+        </label>
+        <button type="button" id="ideaInvestigarBtn" class="btn num-btn-primary full">🔎 Investigar</button>
+        <textarea id="ideaInvestigacion" rows="14" placeholder="La investigación aparecerá aquí…" readonly style="width:100%;margin-top:10px;font-size:.9rem"></textarea>
+        <p id="ideaInvestigacionHint" class="muted small" hidden>Sin API key: copia este texto y pégalo en el chat de Claude. Te devuelve la ficha con las fuentes.</p>
+        <div class="settings-row" style="margin-top:8px">
+          <button type="button" id="ideaCopiarBtn" class="btn ghost">Copiar</button>
+          <button type="button" id="ideaCompartirBtn" class="btn ghost">Compartir</button>
+        </div>
+      </div>
+
+      <div class="card num-editor-card">
+        <h3>Mis ideas guardadas</h3>
+        <div id="ideasLista"></div>
+        <p id="ideasVacia" class="muted small">Todavía no has guardado ideas.</p>
+      </div>
+      <div style="padding-bottom:32px"></div>
+    </section>
+
     <section id="view-aprobar" class="view">
       <div id="semanaScreen">
         <div class="view-head">
@@ -565,7 +596,7 @@
       <!-- Fuentes RSS de El Número -->
       <div class="card">
         <h3>📰 Fuentes de El Número</h3>
-        <p class="muted">La app jala titulares de estas fuentes al usar "Idear número". Activa o desactiva cada una, o agrega las tuyas.</p>
+        <p class="muted">La app jala titulares de estas fuentes al generar ideas en la pestaña «Ideas». Activa o desactiva cada una, o agrega las tuyas.</p>
         <div id="rssSourcesList" class="rss-list"></div>
         <div class="rss-add-form">
           <input type="text" id="rssNewName" class="rss-input" placeholder="Nombre (ej: Semana)" />
@@ -606,6 +637,7 @@
     <button class="tab active" data-view="timeline"><span>📚</span>Recuerdos</button>
     <button class="tab" data-view="book"><span>📖</span>Libro</button>
     <button class="tab" data-view="numero"><span>#️⃣</span>El Número</button>
+    <button class="tab" data-view="ideas"><span>💡</span>Ideas</button>
     <button class="tab" data-view="aprobar"><span>✅</span>Aprobar</button>
     <button class="tab" data-view="essence"><span>🔮</span>Esencia</button>
     <button class="tab" data-view="settings"><span>⚙️</span>Ajustes</button>
