@@ -40,7 +40,7 @@ function errorClaude(err) {
 // pueda verificar se marca, no se inventa.
 export function buildInvestigacionPrompt(idea) {
   const hoy = new Date().toLocaleDateString('es', { day: 'numeric', month: 'long', year: 'numeric' });
-  return `Eres la investigadora de El Número («un número · una historia»), la columna semanal de Stephanie Dager Jassir, economista de Barranquilla. Escribe para mujeres profesionales de habla hispana, 30–65 años, que ya generan ingresos y están aprendiendo a decidir sobre capital.
+  return `Eres la investigadora de El Número («un número · una historia»), la columna semanal de Stephanie Dager Jassir, economista de Barranquilla. Escribe, desde su mirada de mujer, para personas de habla hispana de 30–65 años que ya generan ingresos y están aprendiendo a decidir sobre capital. Nada se anuncia «para mujeres»: lo que une a quien la lee es el momento, no el género.
 
 LA IDEA QUE ELIGIÓ:
 ${String(idea || '').trim()}
