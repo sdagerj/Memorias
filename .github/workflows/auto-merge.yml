@@ -1,0 +1,44 @@
+# Cada PR que llega a main se prueba, se fusiona solo y su rama se borra.
+name: Fusión automática a main
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: auto-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  fusionar:
+    # Solo ramas de este mismo repo (nunca de forks ajenos).
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Pruebas de Memorias
+        env:
+          CHROMIUM: /usr/bin/google-chrome
+        run: |
+          npm ci
+          npm test
+
+      - name: Fusionar a main y borrar la rama
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          if [ "${{ github.event.pull_request.draft }}" = "true" ]; then
+            gh pr ready "$PR" --repo "$GITHUB_REPOSITORY"
+          fi
+          gh pr merge "$PR" --repo "$GITHUB_REPOSITORY" --merge --delete-branch
