@@ -430,7 +430,7 @@ export function buildIdeaPrompt(headlines, publicados = [], recuerdos = [], nota
   // Primero lo de ella: lo que escribio ahora y lo que vivio hace poco.
   const n = String(notas || '').trim();
   if (n) {
-    lines.push('LO QUE ME PASÓ / LO QUE TENGO EN LA CABEZA ESTA SEMANA:');
+    lines.push('EN LO QUE ESTOY PENSANDO (es el punto de partida: al menos 2 de las 3 ideas salen de aquí; busca el número de fuente primaria y las noticias relacionadas con esto):');
     lines.push('');
     lines.push(n);
     lines.push('');
@@ -472,6 +472,7 @@ export function buildIdeaPrompt(headlines, publicados = [], recuerdos = [], nota
   lines.push('---');
   lines.push('');
   lines.push('Dame las ideas con la ENTREGA de arriba, máximo 3, de mejor a peor, y al final tus 3 PREGUNTAS para sacarme la memoria.');
+  lines.push('FORMATO: empieza cada idea con una línea que diga exactamente «===IDEA===» y, en la línea siguiente, «número · título». Antes de las preguntas pon una línea «===PREGUNTAS===». Así puedo guardar cada idea por separado.');
   return lines.join('\n');
 }
 

@@ -925,3 +925,7 @@ h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; }
 .idea-guardada:first-child { border-top: 0; }
 .idea-guardada summary { cursor: pointer; color: var(--num-navy); font-weight: 600; }
 .idea-texto { white-space: pre-wrap; line-height: 1.45; font-size: .92rem; }
+.idea-nueva { border: 1px solid #eee6d6; border-radius: 12px; padding: 10px 12px; margin-top: 10px; background: #fff; }
+.idea-nueva summary { cursor: pointer; color: var(--num-navy); font-weight: 600; }
+.idea-nueva.guardada { border-color: var(--num-teal, #2F8A85); }
+.idea-preguntas { margin-top: 10px; }

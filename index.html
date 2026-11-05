@@ -404,8 +404,8 @@
       <div class="card num-editor-card">
         <h3>1 · Generar ideas</h3>
         <label class="field">
-          <span>¿Qué te pasó o qué tienes en la cabeza? <span class="muted" style="font-weight:400">— opcional</span></span>
-          <textarea id="numIdeaNotas" rows="3" placeholder="Una conversación, un dato que te sorprendió, algo que viviste…"></textarea>
+          <span>¿En qué estás pensando? <span class="muted" style="font-weight:400">— las ideas salen de aquí</span></span>
+          <textarea id="numIdeaNotas" rows="3" placeholder="Un tema, una conversación, un dato que te sorprendió, algo que viviste… Claude busca el número y las noticias relacionadas."></textarea>
         </label>
         <label class="field checkbox-field">
           <input type="checkbox" id="numIdeaRecuerdos" checked />
@@ -414,9 +414,8 @@
         <button type="button" id="numIdeaBtn" class="btn num-btn-primary full">💡 Generar ideas</button>
         <textarea id="numIdeaPaste" rows="12" placeholder="Las ideas aparecerán aquí…" readonly style="width:100%;margin-top:10px;font-size:.9rem"></textarea>
         <p id="numIdeaHint" class="muted small" hidden>Sin API key configurada: copia todo este texto y pégalo en <strong>claude.ai</strong>. Después pega aquí la respuesta para guardarla.</p>
-        <div class="settings-row" style="margin-top:8px">
-          <button type="button" id="ideaGuardarBtn" class="btn">⭐ Guardar estas ideas</button>
-        </div>
+        <div id="ideasNuevas"></div>
+        <p id="ideasNuevasHint" class="muted small" hidden>Guarda solo las que te gusten. Lo que escribiste arriba queda como nota de cada idea.</p>
       </div>
 
       <div class="card num-editor-card">
