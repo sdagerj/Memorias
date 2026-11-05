@@ -674,6 +674,7 @@ prueba('El prompt de ideas es el de Stefy, y lleva sus recuerdos, sus notas y la
   // exactamente lo que le llegaria a Claude.
   await p.route('**/*.xml', (r) => r.fulfill({ status: 404, body: '' }));
   await p.route('**/rss**', (r) => r.fulfill({ status: 404, body: '' }));
+  await p.route('https://api.rss2json.com/**', (r) => r.fulfill({ status: 404, body: '' }));
   await p.click('.tab[data-view="ideas"]'); await p.waitForTimeout(500);
   await p.fill('#numIdeaNotas', 'Mi hija me preguntó cuánto gano.');
   await p.click('#numIdeaBtn');
@@ -1274,6 +1275,7 @@ prueba('Las ideas tienen su propia pestaña: se guardan y se investigan', async 
   const p = await nuevaPagina(b);
   await p.route('**/*.xml', (r) => r.fulfill({ status: 404, body: '' }));
   await p.route('**/rss**', (r) => r.fulfill({ status: 404, body: '' }));
+  await p.route('https://api.rss2json.com/**', (r) => r.fulfill({ status: 404, body: '' }));
   // El editor de una entrega ya no tiene el botón de idear.
   await p.click('.tab[data-view="numero"]'); await p.waitForTimeout(400);
   await p.click('#newNumeroBtn'); await p.waitForTimeout(300);
