@@ -62,6 +62,47 @@ ARMA LA FICHA DE INVESTIGACIÓN para que ella arranque a escribir:
 REGLAS: español, directo, sin menús largos. No nombres productos de inversión, rentabilidades ni tickers. No asumas que la maternidad, el matrimonio o el patrimonio fueron una elección. No escribas la columna: es la ficha para que ella la escriba con su voz.`;
 }
 
+// Parte la respuesta de Claude en ideas sueltas, para guardar solo las que le
+// gustan. El prompt pide «===IDEA===» antes de cada una; si la respuesta vino
+// de claude.ai sin esas marcas, se parte por los encabezados numerados
+// («1.», «Idea 2», «## 3)»). Si no se puede, queda como una sola idea.
+export function separarIdeas(texto) {
+  const t = String(texto || '').replace(/\r/g, '').trim();
+  if (!t) return { ideas: [], preguntas: '' };
+  let cuerpo = t;
+  let preguntas = '';
+  const mp = cuerpo.search(/^\s*=+\s*PREGUNTAS\s*=+\s*$/im);
+  if (mp >= 0) {
+    preguntas = cuerpo.slice(mp).replace(/^\s*=+\s*PREGUNTAS\s*=+\s*$/im, '').trim();
+    cuerpo = cuerpo.slice(0, mp);
+  }
+  let partes;
+  if (/^\s*=+\s*IDEA\b[^\n]*$/im.test(cuerpo)) {
+    partes = cuerpo.split(/^\s*=+\s*IDEA\b[^\n]*$/im).slice(1);
+  } else {
+    const enc = /^[ \t]*(?:#{1,4}[ \t]*)?(?:\*\*)?[ \t]*(?:IDEA[ \t]*\d+|\d[.)])(?=[ \t:*·—-])/gim;
+    const pos = [];
+    let m;
+    while ((m = enc.exec(cuerpo))) pos.push(m.index);
+    if (pos.length >= 2) {
+      partes = pos.map((p, i) => cuerpo.slice(p, pos[i + 1]));
+      // Las preguntas del final, si no venían marcadas, no son una idea.
+      const ult = partes[partes.length - 1];
+      const mq = ult.search(/^[ \t]*(?:#{1,4}[ \t]*)?(?:\*\*)?[ \t]*(?:\d[ \t]*)?PREGUNTAS\b/im);
+      if (mq > 0 && !preguntas) { preguntas = ult.slice(mq).trim(); partes[partes.length - 1] = ult.slice(0, mq); }
+    } else {
+      partes = [cuerpo];
+    }
+  }
+  const ideas = partes.map((x) => x.trim()).filter(Boolean);
+  return { ideas, preguntas };
+}
+
+export function tituloIdea(texto) {
+  const l = String(texto || '').split('\n').find((x) => x.trim()) || 'Idea';
+  return l.replace(/^[\s#*]+|[\s*]+$/g, '').slice(0, 140);
+}
+
 export async function leerIdeas() {
   try { return (await db.getSetting(CLAVE, [])) || []; } catch { return []; }
 }
@@ -104,7 +145,7 @@ async function pintarLista() {
   cont.innerHTML = lista.map((x) => `
     <article class="idea-guardada" data-idea="${esc(x.id)}">
       <p class="small muted">${esc(x.fecha)}${x.notas ? ' · ' + esc(x.notas.slice(0, 80)) : ''}${x.investigacion ? ' · 🔎 con investigación' : ''}</p>
-      <details><summary>${esc(x.texto.split('\n').find((l) => l.trim()) || 'Ideas')}</summary><p class="idea-texto">${esc(x.texto)}</p>
+      <details><summary>${esc(tituloIdea(x.texto))}</summary><p class="idea-texto">${esc(x.texto)}</p>
       ${x.investigacion ? `<p class="small"><strong>Investigación:</strong></p><p class="idea-texto">${esc(x.investigacion)}</p>` : ''}</details>
       <div class="settings-row">
         <button type="button" class="btn ghost" data-accion="investigar" data-id="${esc(x.id)}">🔎 Investigar esta</button>
@@ -138,6 +179,7 @@ async function generar() {
       caja.value = await callClaude(prompt);
       caja.readOnly = false;
       $('#numIdeaHint').hidden = true;
+      pintarNuevas();
       aviso('Ideas listas ✨');
     } catch (err) {
       aviso(errorClaude(err));
@@ -149,6 +191,7 @@ async function generar() {
     caja.value = prompt;
     caja.readOnly = false;
     $('#numIdeaHint').hidden = false;
+    pintarNuevas();
     try {
       await navigator.clipboard.writeText(prompt);
       aviso(`Copiado ✨ — ${headlines.length} titulares y ${recuerdos.length} recuerdos incluidos`);
@@ -160,16 +203,63 @@ async function generar() {
   btn.textContent = '💡 Generar ideas';
 }
 
-async function guardarActuales() {
-  const texto = $('#numIdeaPaste').value;
-  // Si la caja tiene el prompt (no la respuesta), no se guarda: no es una idea.
+// Las ideas recién generadas, cada una con su tarjeta: se guarda o se
+// investiga una sola, no el bloque entero.
+let nuevas = [];
+
+function pintarNuevas() {
+  const caja = $('#numIdeaPaste');
+  const texto = caja.value;
+  const cont = $('#ideasNuevas');
+  // Si la caja tiene el prompt (no la respuesta), no hay ideas que mostrar.
   if (!texto.trim() || texto.startsWith('Eres mi editora de ideas')) {
-    aviso('Primero genera las ideas (o pega aquí la respuesta de Claude)');
+    nuevas = [];
+    cont.innerHTML = '';
+    $('#ideasNuevasHint').hidden = true;
     return;
   }
-  await guardarIdea(texto, $('#numIdeaNotas')?.value || '');
-  await pintarLista();
-  aviso('Ideas guardadas ⭐');
+  const { ideas, preguntas } = separarIdeas(texto);
+  nuevas = ideas.map((t) => ({ texto: t, guardadaId: (nuevas.find((n) => n.texto === t) || {}).guardadaId || null }));
+  cont.innerHTML = nuevas.map((x, i) => `
+    <article class="idea-nueva${x.guardadaId ? ' guardada' : ''}" data-i="${i}">
+      <details><summary>${esc(tituloIdea(x.texto))}</summary><p class="idea-texto">${esc(x.texto)}</p></details>
+      <div class="settings-row">
+        <button type="button" class="btn" data-nueva="guardar" data-i="${i}" ${x.guardadaId ? 'disabled' : ''}>${x.guardadaId ? '✓ Guardada' : '⭐ Guardar esta'}</button>
+        <button type="button" class="btn ghost" data-nueva="investigar" data-i="${i}">🔎 Investigar esta</button>
+      </div>
+    </article>`).join('') + (preguntas ? `
+    <details class="idea-preguntas"><summary class="small">Las preguntas para sacarte la memoria</summary><p class="idea-texto">${esc(preguntas)}</p></details>` : '');
+  $('#ideasNuevasHint').hidden = nuevas.length === 0;
+}
+
+async function guardarNueva(i) {
+  const x = nuevas[i];
+  if (!x) return null;
+  if (!x.guardadaId) {
+    const idea = await guardarIdea(x.texto, $('#numIdeaNotas')?.value || '');
+    x.guardadaId = idea && idea.id;
+    await pintarLista();
+    pintarNuevas();
+  }
+  return x.guardadaId;
+}
+
+async function alClicNuevas(ev) {
+  const b = ev.target.closest('button[data-nueva]');
+  if (!b) return;
+  const i = Number(b.dataset.i);
+  if (b.dataset.nueva === 'guardar') {
+    await guardarNueva(i);
+    aviso('Idea guardada ⭐');
+    return;
+  }
+  // Investigar una idea la guarda también: si la investigas, te gusta.
+  const id = await guardarNueva(i);
+  ideaEnInvestigacion = id;
+  $('#ideaElegida').value = nuevas[i].texto.slice(0, 1500);
+  $('#ideaInvestigacion').value = '';
+  $('#ideaElegida').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  aviso('Idea guardada. Toca «Investigar» para la ficha 🔎');
 }
 
 async function investigar() {
@@ -228,7 +318,9 @@ export async function initIdeas() {
     if (c && guardado !== null) c.checked = guardado === '1';
   } catch { /* modo privado */ }
   $('#numIdeaBtn').addEventListener('click', generar);
-  $('#ideaGuardarBtn').addEventListener('click', guardarActuales);
+  $('#ideasNuevas').addEventListener('click', alClicNuevas);
+  // Si pega la respuesta de claude.ai, las tarjetas aparecen solas.
+  $('#numIdeaPaste').addEventListener('input', pintarNuevas);
   $('#ideaInvestigarBtn').addEventListener('click', investigar);
   $('#ideaElegida').addEventListener('input', () => { if (!$('#ideaElegida').value.trim()) ideaEnInvestigacion = null; });
   $('#ideasLista').addEventListener('click', alClicLista);

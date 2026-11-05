@@ -1280,18 +1280,33 @@ prueba('Las ideas tienen su propia pestaña: se guardan y se investigan', async 
   comprobar('el editor ya no tiene «Idear número»', await p.locator('#numeroEditor #numIdeaBtn').count() === 0);
   await p.click('.tab[data-view="ideas"]'); await p.waitForTimeout(500);
   comprobar('existe la pestaña Ideas', await p.isVisible('#view-ideas'));
-  // Guardar sin haber generado nada no guarda.
-  await p.click('#ideaGuardarBtn'); await p.waitForTimeout(200);
-  comprobar('no guarda una caja vacía', await p.locator('.idea-guardada').count() === 0);
-  // Sin llave, la caja muestra el prompt; tampoco eso se guarda como idea.
+  // Sin respuesta no hay tarjetas para guardar.
+  comprobar('sin respuesta no hay ideas para guardar', await p.locator('.idea-nueva').count() === 0);
+  // Sin llave, la caja muestra el prompt; eso no se parte en ideas.
+  await p.fill('#numIdeaNotas', 'La prima de mi seguro de vida subió');
   await p.click('#numIdeaBtn');
   await p.waitForFunction(() => (document.querySelector('#numIdeaPaste')?.value || '').length > 500, null, { timeout: 20000 });
-  await p.click('#ideaGuardarBtn'); await p.waitForTimeout(200);
-  comprobar('el prompt no se guarda como idea', await p.locator('.idea-guardada').count() === 0);
-  // Ella pega la respuesta de Claude y la guarda.
-  await p.fill('#numIdeaPaste', '1. 3,9 · Les cobran más a las que mejor pagan\nFuente: Banco de la República');
-  await p.click('#ideaGuardarBtn'); await p.waitForTimeout(300);
-  comprobar('guarda la idea', await p.locator('.idea-guardada').count() === 1);
+  const pr = await p.inputValue('#numIdeaPaste');
+  comprobar('lo que está pensando es el punto de partida', pr.includes('EN LO QUE ESTOY PENSANDO') && pr.includes('La prima de mi seguro de vida subió'));
+  comprobar('pide las marcas para separar ideas', pr.includes('===IDEA==='));
+  comprobar('el prompt no se vuelve idea', await p.locator('.idea-nueva').count() === 0);
+  // Ella pega la respuesta de Claude: salen tres tarjetas y guarda solo una.
+  await p.fill('#numIdeaPaste', '===IDEA===\n3,9 · Les cobran más a las que mejor pagan\nFuente: Banco de la República\n===IDEA===\n16,4% · La brecha\nDetalle\n===IDEA===\n11 · Minutos\nDetalle\n===PREGUNTAS===\n1. ¿Qué sentiste?');
+  await p.waitForTimeout(200);
+  comprobar('separa las tres ideas', await p.locator('.idea-nueva').count() === 3);
+  comprobar('las preguntas no son una idea', (await p.textContent('#ideasNuevas')).includes('Las preguntas para sacarte'));
+  await p.click('.idea-nueva[data-i="0"] button[data-nueva="guardar"]'); await p.waitForTimeout(300);
+  comprobar('guarda solo la que eligió', await p.locator('.idea-guardada').count() === 1);
+  comprobar('la idea guarda su nota', (await p.textContent('.idea-guardada')).includes('La prima de mi seguro'));
+  // Investigar otra la guarda y la pasa a la caja.
+  await p.click('.idea-nueva[data-i="1"] button[data-nueva="investigar"]'); await p.waitForTimeout(300);
+  comprobar('investigar otra también la guarda', await p.locator('.idea-guardada').count() === 2);
+  comprobar('la idea pasa a investigar', (await p.inputValue('#ideaElegida')).startsWith('16,4% · La brecha'));
+  await p.locator('.idea-guardada', { hasText: '16,4%' }).locator('button[data-accion="borrar"]').click(); await p.waitForTimeout(300);
+  // Sin marcas (pegado de claude.ai), parte por los números.
+  await p.fill('#numIdeaPaste', '1. 7,7 · Terremoto\nalgo\n2. 52,4% · Informalidad\nalgo\n3. 300 · Medici\nalgo');
+  await p.waitForTimeout(200);
+  comprobar('parte por encabezados numerados', await p.locator('.idea-nueva').count() === 3);
   await p.reload(); await p.waitForTimeout(900);
   await p.click('.tab[data-view="ideas"]'); await p.waitForTimeout(500);
   comprobar('la idea sigue tras recargar', await p.locator('.idea-guardada').count() === 1);
