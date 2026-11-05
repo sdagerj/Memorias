@@ -467,11 +467,11 @@
         <p class="muted">Claude analiza todos tus recuerdos y te devuelve un espejo profundo: quién eres en esta etapa, qué te importa de verdad y hacia dónde apunta tu vida.</p>
         <p id="essenceCount" class="muted essence-count"></p>
         <div class="settings-row">
-          <button type="button" id="essenceCopyBtn" class="btn primary">🔮 Copiar para Claude</button>
+          <button type="button" id="essenceCopyBtn" class="btn primary">🔮 Ver mi esencia</button>
         </div>
-        <p class="muted small">Pega el texto en <strong>claude.ai</strong>, copia la respuesta y tráela aquí abajo.</p>
+        <p id="essenceHint" class="muted small" hidden>Sin API key configurada: copia el texto de la caja, pégalo en <strong>claude.ai</strong> y trae aquí la respuesta.</p>
         <label class="field">
-          <span>Pega aquí la respuesta de Claude</span>
+          <span>Respuesta de Claude <span class="muted" style="font-weight:400">— solo si la trajiste de claude.ai</span></span>
           <textarea id="essencePaste" rows="6" placeholder="Pega el análisis de Claude…"></textarea>
         </label>
         <div class="settings-row">
