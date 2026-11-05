@@ -43,15 +43,15 @@ gratuita es **GitHub Pages**. Solo se hace **una vez** y desde la computadora.
 3. En el menú de la izquierda, toca **Pages**.
 4. En **Source** (Origen) elige **Deploy from a branch** (Desplegar desde una
    rama).
-5. En **Branch** (Rama) elige **`claude/memory-book-app-10p7j3`** y la carpeta
+5. En **Branch** (Rama) elige **`main`** y la carpeta
    **`/ (root)`**. Toca **Save** (Guardar).
 6. Espera **1 o 2 minutos** y recarga la página de **Pages**. Aparecerá un
    recuadro verde con tu dirección:
 
    **`https://sdagerj.github.io/Memorias/`**
 
-> No hace falta fusionar nada: la app ya está en esa rama, así que se publica
-> tal cual.
+> Todo cambio entra a `main` por pull request: las pruebas corren solas y, si
+> pasan, se fusiona y la rama se borra (fusión automática).
 
 ### Paso 2 — Instalarla en el celular
 
