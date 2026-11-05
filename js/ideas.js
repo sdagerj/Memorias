@@ -57,6 +57,7 @@ ARMA LA FICHA DE INVESTIGACIÓN para que ella arranque a escribir:
 6. LA MUJER O LA DECISIÓN HUMANA detrás del número, y 3 preguntas para sacarle a ella la memoria (qué vivió, qué decidió, qué haría distinto).
 7. ARCO SUGERIDO: mundo → yo → ellas, una línea cada uno, y una pregunta de cierre abierta de verdad.
 8. RIESGOS: cifras débiles, comparaciones que no cuadran o ángulos ya usados.
+9. PRUEBA ÁCIDA (sé dura, sin suavizar): ¿le pasa a quien la lee o a otros? (si es a otros, ¿en qué ángulo le toca a ella: presta, contrata, invierte, paga, vota?) · ¿hay una frase que ya oyó o vivió para abrir el video en 2 segundos? · ¿lo mandaría a su grupo de WhatsApp? · ¿el número sorprende solo, sin contexto? · ¿es distinto de los últimos temas? Veredicto en una línea: VA, VA CON OTRO ÁNGULO (di cuál) o NO VA. Referencia: lo personal y cercano funcionó (péptidos y «¿cómo estás de flaca?», pensiones, restaurantes, el terremoto); el gota a gota, que le pasa a otros, no.
 
 REGLAS: español, directo, sin menús largos. No nombres productos de inversión, rentabilidades ni tickers. No asumas que la maternidad, el matrimonio o el patrimonio fueron una elección. No escribas la columna: es la ficha para que ella la escriba con su voz.`;
 }
