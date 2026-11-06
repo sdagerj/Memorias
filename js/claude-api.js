@@ -69,19 +69,29 @@ export async function callClaude(prompt) {
     headers['anthropic-dangerous-direct-browser-calls'] = 'true';
   }
 
+  const body = JSON.stringify({
+    model: MODEL,
+    max_tokens: 4096,
+    messages: [{ role: 'user', content: prompt }],
+  });
   let res;
   try {
-    res = await fetch(endpoint, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: 4096,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
+    res = await fetch(endpoint, { method: 'POST', headers, body });
   } catch (networkErr) {
-    throw new Error('NETWORK: ' + (networkErr.message || 'sin conexión'));
+    // El proxy solo deja pasar la app publicada en sdagerj.github.io: desde
+    // elnumero.com.co/memorias (u otra dirección) el navegador lo bloquea y
+    // fetch falla sin respuesta. En ese caso se llama directo a Anthropic, que
+    // sí acepta llamadas desde el navegador con este header.
+    if (endpoint === ANTHROPIC_URL) throw new Error('NETWORK: ' + (networkErr.message || 'sin conexión'));
+    try {
+      res = await fetch(ANTHROPIC_URL, {
+        method: 'POST',
+        headers: { ...headers, 'anthropic-dangerous-direct-browser-calls': 'true' },
+        body,
+      });
+    } catch (err2) {
+      throw new Error('NETWORK: ' + (err2.message || networkErr.message || 'sin conexión'));
+    }
   }
 
   if (!res.ok) {
