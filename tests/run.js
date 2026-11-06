@@ -1292,6 +1292,10 @@ prueba('Las ideas tienen su propia pestaña: se guardan y se investigan', async 
   comprobar('lo que está pensando es el punto de partida', pr.includes('EN LO QUE ESTOY PENSANDO') && pr.includes('La prima de mi seguro de vida subió'));
   comprobar('pide las marcas para separar ideas', pr.includes('===IDEA==='));
   comprobar('el prompt no se vuelve idea', await p.locator('.idea-nueva').count() === 0);
+  comprobar('sin llave avisa claro que falta la clave', await p.isVisible('#numIdeaHint') && (await p.textContent('#numIdeaHint')).includes('falta tu clave'));
+  await p.click('#numIdeaHint [data-ir-ajustes]'); await p.waitForTimeout(500);
+  comprobar('el aviso lleva a Ajustes', await p.isVisible('#view-settings.active'));
+  await p.click('.tab[data-view="ideas"]'); await p.waitForTimeout(400);
   // Ella pega la respuesta de Claude: salen tres tarjetas y guarda solo una.
   await p.fill('#numIdeaPaste', '===IDEA===\n3,9 · Les cobran más a las que mejor pagan\nFuente: Banco de la República\n===IDEA===\n16,4% · La brecha\nDetalle\n===IDEA===\n11 · Minutos\nDetalle\n===PREGUNTAS===\n1. ¿Qué sentiste?');
   await p.waitForTimeout(200);
