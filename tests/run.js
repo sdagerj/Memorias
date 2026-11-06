@@ -1308,7 +1308,7 @@ prueba('Las ideas tienen su propia pestaña: se guardan y se investigan', async 
   // El proxy no deja pasar esta dirección: se llama directo a Anthropic y salen las ideas.
   await p.evaluate(async () => { const db = await import('./js/db.js'); await db.setSetting('claudeProxyUrl', 'https://proxy-prueba.workers.dev'); });
   await p.route('https://proxy-prueba.workers.dev/**', (r) => r.abort('failed'));
-  await p.route('https://api.anthropic.com/v1/messages', (r) => r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ content: [{ type: 'text', text: '===IDEA===\n7,7 · Directo\nsin proxy' }] }) }));
+  await p.route('https://api.anthropic.com/v1/messages', (r) => r.request().headers()['anthropic-dangerous-direct-browser-access'] !== 'true' ? r.abort('failed') : r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ content: [{ type: 'text', text: '===IDEA===\n7,7 · Directo\nsin proxy' }] }) }));
   await p.click('#numIdeaBtn');
   await p.waitForFunction(() => (document.querySelector('#numIdeaPaste')?.value || '').includes('Directo'), null, { timeout: 20000 });
   comprobar('si el proxy no responde, llama directo a Claude', (await p.inputValue('#numIdeaPaste')).includes('7,7 · Directo'));

@@ -66,7 +66,7 @@ export async function callClaude(prompt) {
   };
   // El header especial solo se envía en llamadas directas al navegador (sin proxy)
   if (endpoint === ANTHROPIC_URL) {
-    headers['anthropic-dangerous-direct-browser-calls'] = 'true';
+    headers['anthropic-dangerous-direct-browser-access'] = 'true';
   }
 
   const body = JSON.stringify({
@@ -86,7 +86,7 @@ export async function callClaude(prompt) {
     try {
       res = await fetch(ANTHROPIC_URL, {
         method: 'POST',
-        headers: { ...headers, 'anthropic-dangerous-direct-browser-calls': 'true' },
+        headers: { ...headers, 'anthropic-dangerous-direct-browser-access': 'true' },
         body,
       });
     } catch (err2) {
