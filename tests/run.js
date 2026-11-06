@@ -1305,7 +1305,18 @@ prueba('Las ideas tienen su propia pestaña: se guardan y se investigan', async 
   comprobar('si Claude falla, no queda el texto viejo', (await p.inputValue('#numIdeaPaste')) === '');
   comprobar('si Claude falla, se esconde el aviso de clave', await p.isHidden('#numIdeaHint'));
   await p.unroute('**/v1/messages');
-  await p.evaluate(async () => { const db = await import('./js/db.js'); await db.setSetting('claudeApiKey', ''); });
+  // El proxy no deja pasar esta dirección: se llama directo a Anthropic y salen las ideas.
+  await p.evaluate(async () => { const db = await import('./js/db.js'); await db.setSetting('claudeProxyUrl', 'https://proxy-prueba.workers.dev'); });
+  await p.route('https://proxy-prueba.workers.dev/**', (r) => r.abort('failed'));
+  await p.route('https://api.anthropic.com/v1/messages', (r) => r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ content: [{ type: 'text', text: '===IDEA===\n7,7 · Directo\nsin proxy' }] }) }));
+  await p.click('#numIdeaBtn');
+  await p.waitForFunction(() => (document.querySelector('#numIdeaPaste')?.value || '').includes('Directo'), null, { timeout: 20000 });
+  comprobar('si el proxy no responde, llama directo a Claude', (await p.inputValue('#numIdeaPaste')).includes('7,7 · Directo'));
+  comprobar('y ya no muestra error', await p.isHidden('#numIdeaError'));
+  await p.unroute('https://proxy-prueba.workers.dev/**');
+  await p.unroute('https://api.anthropic.com/v1/messages');
+  await p.evaluate(async () => { const db = await import('./js/db.js'); await db.setSetting('claudeApiKey', ''); await db.setSetting('claudeProxyUrl', ''); });
+  await p.fill('#numIdeaPaste', '');
   // Ella pega la respuesta de Claude: salen tres tarjetas y guarda solo una.
   await p.fill('#numIdeaPaste', '===IDEA===\n3,9 · Les cobran más a las que mejor pagan\nFuente: Banco de la República\n===IDEA===\n16,4% · La brecha\nDetalle\n===IDEA===\n11 · Minutos\nDetalle\n===PREGUNTAS===\n1. ¿Qué sentiste?');
   await p.waitForTimeout(200);
