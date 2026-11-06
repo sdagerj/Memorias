@@ -1296,6 +1296,16 @@ prueba('Las ideas tienen su propia pestaña: se guardan y se investigan', async 
   await p.click('#numIdeaHint [data-ir-ajustes]'); await p.waitForTimeout(500);
   comprobar('el aviso lleva a Ajustes', await p.isVisible('#view-settings.active'));
   await p.click('.tab[data-view="ideas"]'); await p.waitForTimeout(400);
+  // Con llave pero Claude falla: no queda el texto viejo y el error se ve.
+  await p.route('**/v1/messages', (r) => r.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: { message: 'servidor caído' } }) }));
+  await p.evaluate(async () => { const db = await import('./js/db.js'); await db.setSetting('claudeApiKey', 'sk-ant-api03-' + 'a'.repeat(90)); });
+  await p.click('#numIdeaBtn');
+  await p.waitForFunction(() => !document.querySelector('#numIdeaError')?.hidden, null, { timeout: 20000 });
+  comprobar('si Claude falla, se ve el error', (await p.textContent('#numIdeaError')).includes('servidor caído'));
+  comprobar('si Claude falla, no queda el texto viejo', (await p.inputValue('#numIdeaPaste')) === '');
+  comprobar('si Claude falla, se esconde el aviso de clave', await p.isHidden('#numIdeaHint'));
+  await p.unroute('**/v1/messages');
+  await p.evaluate(async () => { const db = await import('./js/db.js'); await db.setSetting('claudeApiKey', ''); });
   // Ella pega la respuesta de Claude: salen tres tarjetas y guarda solo una.
   await p.fill('#numIdeaPaste', '===IDEA===\n3,9 · Les cobran más a las que mejor pagan\nFuente: Banco de la República\n===IDEA===\n16,4% · La brecha\nDetalle\n===IDEA===\n11 · Minutos\nDetalle\n===PREGUNTAS===\n1. ¿Qué sentiste?');
   await p.waitForTimeout(200);

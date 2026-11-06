@@ -27,6 +27,19 @@ function aviso(msg) {
   setTimeout(() => (t.hidden = true), 2600);
 }
 
+// El error queda a la vista (no solo un aviso que se va) y la caja se limpia,
+// para que no quede el texto de un intento anterior como si fuera la respuesta.
+function mostrarError(id, err) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = '';
+  const p = document.createElement('p');
+  p.innerHTML = '<strong>⚠️ Claude no respondió.</strong> ';
+  p.append(errorClaude(err));
+  el.append(p);
+  el.hidden = false;
+}
+
 function errorClaude(err) {
   const m = err && err.message;
   if (m === 'NO_KEY') return 'No hay API key configurada. Ve a Ajustes → Claude API.';
@@ -173,8 +186,12 @@ async function generar() {
   const prompt = buildIdeaPrompt(headlines, publicados, recuerdos, notas);
   const caja = $('#numIdeaPaste');
   const key = await getApiKey();
+  $('#numIdeaError').hidden = true;
   if (hasApiKey(key)) {
     btn.textContent = 'Consultando a Claude…';
+    $('#numIdeaHint').hidden = true;
+    caja.value = '';
+    pintarNuevas();
     try {
       caja.value = await callClaude(prompt);
       caja.readOnly = false;
@@ -182,10 +199,14 @@ async function generar() {
       pintarNuevas();
       aviso('Ideas listas ✨');
     } catch (err) {
+      mostrarError('numIdeaError', err);
       aviso(errorClaude(err));
     }
   } else {
-    if (key) aviso('No se pudo usar tu API key. ' + describeApiKeyProblem(key));
+    if (key) {
+      aviso('No se pudo usar tu API key. ' + describeApiKeyProblem(key));
+      mostrarError('numIdeaError', new Error('La clave guardada no sirve: ' + describeApiKeyProblem(key)));
+    }
     // Sin llave el prompt queda a la vista para copiarlo: en Safari el
     // portapapeles falla después de esperar los titulares.
     caja.value = prompt;
@@ -276,9 +297,12 @@ async function investigar() {
   const caja = $('#ideaInvestigacion');
   const prompt = buildInvestigacionPrompt(idea);
   const key = await getApiKey();
+  $('#ideaInvestigacionError').hidden = true;
   if (hasApiKey(key)) {
     btn.disabled = true;
     btn.textContent = 'Investigando…';
+    $('#ideaInvestigacionHint').hidden = true;
+    caja.value = '';
     try {
       const r = await callClaude(prompt);
       caja.value = r;
@@ -287,6 +311,7 @@ async function investigar() {
       if (ideaEnInvestigacion) { await actualizarIdea(ideaEnInvestigacion, { investigacion: r }); await pintarLista(); }
       aviso('Investigación lista 🔎');
     } catch (err) {
+      mostrarError('ideaInvestigacionError', err);
       aviso(errorClaude(err));
     }
     btn.disabled = false;
