@@ -262,6 +262,13 @@ async function alClicNuevas(ev) {
   aviso('Idea guardada. Toca «Investigar» para la ficha 🔎');
 }
 
+// Desde el aviso de clave faltante se va directo a Ajustes.
+document.addEventListener('click', (ev) => {
+  if (!ev.target.closest('[data-ir-ajustes]')) return;
+  document.querySelector('.tab[data-view="settings"]')?.click();
+  setTimeout(() => document.getElementById('claudeApiKeyInput')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+});
+
 async function investigar() {
   const idea = $('#ideaElegida').value.trim();
   if (!idea) { aviso('Escribe o elige la idea que quieres investigar'); return; }

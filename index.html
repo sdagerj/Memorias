@@ -412,8 +412,8 @@
           <span>Usar mis 8 recuerdos más recientes como material</span>
         </label>
         <button type="button" id="numIdeaBtn" class="btn num-btn-primary full">💡 Generar ideas</button>
+        <div id="numIdeaHint" class="aviso-llave" hidden><p><strong>⚠️ Claude no está conectado en esta app: falta tu clave.</strong> Lo que ves abajo no son ideas: es el texto para pedírselas a Claude.</p><p>Pon tu clave en Ajustes y vuelve a tocar «Generar ideas». O copia el texto, pégalo en claude.ai y trae aquí la respuesta.</p><button type="button" class="btn" data-ir-ajustes>🔑 Poner mi clave en Ajustes</button></div>
         <textarea id="numIdeaPaste" rows="12" placeholder="Las ideas aparecerán aquí…" readonly style="width:100%;margin-top:10px;font-size:.9rem"></textarea>
-        <p id="numIdeaHint" class="muted small" hidden>Sin API key configurada: copia todo este texto y pégalo en <strong>claude.ai</strong>. Después pega aquí la respuesta para guardarla.</p>
         <div id="ideasNuevas"></div>
         <p id="ideasNuevasHint" class="muted small" hidden>Guarda solo las que te gusten. Lo que escribiste arriba queda como nota de cada idea.</p>
       </div>
@@ -427,7 +427,7 @@
         </label>
         <button type="button" id="ideaInvestigarBtn" class="btn num-btn-primary full">🔎 Investigar</button>
         <textarea id="ideaInvestigacion" rows="14" placeholder="La investigación aparecerá aquí…" readonly style="width:100%;margin-top:10px;font-size:.9rem"></textarea>
-        <p id="ideaInvestigacionHint" class="muted small" hidden>Sin API key: copia este texto y pégalo en el chat de Claude. Te devuelve la ficha con las fuentes.</p>
+        <div id="ideaInvestigacionHint" class="aviso-llave" hidden><p><strong>⚠️ Claude no está conectado en esta app: falta tu clave.</strong> Lo que ves abajo no es la ficha: es el texto para pedírsela a Claude.</p><button type="button" class="btn" data-ir-ajustes>🔑 Poner mi clave en Ajustes</button></div>
         <div class="settings-row" style="margin-top:8px">
           <button type="button" id="ideaCopiarBtn" class="btn ghost">Copiar</button>
           <button type="button" id="ideaCompartirBtn" class="btn ghost">Compartir</button>

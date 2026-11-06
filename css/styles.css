@@ -923,3 +923,8 @@ h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; }
 .idea-nueva summary { cursor: pointer; color: var(--num-navy); font-weight: 600; }
 .idea-nueva.guardada { border-color: var(--num-teal, #2F8A85); }
 .idea-preguntas { margin-top: 10px; }
+
+/* Aviso: falta la clave de Claude */
+.aviso-llave { background: #FFF4D6; border: 1px solid #F4DA55; border-radius: 10px; padding: 12px 14px; margin: 10px 0; color: #12486C; font-size: .92rem; }
+.aviso-llave p { margin: 0 0 8px; }
+.aviso-llave .btn { margin-top: 2px; }
