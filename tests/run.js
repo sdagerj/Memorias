@@ -65,7 +65,7 @@ prueba('La app arranca sin errores de JavaScript', async (b) => {
   const p = await nuevaPagina(b);
   comprobar('sin errores al cargar', p.erroresJS.length === 0, p.erroresJS.join(' | '));
   comprobar('la barra de pestañas se ve', await p.isVisible('.tabbar'));
-  for (const v of ['timeline', 'book', 'numero', 'aprobar', 'essence', 'settings']) {
+  for (const v of ['timeline', 'book', 'numero', 'aprobar', 'settings']) {
     await p.click(`.tab[data-view="${v}"]`);
     await p.waitForTimeout(350);
     comprobar(`la pestaña ${v} se abre`, await p.isVisible(`#view-${v}.active`));
@@ -1328,30 +1328,10 @@ prueba('Las ideas tienen su propia pestaña: se guardan y se investigan', async 
   comprobar('sin errores de JavaScript', p.erroresJS.length === 0, p.erroresJS.join(' | '));
 });
 
-prueba('Mi esencia funciona sin pegar nada a mano y no se ahoga con muchos recuerdos', async (b) => {
+prueba('Mi esencia ya no está en la app', async (b) => {
   const p = await nuevaPagina(b);
-  await p.evaluate(async () => {
-    const db = await import('./js/db.js');
-    for (let i = 0; i < 80; i++) {
-      await db.saveEntry({ id: 'e' + i, title: 'Recuerdo ' + i, text: 'y'.repeat(3000), date: '2026-01-01', createdAt: i, updatedAt: i, photos: [] });
-    }
-  });
-  await p.click('.tab[data-view="essence"]'); await p.waitForTimeout(500);
-  comprobar('el botón se llama «Ver mi esencia»', (await p.textContent('#essenceCopyBtn')).includes('Ver mi esencia'));
-  // Sin llave: el texto queda en la caja para copiarlo.
-  await p.click('#essenceCopyBtn'); await p.waitForTimeout(500);
-  const t = await p.inputValue('#essencePaste');
-  comprobar('sin llave deja el texto a la vista', t.startsWith('Eres un guía introspectivo'));
-  comprobar('le saca historias para El Número', t.includes('Las historias que solo yo puedo contar'));
-  comprobar('manda solo los 60 más recientes', !t.includes('Recuerdo 19\n') && t.includes('Recuerdo 79'));
-  comprobar('recorta los recuerdos largos', !t.includes('y'.repeat(1300)));
-  await p.click('#essenceSaveBtn'); await p.waitForTimeout(300);
-  comprobar('el texto para Claude no se guarda como esencia', await p.isHidden('#essenceProfile'));
-  // Con llave: Claude responde y la esencia aparece sola.
-  await p.route('**/v1/messages', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ content: [{ type: 'text', text: 'Eres alguien que decide.' }] }) }));
-  await p.evaluate(async () => { const db = await import('./js/db.js'); await db.setSetting('claudeApiKey', 'sk-ant-api03-' + 'a'.repeat(90)); });
-  await p.click('#essenceCopyBtn'); await p.waitForTimeout(1200);
-  comprobar('con llave la esencia aparece sola', (await p.textContent('#essenceProfile .essence-text')).includes('Eres alguien que decide'));
+  comprobar('no hay pestaña Esencia', await p.locator('.tab[data-view="essence"]').count() === 0);
+  comprobar('no hay vista Mi esencia', await p.locator('#view-essence').count() === 0);
   comprobar('sin errores de JavaScript', p.erroresJS.length === 0, p.erroresJS.join(' | '));
 });
 

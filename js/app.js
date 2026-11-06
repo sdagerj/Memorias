@@ -3,7 +3,6 @@ import * as db from './db.js';
 import { getCurrentPosition, reverseGeocode, formatCoords, mapLink } from './geo.js';
 import { renderBook, formatLongDate } from './book.js';
 import { VoiceDictation, isVoiceSupported } from './voice.js';
-import { initEssence } from './essence.js';
 import { initNumero, initRssSources, refrescarNumeros } from './numero.js';
 import { normalizeApiKey, describeApiKeyProblem } from './claude-api.js';
 import { normalizeToken, describeTokenProblem, setGithubToken } from './publicar.js';
@@ -32,7 +31,6 @@ function showView(name) {
   // El FAB solo tiene sentido en la línea de tiempo; en El Número tiene su propio botón.
   $('#fab').hidden = !['timeline'].includes(name);
   if (name === 'book') showBooksScreen();
-  if (name === 'essence') essenceReady.then((init) => init());
   if (name === 'numero') numeroReady.then((init) => init());
   if (name === 'ideas' && !ideasIniciada) { ideasIniciada = true; initIdeas(); }
   if (name === 'aprobar') {
@@ -1252,16 +1250,7 @@ $('#installBtn').addEventListener('click', async () => {
 
 // =================== Arranque ===================
 
-// initEssence / initNumero se llaman una sola vez (la primera vez que se abre cada pestaña).
-let essenceInitialized = false;
-const essenceReady = (async () => {
-  return () => {
-    if (essenceInitialized) return;
-    essenceInitialized = true;
-    initEssence();
-  };
-})();
-
+// initNumero se llama una sola vez (la primera vez que se abre cada pestaña).
 let numeroInitialized = false;
 const numeroReady = (async () => {
   return () => {
