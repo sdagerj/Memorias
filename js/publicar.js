@@ -20,11 +20,11 @@ const RAMA = 'main';
 export const SITIO_WEB = 'https://elnumero.com.co';
 
 export const CANTERAS_WEB = [
-  { id: 'mercados', nombre: 'Mercados' },
-  { id: 'arte', nombre: 'Arte' },
-  { id: 'mujeres', nombre: 'Mujeres' },
-  { id: 'vida', nombre: 'Vida' },
-  { id: 'efemerides', nombre: 'Efemérides' },
+  { id: 'planear', nombre: 'Planear' },
+  { id: 'trabajar', nombre: 'Trabajar' },
+  { id: 'invertir', nombre: 'Invertir' },
+  { id: 'endeudarse', nombre: 'Endeudarse' },
+  { id: 'gastar', nombre: 'Gastar' },
 ];
 
 // ── El token ──────────────────────────────────────────────────────────────────
