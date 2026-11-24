@@ -264,7 +264,7 @@ prueba('Publicar valida antes de subir y arma el archivo de la web', async (b) =
   const md = await p.evaluate(async () => {
     const m = await import('./js/publicar.js');
     const e = { numero: '52%', gancho: 'La cifra: "clave"', fecha: '2026-08-24',
-                resumen: 'Un resumen.', cantera: 'mercados',
+                resumen: 'Un resumen.', cantera: 'planear',
                 editorial: 'Primero.\n\nSegundo.', destaque: 'Frase suelta.',
                 fuentes: [{ nombre: 'DANE', documento: 'GEIH', anio: '2026', url: 'https://dane.gov.co' }] };
     return { texto: m.construirMarkdown(e), archivo: m.nombreArchivo(e.fecha, e.gancho),
@@ -282,7 +282,7 @@ prueba('Publicar valida antes de subir y arma el archivo de la web', async (b) =
   // archivo para subirlo a mano.
   await p.fill('#numNumero', '52'); await p.fill('#numGancho', 'Prueba');
   await p.fill('#numEditorial', 'Un texto.'); await p.fill('#numResumen', 'Resumen corto.');
-  await p.selectOption('#numCantera', 'mercados');
+  await p.selectOption('#numCantera', 'planear');
   await p.click('#numPublicarBtn'); await p.waitForTimeout(800);
   comprobar('ofrece el archivo a mano sin llave', await p.locator('#numPubMd').count() === 1);
   const contenido = await p.inputValue('#numPubMd');
@@ -296,7 +296,7 @@ prueba('Los párrafos del editor se separan como los quiere Markdown', async (b)
   const r = await p.evaluate(async () => {
     const m = await import('./js/publicar.js');
     const e = { numero: '300', gancho: 'Los Medici', fecha: '2026-08-21',
-                resumen: 'R', cantera: 'vida',
+                resumen: 'R', cantera: 'planear',
                 editorial: 'Primero.\nSegundo.\n\n\nTercero.  \n' };
     return { md: m.construirMarkdown(e), sep: m.separarParrafos('Uno.\nDos.') };
   });
@@ -310,7 +310,7 @@ prueba('Un borrador no promete una dirección que da 404', async (b) => {
   const r = await p.evaluate(async () => {
     const m = await import('./js/publicar.js');
     const e = { numero: '1', gancho: 'T', fecha: '2026-01-01', resumen: 'R',
-                cantera: 'vida', editorial: 'X', borrador: true };
+                cantera: 'planear', editorial: 'X', borrador: true };
     return { md: m.construirMarkdown(e) };
   });
   comprobar('marca el borrador en el archivo', r.md.includes('borrador: true'));
@@ -591,7 +591,7 @@ prueba('De una columna salen dos publicaciones distintas para el feed', async (b
     const m = await import('./js/publicacion.js');
     const e = {
       numero: '300', gancho: 'No pretendas ser lo que no eres',
-      destaque: 'El poder que se muestra, se gasta.', cantera: 'mujeres',
+      destaque: 'El poder que se muestra, se gasta.', cantera: 'planear',
     };
     const mirar = async (id) => {
       const c = await m.dibujarPublicacion(e, id);
@@ -762,7 +762,7 @@ prueba('Publicar con fecha vieja avisa y ofrece la fecha de hoy', async (b) => {
   await p.fill('#numGancho', 'Más restaurantes, menos consumo');
   await p.fill('#numEditorial', 'Un texto de prueba.');
   await p.fill('#numResumen', 'Un resumen suficientemente largo para pasar.');
-  await p.selectOption('#numCantera', 'mercados');
+  await p.selectOption('#numCantera', 'planear');
   await p.fill('#numFecha', '2026-09-23');   // hace semanas
 
   await p.click('#numPublicarBtn'); await p.waitForTimeout(800);
@@ -786,7 +786,7 @@ prueba('Publicar con fecha vieja avisa y ofrece la fecha de hoy', async (b) => {
   await q.click('.tab[data-view="numero"]'); await q.waitForTimeout(500);
   await q.click('#newNumeroBtn'); await q.waitForTimeout(300);
   await q.fill('#numNumero', '7'); await q.fill('#numGancho', 'Otra'); await q.fill('#numEditorial', 'Texto.');
-  await q.fill('#numResumen', 'Un resumen suficientemente largo para pasar.'); await q.selectOption('#numCantera', 'vida');
+  await q.fill('#numResumen', 'Un resumen suficientemente largo para pasar.'); await q.selectOption('#numCantera', 'planear');
   await q.click('#numPublicarBtn'); await q.waitForTimeout(800);
   comprobar('con fecha de hoy no avisa', await q.locator('#numPubOverlay').count() === 1 && await q.locator('.pub-aviso').count() === 0);
   await q.click('#numPubCancel');
@@ -814,7 +814,7 @@ prueba('Republicar no crea una copia aunque la web haya renombrado el archivo', 
     const m = await import('./js/publicar.js');
     const entrega = {
       numero: '1.63', gancho: '¿Cuántos hijos habrías querido tener?', editorial: 'Texto.',
-      resumen: 'Un resumen de prueba suficientemente largo', cantera: 'mujeres',
+      resumen: 'Un resumen de prueba suficientemente largo', cantera: 'planear',
       fecha: '2026-08-22', fuentes: [], webArchivo: '2026-08-22-cuantos-hijos-habrias-querido-tener.md',
     };
     const out = await m.publicarEnLaWeb(entrega, 'github_pat_' + 'x'.repeat(30));
@@ -845,7 +845,7 @@ prueba('Republicar no crea una copia aunque la web haya renombrado el archivo', 
     const m = await import('./js/publicar.js');
     const out = await m.publicarEnLaWeb({
       numero: '300', gancho: 'No pretendas ser lo que no eres', editorial: 'Texto.',
-      resumen: 'Un resumen de prueba suficientemente largo', cantera: 'vida',
+      resumen: 'Un resumen de prueba suficientemente largo', cantera: 'planear',
       fecha: '2026-09-01', fuentes: [], webArchivo: '2026-08-21-no-pretendas-ser-lo-que-no-eres.md',
     }, 'github_pat_' + 'x'.repeat(30));
     return { fechaWeb: out.fechaWeb, archivo: out.archivo };
@@ -858,7 +858,7 @@ prueba('Una fuente con enlace inválido no llega a la web', async (b) => {
   const p = await nuevaPagina(b);
   const problemas = await p.evaluate(async () => {
     const m = await import('./js/publicar.js');
-    const base = { numero: '1', gancho: 'T', fecha: '2026-01-01', resumen: 'R', cantera: 'vida', editorial: 'X' };
+    const base = { numero: '1', gancho: 'T', fecha: '2026-01-01', resumen: 'R', cantera: 'planear', editorial: 'X' };
     return {
       urlMala: m.problemasParaPublicar({ ...base, fuentes: [{ nombre: 'DANE', url: 'dane.gov.co' }] }),
       sinNombre: m.problemasParaPublicar({ ...base, fuentes: [{ documento: 'Informe' }] }),
@@ -870,7 +870,7 @@ prueba('Una fuente con enlace inválido no llega a la web', async (b) => {
   // El audio de Spotify: se escribe en la cabecera y se valida que sea un episodio.
   const audio = await p.evaluate(async () => {
     const m = await import('./js/publicar.js');
-    const base = { numero: '1', gancho: 'T', fecha: '2026-01-01', resumen: 'Resumen de prueba largo', cantera: 'vida', editorial: 'X', fuentes: [] };
+    const base = { numero: '1', gancho: 'T', fecha: '2026-01-01', resumen: 'Resumen de prueba largo', cantera: 'planear', editorial: 'X', fuentes: [] };
     return {
       conAudio: m.construirMarkdown({ ...base, audio: 'https://open.spotify.com/episode/3HUspxeHwX3oy6X4n4ATYM?si=x' }),
       sinAudio: m.construirMarkdown(base),
